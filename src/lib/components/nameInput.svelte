@@ -2,6 +2,8 @@
     import { getConnectionStatus } from "../doichain/connectElectrum.js";
     import { checkName } from "$lib/doichain/nameValidation.js";
     import { electrumClient, connectedServer } from "../doichain/doichain-store.js";
+    import { createEventDispatcher } from 'svelte';
+    const dispatch = createEventDispatcher();
 
     export let name = '';
     export let totalUtxoValue = 0;
@@ -21,39 +23,51 @@
     }
 
     $: name ? checkName($electrumClient, name, totalUtxoValue, totalAmount, nameCheckCallback) : null;
+
+    function handleInput(event) {
+        if (event.keyCode === 13) {
+            dispatch('input', name);
+        }
+    }
 </script>
 
-<div>
-    <label for="name" class="block text-sm font-medium leading-6 text-gray-900">Check your Doichain Name</label>
-    <div class="relative mt-2 rounded-md shadow-sm">
-        <input bind:value={name} name="name" id="name"
-               type="text"
-               class="input {isNameValid ? '' : 'input-error'}"
-               placeholder="name"
-               aria-invalid="{!isNameValid}"
-               aria-describedby="name-error"/>
-
-        {#if !isNameValid}
-            <div class="input-icon">
-                <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                </svg>
-            </div>
-        {:else if name}
-            <div class="input-icon">
-                <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                </svg>
-            </div>
-        {/if}
+<div class="relative w-full">
+    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="w-5 h-5 text-gray-400">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
     </div>
+    <input bind:value={name}
+           on:keydown={handleInput}
+           type="search"
+           name="name"
+           id="name"
+           class="block w-full pl-10 pr-10 py-2 text-sm text-gray-900 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300"
+           placeholder="Search name..."
+           autocomplete="off"
+           aria-invalid="{!isNameValid}"
+           aria-describedby="name-error"
+    >
+    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
     {#if !isNameValid}
-        <p class="mt-2 text-sm text-red-600" id="name-error">{nameErrorMessage}</p>
-    {:else if name}
-        <p class="mt-2 text-sm text-green-600" id="name-success">Address: {doichainAddress}</p>
+            <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+        {:else if name}
+            <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
     {/if}
-    <p class="mt-2 text-sm font-semibold tracking-tight server-status {isConnected ? 'connected' : ''}">{serverName}</p>
+    </div>
 </div>
+<div class="mt-2 w-full">
+    {#if !isNameValid}
+        <p class="text-sm text-red-600 break-words" id="name-error">{nameErrorMessage}</p>
+    {:else if name}
+        <p class="text-sm text-green-600 break-words" id="name-success">Address: {doichainAddress}</p>
+    {/if}
+</div>
+<p class="mt-2 text-sm font-extralight tracking-tight server-status {isConnected ? 'connected' : ''}">{serverName}</p>
 
 <style>
     .input-icon {
@@ -65,5 +79,17 @@
     }
     .server-status.connected {
         color: green;
+    }
+    /* Add these new styles */
+    .relative {
+        max-width: 100%;
+    }
+
+    #name-error,
+    #name-success {
+        max-width: 100%;
+        word-break: break-word;
+        hyphens: auto;
+        transition: all 0.3s ease;
     }
 </style>
