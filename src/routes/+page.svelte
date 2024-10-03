@@ -72,9 +72,13 @@
 	</section>
 {/if}
 
-<section class="flex items-center justify-center flex-grow">
-	<div class="text-center max-w-4xl mx-auto px-4">
-		<NameInput on:input={handleInput}/>
+<section class="flex items-center justify-center">
+	<div class="text-center w-full max-w-sm mx-auto px-4">
+		<NameInput 
+			on:input={handleInput}
+			customErrorMessage="Name '{name}' is already registered"
+			customSuccessMessage="Custom success message: "
+		/>
 	</div>
 </section>
 <style>
