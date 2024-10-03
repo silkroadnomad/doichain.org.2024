@@ -1,9 +1,15 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
 	import NameInput from '$lib/components/nameInput.svelte';
+	import NFTCard from '$lib/components/NFTCard.svelte';
 
 	let showHeroSection = true;
 	let inputValue = '';
+	let currentNameOp, currentNameUtxo;
+	$: updatedCurrentNameOp = currentNameOp;
+	$: updatedCurrentNameUtxo = currentNameUtxo;
+
+	let customErrorMessage = "Name ---name--- is already registered!";
+	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
 
 	function handleInput(event) {
 		inputValue = event.detail;
@@ -13,10 +19,25 @@
 	}
 
 	let title = `Doichain.org names on chain`
-	let description = "A name registration service for Doichain";
+	let description = "Simple name registration for Doichain";
 	const url = "ipns://name-on-chain.com"
 	let image = "/nasa-Q1p7bh3SHj8-unsplash.jpg"
 	const favicon = "./favicon.ico"
+
+	const flyAndFade = (node, params) => {
+		return {
+			delay: params.delay || 0,
+			duration: params.duration || 300,
+			css: t => {
+				const y = params.y || 0;
+				const opacity = t;
+				return `
+					transform: translateY(${(1 - t) * y}px);
+					opacity: ${opacity};
+				`;
+			}
+		};
+	};
 </script>
 
 <svelte:head>
@@ -46,7 +67,7 @@
 
 {#if showHeroSection}
 	<section 
-		transition:fly={{ y: -50, duration: 300, opacity: 0 }} 
+		transition:flyAndFade={{ y: -50, duration: 300 }} 
 		class="flex items-center justify-center flex-grow"
 	>
 		<div class="text-center max-w-4xl mx-auto px-4">
@@ -73,12 +94,21 @@
 {/if}
 
 <section class="flex items-center justify-center">
-	<div class="text-center w-full max-w-sm mx-auto px-4">
+	<div class="text-center w-full max-w-sm mt-4 mx-auto px-4">
 		<NameInput 
+			bind:currentNameOp
+			bind:currentNameUtxo
 			on:input={handleInput}
-			customErrorMessage="Name '{name}' is already registered"
-			customSuccessMessage="Custom success message: "
-		/>
+			bind:customErrorMessage
+			bind:customSuccessMessage
+			/>
+	</div>
+</section>
+<section>
+	<div class="flex justify-center mt-4">
+		{#if currentNameOp && !showHeroSection}
+			<NFTCard currentNameOp={updatedCurrentNameOp} currentNameUtxo={updatedCurrentNameUtxo} />
+		{/if}
 	</div>
 </section>
 <style>

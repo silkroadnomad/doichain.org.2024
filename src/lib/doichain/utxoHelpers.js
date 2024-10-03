@@ -15,6 +15,8 @@ export async function getUtxosAndNamesOfAddress(electrumClient, doichainAddress)
                 hash: utxo.tx_hash,
                 n: utxo.fullTx.n,
                 value: utxo.value,
+                height: utxo.height,
+                expires: utxo.height+36000,
                 address: utxo.fullTx.scriptPubKey.addresses[0]})
         } else {
             nameOpTxs.push(scriptPubKey.nameOp.name)

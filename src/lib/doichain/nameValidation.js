@@ -1,22 +1,21 @@
 import { nameShow } from "$lib/doichain/nameShow.js";
 import sb from "satoshi-bitcoin";
-import pkg from 'lodash';
-const {debounce} = pkg;
+import { debounce } from 'lodash';
 
-export const checkName = debounce((electrumClient, name, totalUtxoValue, totalAmount, callback) => {
-    _checkName(electrumClient, name, totalUtxoValue, totalAmount).then(result => {
+export const checkName = debounce((electrumClient, currentNameAddress , name, totalUtxoValue, totalAmount, callback) => {
+    _checkName(electrumClient, currentNameAddress, name, totalUtxoValue, totalAmount).then(result => {
         callback(result);
     });
 }, 300);
 
-export async function _checkName(electrumClient, _name, totalUtxoValue, totalAmount) {
+export async function _checkName(electrumClient, currentNameAddress, _name, totalUtxoValue, totalAmount) {
 
     let nameErrorMessage = '';
     let utxoErrorMessage = '';
     let isNameValid = true;
     let isUTXOAddressValid = true;
-
-    let currentNameAddress = '';
+    let currentNameOp = true;
+    let currentNameUtxo
 
     if(!_name) {
         const nameErrorMessage = `No name provided`;
@@ -29,29 +28,31 @@ export async function _checkName(electrumClient, _name, totalUtxoValue, totalAmo
     }
     if (_name.length > 3) {
         const res = await nameShow(electrumClient, _name);
-        console.log("res",res)
-        if (res && res.length > 0) {
+        if (res.length > 0) {
             for (let utxo of res) {
                 const scriptPubKey = utxo.scriptPubKey;
                 if (scriptPubKey && scriptPubKey.nameOp) {
                     currentNameAddress = scriptPubKey.addresses[0];
+                    currentNameOp = scriptPubKey.nameOp
+                    currentNameUtxo = utxo
                 }
             }
             nameErrorMessage = `Name "${_name}" already registered under address ${currentNameAddress}`;
             isNameValid = false;
-            return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
+            return { currentNameAddress, currentNameOp, currentNameUtxo, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
         }
         else if(totalUtxoValue <= sb.toSatoshi(totalAmount)){
             utxoErrorMessage = `Funds on ${currentNameAddress} are insufficient for this Doichain name`;
             isUTXOAddressValid = false;
-            return { nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
+            return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
         }
         else {
-           return
+            isNameValid = true;
+            return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
         }
     } else {
         nameErrorMessage = `Name "${_name}" is too short`;
         isNameValid = false;
-        return { nameErrorMessage, currentNameAddress, utxoErrorMessage, isNameValid, isUTXOAddressValid };
+        return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid };
     }
 }

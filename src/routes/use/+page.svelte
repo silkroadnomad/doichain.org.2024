@@ -33,12 +33,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
-<!-- Hero Section -->
-<section class="flex items-center justify-center flex-grow">
-	<div class="text-center max-w-4xl mx-auto px-4">
-		<NameInput/>
-	</div>
-</section>
+
 
 
 
