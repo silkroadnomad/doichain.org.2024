@@ -1,13 +1,15 @@
 <script>
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
+	import NameDoi from '$lib/components/nameDoi.svelte';
 
 	let showHeroSection = true;
 	let inputValue = '';
-	let currentNameOp, currentNameUtxo;
+	let currentNameOp
+	let currentNameUtxo;
 	$: updatedCurrentNameOp = currentNameOp;
 	$: updatedCurrentNameUtxo = currentNameUtxo;
-
+	$: console.log("updatedCurrentNameUtxo",updatedCurrentNameUtxo)
 	let customErrorMessage = "Name ---name--- is already registered!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
 
@@ -108,6 +110,12 @@
 	<div class="flex justify-center mt-4">
 		{#if currentNameOp && !showHeroSection}
 			<NFTCard currentNameOp={updatedCurrentNameOp} currentNameUtxo={updatedCurrentNameUtxo} />
+		{:else}
+			{#if !currentNameOp && inputValue}
+				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
+					<NameDoi nftName={inputValue} />
+				</div>
+			{/if}
 		{/if}
 	</div>
 </section>

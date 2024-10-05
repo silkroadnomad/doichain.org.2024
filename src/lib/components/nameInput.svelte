@@ -38,6 +38,7 @@
     }
 
     async function nameCheckCallback(result) {
+        console.log("result",result)
         doichainAddress = result.currentNameAddress || doichainAddress;
         isNameValid = result.isNameValid;
         currentNameOp = result.currentNameOp

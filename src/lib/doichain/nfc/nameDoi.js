@@ -1,10 +1,11 @@
 import { address, crypto, Psbt } from 'bitcoinjs-lib'
-import { DOICHAIN, NETWORK_FEE, VERSION } from './doichain.js'
-import { getNameOPStackScript } from './getNameOPStackScript.js'
-import { getNameOpUTXOsOfTxHash } from './getNameOpUTXOsOfTxHash.js'
+import { DOICHAIN, NETWORK_FEE, VERSION } from '../doichain.js'
+import { getNameOPStackScript } from '../getNameOPStackScript.js'
+import { getNameOpUTXOsOfTxHash } from '../getNameOpUTXOsOfTxHash.js'
 
 /**
  * Gets the unspent transaction outputs
+ *
  * @param electrumClient
  * @param utxoAddress
  * @returns {Promise<*>}
@@ -16,7 +17,6 @@ export const getUTXOSFromAddress = async (electrumClient, utxoAddress) => {
 	let reversedHash = Buffer.from(hash.reverse()).toString("hex");
 
 	const utxos = await electrumClient.request('blockchain.scripthash.listunspent', [reversedHash]);
-	console.log("received from electrum",utxos)
 	for (let i = 0; i < utxos.length; i++) {
 		const utxo = utxos[i];
 		const fullTX = await getNameOpUTXOsOfTxHash(electrumClient, utxo.tx_hash, utxo.tx_pos);

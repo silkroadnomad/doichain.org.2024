@@ -1,4 +1,4 @@
-import { getUTXOSFromAddress } from "./nameDoi.js";
+import { getUTXOSFromAddress } from "./nfc/nameDoi.js";
 
 export async function getUtxosAndNamesOfAddress(electrumClient, doichainAddress) {
     let nameOpTxs = []

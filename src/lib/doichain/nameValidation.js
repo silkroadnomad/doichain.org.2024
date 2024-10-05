@@ -41,7 +41,7 @@ export async function _checkName(electrumClient, currentNameAddress, _name, tota
             isNameValid = false;
             return { currentNameAddress, currentNameOp, currentNameUtxo, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
         }
-        else if(totalUtxoValue <= sb.toSatoshi(totalAmount)){
+        else if(totalUtxoValue <= sb.toSatoshi(totalAmount)){ //TODO why is this here inside? Please move
             utxoErrorMessage = `Funds on ${currentNameAddress} are insufficient for this Doichain name`;
             isUTXOAddressValid = false;
             return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
