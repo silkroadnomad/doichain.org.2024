@@ -77,7 +77,7 @@
                class="block w-full pl-10 pr-10 py-2 text-sm
                border-blue-500 focus:border-blue-700
                text-gray-900 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300"
-               placeholder="Search name..."
+               placeholder="Find name..."
                autocomplete="off"
                aria-invalid="{!isNameValid}"
                aria-describedby="name-error"

@@ -30,7 +30,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
     let changeAmount;
 
     _utxoAddresses.forEach(utxo => {
-        const isSegWit = utxo?.fullTx.scriptPubKey?.type === "witness_v0_keyhash" || scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
+        const isSegWit = utxo?.fullTx.scriptPubKey?.type === "witness_v0_keyhash" || utxo?.fullTx.scriptPubKey.hex?.startsWith('0014') || utxo?.fullTx.scriptPubKey.hex?.startsWith('0020');
         if (isSegWit) {
             psbt.addInput({
                 hash: utxo.tx_hash,

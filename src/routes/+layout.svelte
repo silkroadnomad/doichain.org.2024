@@ -15,10 +15,12 @@
 	import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
 	import { webRTC, webRTCDirect } from '@libp2p/webrtc'
 	import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery'
+	import { webTransport } from '@libp2p/webtransport';
 	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB || '_peer-discovery._p2p._pubsub'
 	export let data
 
 	const config = libp2pDefaults()
+	console.log("config",config)
 	let blockstore = new LevelBlockstore("./helia-blocks")
 	let datastore = new LevelDatastore("./helia-data")
 
@@ -30,6 +32,7 @@
 		// tcp(),
 		webRTC(),
 		webRTCDirect(),
+		webTransport(),
 		webSockets({ filter: filters.all})
 	]
 	const newPubsub = {...config.services.pubsub, ...{ services: { pubsub: gossipsub({ emitSelf: true, allowPublishToZeroTopicPeers: true, canRelayMessage: true }) } }}
@@ -55,12 +58,13 @@
 		})
 	]]
 
-	// config.peerDiscovery = newPubSubPeerDiscovey
+	config.peerDiscovery = newPubSubPeerDiscovey
 
 	onMount( async () => {
-		//$helia = await createHelia()
 		$libp2p = await createLibp2p(config)
+		window.libp2p = $libp2p
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore})
+		window.helia = $helia
 		try {
 			if($libp2p) {
 				$libp2p.addEventListener('connection:open',  (p) => {
@@ -71,8 +75,11 @@
 				$libp2p.addEventListener('connection:close', () => {
 					$connectedPeers = $connectedPeers - 1
 				});
-				await $libp2p.dial(multiaddr('/ip4/65.21.180.203/udp/4001/quic-v1/webtransport/certhash/uEiDk1JxhhAhI3c3Q_90QiRUdw5WDyxDLjzeDvg94_Zz4yQ/certhash/uEiDnxUwThh3AGQtzaojyo5CX6o0WJcQEE4NAdCFpbKUP4w/p2p/12D3KooWALjeG5hYT9qtBtqpv1X3Z4HVgjDrBamHfo37Jd61uW1t'))
-				await $libp2p.dial(multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
+				await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
+				// await $helia.libp2p.dial(multiaddr('/ip4/159.69.119.82/udp/4001/quic-v1/webtransport/certhash/uEiCJm1b3Z_aLNu9lBcYJ64C7mgeQmOojkYjrFne0VSMY2Q/certhash/uEiDl2NHHKh-V4jr5hckVHZ74ygXPxNliaivVsVXqMo7GZw/p2p/12D3KooWK8X8tjKHDyoXyR4EH4FBuqgWQnhRuuAm5SSNLr4zAQp2'))
+				await $helia.libp2p.dial(multiaddr('/ip4/159.69.119.82/udp/4001/quic-v1/webtransport/certhash/uEiCJm1b3Z_aLNu9lBcYJ64C7mgeQmOojkYjrFne0VSMY2Q/certhash/uEiDl2NHHKh-V4jr5hckVHZ74ygXPxNliaivVsVXqMo7GZw/p2p/12D3KooWK8X8tjKHDyoXyR4EH4FBuqgWQnhRuuAm5SSNLr4zAQp2'))
+				console.log("dialed istanbul (159.69.119.82)")// await $libp2p.dial(multiaddr('/ip4/65.21.180.203/udp/4001/quic-v1/webtransport/certhash/uEiDk1JxhhAhI3c3Q_90QiRUdw5WDyxDLjzeDvg94_Zz4yQ/certhash/uEiDnxUwThh3AGQtzaojyo5CX6o0WJcQEE4NAdCFpbKUP4w/p2p/12D3KooWALjeG5hYT9qtBtqpv1X3Z4HVgjDrBamHfo37Jd61uW1t'))
+				//await $libp2p.dial(multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
 			}
 			// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
 			// console.log("topics",$helia.libp2p.services.pubsub.getTopics())

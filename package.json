@@ -70,6 +70,7 @@
 		"lodash": "^4.17.21",
 		"moment": "^2.30.1",
 		"satoshi-bitcoin": "^1.0.5",
+		"sb": "^8.3.5",
 		"svelte-file-dropzone": "^2.0.8",
 		"vite-plugin-node-polyfills": "^0.22.0"
 	}

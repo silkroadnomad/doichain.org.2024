@@ -3,7 +3,6 @@
 	import { nameShow } from '../doichain/nameShow.js'
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
-	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core' //https://svelteui.dev/core/card
 	let nameToCheck = 'PeaceDove-CC'
 	let results = [];
 </script>

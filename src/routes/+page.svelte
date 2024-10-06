@@ -10,7 +10,7 @@
 	$: updatedCurrentNameOp = currentNameOp;
 	$: updatedCurrentNameUtxo = currentNameUtxo;
 	$: console.log("updatedCurrentNameUtxo",updatedCurrentNameUtxo)
-	let customErrorMessage = "Name ---name--- is already registered!";
+	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to see observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
 
 	function handleInput(event) {

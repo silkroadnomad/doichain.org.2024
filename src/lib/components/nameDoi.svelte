@@ -7,6 +7,7 @@
   import { renderBCUR } from '../doichain/renderQR.js'
   import { DOICHAIN } from "$lib/doichain/doichain.js";
   import { unixfs } from '@helia/unixfs'
+  import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
 
   const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || "/doichain-nfc/1/message/proto"
 
@@ -36,41 +37,6 @@
   onMount(async ()=>{
     utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
   })
-
-  $: {
-    if(selectedUtxos.length > 0 && nameId && nameValue) {
-      console.log("prepare signing transaction")
-      const result = prepareSignTransaction(
-        selectedUtxos,
-        nameId,
-        nameValue,
-        DOICHAIN,
-        storageFee,
-        recipientsAddress,
-        changeAddress,
-        walletAddress);
-
-      if (result.error) {
-        console.log("error",result.error)
-        utxoErrorMessage = result.error;
-        qrCodeData = undefined;
-      } else {
-          console.log("psbtBaseText",psbtBaseText)
-          psbtBaseText = result.psbtBase64;
-          transactionFee = result.transactionFee;
-          changeAmount = result.changeAmount;
-          totalAmount = result.totalAmount;
-
-          renderBCUR(psbtBaseText).then(_qr => {
-            qrCodeData = _qr;
-            displayQrCodes();
-          }).catch(error => {
-            console.error('Error generating QR code:', error);
-            qrCodeData = undefined;
-          });
-      }
-    }
-  }
 
   let files = {
     accepted: [],
@@ -128,7 +94,7 @@
           }).then((cid) => {
             imageCID = cid.toString()
             console.log('Added file to IPFS:', imageCID)
-            $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode("NEW-CID:"+metadataCID.toString()))
+            $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode("NEW-CID:"+imageCID.toString()))
             writeMetadata()
           })}else{
             console.log("not ArrayBuffer")
@@ -151,15 +117,54 @@
 
   let activeTimeLine = 0
   let selectedUtxos = [];
-
-  function toggleUtxoSelection(utxo, isSelected) {
-    if (isSelected)
+  $: selectedUtxosCount = selectedUtxos.length;
+  function toggleUtxoSelection(utxo) {
+    const index = selectedUtxos.findIndex(u => u.tx_hash === utxo.tx_hash && u.tx_pos === utxo.tx_pos);
+    if (index !== -1) {
+      selectedUtxos = selectedUtxos.filter((_, i) => i !== index);
+    } else {
       selectedUtxos = [...selectedUtxos, utxo];
-    else
-      selectedUtxos = selectedUtxos.filter(selectedUtxo => selectedUtxo !== utxo);
+    }
   }
 
-  $:console.log("selectedUtxos",selectedUtxos)
+  function isUtxoSelected(utxo) {
+    return selectedUtxos.some(u => u.tx_hash === utxo.tx_hash && u.tx_pos === utxo.tx_pos);
+  }
+
+  $: {
+    if(selectedUtxosCount > 0 && nameId && nameValue) {
+      console.log("prepare signing transaction",selectedUtxos)
+      const result = prepareSignTransaction(
+        selectedUtxos,
+        nameId,
+        nameValue,
+        DOICHAIN,
+        storageFee,
+        recipientsAddress,
+        changeAddress,
+        walletAddress);
+
+      if (result.error) {
+        console.log("error",result.error)
+        utxoErrorMessage = result.error;
+        qrCodeData = undefined;
+      } else {
+        psbtBaseText = result.psbtBase64;
+        transactionFee = result.transactionFee;
+        changeAmount = result.changeAmount;
+        totalAmount = result.totalAmount;
+        console.log("result",result)
+        console.log("psbtBaseText",psbtBaseText)
+        renderBCUR(psbtBaseText).then(_qr => {
+          qrCodeData = _qr;
+          displayQrCodes();
+        }).catch(error => {
+          console.error('Error generating QR code:', error);
+          qrCodeData = undefined;
+        });
+      }
+    }
+  }
 
   let imageUrl = "https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80";
 
@@ -322,26 +327,33 @@
                 <div>wallet address:</div>
                 <div>{utxo.fullTx?.address?utxo.fullTx?.address:utxo.fullTx?.scriptPubKey.addresses[0]}</div>
                 <div>wallet amount:</div>
-                <div>{utxo.value}</div>
+                <div>{sb.toBitcoin(utxo.value)} BTC</div>
                 <div><b>Activate this UTXO:</b></div>
                 <div>
-                  <div class="relative">
-                    <input 
-                      type="checkbox" 
-                      id="toggle-{utxo.txid}-{utxo.vout}"
-                      class="sr-only peer" 
-                      on:change={(e) => toggleUtxoSelection(utxo, e.target.checked)} 
-                    />
-                    <label 
-                      for="toggle-{utxo.txid}-{utxo.vout}"
-                      class="flex items-center cursor-pointer w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800"
-                    >
-                      <div class="w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-in-out peer-checked:translate-x-5 ml-1"></div>
-                    </label>
-                  </div>
-                  <div class="ml-3 text-gray-700 font-medium">
-                    Toggle me
-                  </div>
+                  {#key selectedUtxosCount}
+                    <div>
+                      <button
+                        on:click={() => toggleUtxoSelection(utxo)}
+                        type="button" 
+                        class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
+                        role="switch" 
+                        aria-checked={isUtxoSelected(utxo)}
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
+                          class:bg-indigo-600={isUtxoSelected(utxo)}
+                          class:bg-gray-200={!isUtxoSelected(utxo)}
+                        ></span>
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
+                          class:translate-x-5={isUtxoSelected(utxo)}
+                          class:translate-x-0={!isUtxoSelected(utxo)}
+                        ></span>
+                      </button>
+                    </div>
+                  {/key}
                 </div>
               </div>
             {/if}
@@ -425,9 +437,15 @@
           {/if}
           
           {#if transactionFee !== undefined && totalAmount !== undefined}
-            <div class="mt-4">
-              <p>Transaction Fee: {transactionFee}</p>
-              <p>Total Amount: {totalAmount}</p>
+            <div class="mt-4 text-right">
+              <p class="flex justify-end">
+                <span class="font-semibold mr-2">Transaction Fee:</span>
+                <span>{sb.toBitcoin(transactionFee).toFixed(8)} BTC</span>
+              </p>
+              <p class="flex justify-end">
+                <span class="font-semibold mr-2">Total Amount:</span>
+                <span>{sb.toBitcoin(totalAmount).toFixed(8)} BTC</span>
+              </p>
             </div>
           {/if}
         </div>
