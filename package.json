@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"ipfs-publish": "npm version patch && npm run build && ./ipfs-publish.sh",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
@@ -72,6 +73,7 @@
 		"satoshi-bitcoin": "^1.0.5",
 		"sb": "^8.3.5",
 		"svelte-file-dropzone": "^2.0.8",
+		"version": "^0.1.2",
 		"vite-plugin-node-polyfills": "^0.22.0"
 	}
 }

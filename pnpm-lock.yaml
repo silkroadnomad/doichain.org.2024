@@ -113,6 +113,9 @@ importers:
       svelte-file-dropzone:
         specifier: ^2.0.8
         version: 2.0.8(svelte@4.2.19)
+      version:
+        specifier: ^0.1.2
+        version: 0.1.2
       vite-plugin-node-polyfills:
         specifier: ^0.22.0
         version: 0.22.0(rollup@4.24.0)(vite@5.4.8(@types/node@22.7.4)(terser@5.34.1))
@@ -4358,6 +4361,14 @@ packages:
     resolution: {integrity: sha512-vTbzVAjQDzwQdKuvj7qEq6OlAprCjE656khuGQ4QaBLg7abQ9I9ISpmLuc6inWe7zP75AECjqUa4g4sdQvOXhg==}
     hasBin: true
 
+  request@2.12.0:
+    resolution: {integrity: sha512-GcOI9NyUw2lRke4kdbrjQFxu+cLugShENHvcb9QCSLLc/yH3lP7I/7RESxVbYS+AxC/r9rwzks52MRHVoZdb5w==}
+    engines: {'0': node >= 0.3.6}
+    deprecated: request has been deprecated, see https://github.com/request/request/issues/3142
+    bundledDependencies:
+      - form-data
+      - mime
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -4950,6 +4961,10 @@ packages:
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
+
+  version@0.1.2:
+    resolution: {integrity: sha512-pU32BxnlMpDnyR8SsRR8amiAmhBZQdTevjYFAMZ9W3eT2wWIJzfjKOH39O1eiCAW4brhyaXe3NpZNFpBAJR56Q==}
+    engines: {node: '>= 0.8.0'}
 
   vite-node@2.1.2:
     resolution: {integrity: sha512-HPcGNN5g/7I2OtPjLqgOtCRu/qhVvBxTUD3qzitmL0SrG1cWFzxzhMDWussxSbrRYWqnKf8P2jiNhPMSN+ymsQ==}
@@ -10770,6 +10785,8 @@ snapshots:
     dependencies:
       jsesc: 3.0.2
 
+  request@2.12.0: {}
+
   require-directory@2.1.1: {}
 
   require-main-filename@2.0.0: {}
@@ -11412,6 +11429,10 @@ snapshots:
       safe-buffer: 5.2.1
 
   vary@1.1.2: {}
+
+  version@0.1.2:
+    dependencies:
+      request: 2.12.0
 
   vite-node@2.1.2(@types/node@22.7.4)(terser@5.34.1):
     dependencies:
