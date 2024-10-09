@@ -29,7 +29,6 @@ function base64ToHex(base64) {
 export const renderBCUR = async (qrData) => {
 
 	if (!qrData) {
-        console.error("No QR data provided");
         return;
     }
 	const maxFragmentLength = 50
@@ -58,22 +57,6 @@ export const renderBCUR = async (qrData) => {
 	});
 	console.log(` generated ${qrSvgs.length } qrcode svgs `)
 	return qrSvgs;
-
-	// Returns SVG code of generated 256x256 QR code with VK logo
-	// const qrSvg = vkQr.createQR(part, {
-	// 	qrSize: 256,
-	// 	isShowLogo: true
-	// });
-
-	// console.log("qrSvg",qrSvg)
-	// const encodedSvg = encodeURIComponent(qrSvg);
-	// console.log("encodedSvg", encodedSvg);
-	// return qrSvg
-	// convert to data URL for display
-	// const base64String = btoa(qrSvg);
-	// const imgDataUrl = `data:image/svg+xml;base64,${base64String}`;
-	// console.log("imgDataUrl",imgDataUrl)
-	// return imgDataUrl;
 }
 
 

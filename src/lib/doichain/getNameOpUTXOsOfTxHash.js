@@ -12,13 +12,10 @@ export async function getNameOpUTXOsOfTxHash(electrumClient, tx, n) {
 
 	const parsedUtxos = []
 	const txDetails = await electrumClient.request('blockchain.transaction.get', [tx, true]);
-	console.log("txDetails",txDetails)
 	if(n !== undefined) {
 		const parsedUtxo = txDetails.vout[n] //await getNameOpOfVout(electrumClient, vout)
 		parsedUtxo.txid = txDetails.txid;
 		parsedUtxo.hex = txDetails.hex;
-		// parsedUtxo.height = txDetails.height;
-		parsedUtxo.expires = txDetails.blocktime ? moment.unix(txDetails.blocktime+(36000*10*60)).format('YYYY-MM-DD HH:mm:ss') : 'mempool';
 		parsedUtxo.formattedBlocktime = txDetails.blocktime ? moment.unix(txDetails.blocktime).format('YYYY-MM-DD HH:mm:ss') : 'mempool';
 		return parsedUtxo
 	}
@@ -27,8 +24,6 @@ export async function getNameOpUTXOsOfTxHash(electrumClient, tx, n) {
 			const parsedUtxo = vout //await getNameOpOfVout(electrumClient, vout)
 			parsedUtxo.txid = txDetails.txid;
 			parsedUtxo.hex = txDetails.hex;
-			// parsedUtxo.height = txDetails.height;
-			parsedUtxo.expires = txDetails.blocktime ? moment.unix(txDetails.blocktime+(36000*10*60)).format('YYYY-MM-DD HH:mm:ss') : 'mempool';
 			parsedUtxo.formattedBlocktime = txDetails.blocktime ? moment.unix(txDetails.blocktime).format('YYYY-MM-DD HH:mm:ss') : 'mempool';
 			parsedUtxos.push(parsedUtxo)
 		}

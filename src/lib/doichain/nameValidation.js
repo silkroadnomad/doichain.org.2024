@@ -16,6 +16,7 @@ export async function _checkName(electrumClient, currentNameAddress, _name, tota
     let isUTXOAddressValid = true;
     let currentNameOp = true;
     let currentNameUtxo
+    let nameExists;
 
     if(!_name) {
         const nameErrorMessage = `No name provided`;
@@ -35,13 +36,14 @@ export async function _checkName(electrumClient, currentNameAddress, _name, tota
                     currentNameAddress = scriptPubKey.addresses[0];
                     currentNameOp = scriptPubKey.nameOp
                     currentNameUtxo = utxo
+                    nameExists = true
                 }
             }
             nameErrorMessage = `Name "${_name}" already registered under address ${currentNameAddress}`;
             isNameValid = false;
-            return { currentNameAddress, currentNameOp, currentNameUtxo, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
+            return { currentNameAddress, currentNameOp, currentNameUtxo, nameErrorMessage, utxoErrorMessage, nameExists, isNameValid, isUTXOAddressValid }
         }
-        else if(totalUtxoValue <= sb.toSatoshi(totalAmount)){ //TODO why is this here inside? Please move
+        else if(totalUtxoValue <= totalAmount){ //TODO why is this here inside? Please move
             utxoErrorMessage = `Funds on ${currentNameAddress} are insufficient for this Doichain name`;
             isUTXOAddressValid = false;
             return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }

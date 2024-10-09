@@ -12,15 +12,28 @@ export async function getUtxosAndNamesOfAddress(electrumClient, doichainAddress)
                 formattedBlocktime: utxo.fullTx.formattedBlocktime,
                 txid: utxo.fullTx.txid,
                 hex: utxo.fullTx.hex,
+                scriptPubKey: utxo.fullTx.scriptPubKey,
                 hash: utxo.tx_hash,
                 n: utxo.fullTx.n,
                 value: utxo.value,
                 height: utxo.height,
-                expires: utxo.height+36000,
-                address: utxo.fullTx.scriptPubKey.addresses[0]})
+                address: utxo.fullTx?.scriptPubKey?.addresses[0]})
         } else {
-            nameOpTxs.push(scriptPubKey.nameOp.name)
+            nameOpTxs.push({
+                name: scriptPubKey.nameOp.name,
+                nameValue: scriptPubKey.nameOp.value,
+                expires: utxo.height+36000,
+                txid: utxo.fullTx.txid,
+                hex: utxo.fullTx.hex,
+                scriptPubKey: utxo.fullTx.scriptPubKey,
+                hash: utxo.tx_hash,
+                n: utxo.fullTx.n,
+                value: utxo.value,
+                height: utxo.height,
+                address: utxo.fullTx?.scriptPubKey?.addresses[0]
+            })
         }
+        totalUtxoValue+=utxo.value;
     }
     return { nameOpTxs, utxoAddresses, totalUtxoValue }
 }
