@@ -77,6 +77,9 @@ importers:
       '@vkontakte/vk-qr':
         specifier: ^2.1.1
         version: 2.1.1
+      bbqr:
+        specifier: ^1.0.0
+        version: 1.0.0
       bitcoinjs-lib:
         specifier: ^6.1.6
         version: 6.1.6
@@ -1932,6 +1935,9 @@ packages:
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
+
+  bbqr@1.0.0:
+    resolution: {integrity: sha512-fTp/EF3O1SACJh+jGuNICN0yDasPZE1aGfNxoTIVOnrfK5j49K71hoF73NYOec59VXEQrUBoML2lmXnl5TRW6g==}
 
   bech32@2.0.0:
     resolution: {integrity: sha512-LcknSilhIGatDAsY1ak2I8VtGaHNhgMSYVxFrGLXv+xLHytaKZKcaUJJUE7qmBr7h33o5YQwP55pMI0xmkpJwg==}
@@ -7828,6 +7834,8 @@ snapshots:
   base-x@4.0.0: {}
 
   base64-js@1.5.1: {}
+
+  bbqr@1.0.0: {}
 
   bech32@2.0.0: {}
 

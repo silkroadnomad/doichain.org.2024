@@ -1,0 +1,22 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "x-ipfs-path",
+          "value": "/ipfs/QmYusUXfxDrhEdcZ9GfP3tf5MfSQFemFVvwNx3C6iE34Da"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "x-ipfs-path",
+          "value": "/ipfs/QmYusUXfxDrhEdcZ9GfP3tf5MfSQFemFVvwNx3C6iE34Da"
+        }
+      ]
+    }
+  ]
+}
