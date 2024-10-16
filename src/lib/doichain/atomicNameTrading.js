@@ -16,6 +16,16 @@ import { getNameOPStackScript } from "$lib/doichain/getNameOPStackScript.js";
  * @returns {Promise<void>}
  */
 export const generateAtomicNameTradingPSBT = async (name, fundingUtxoAddresses, nameOpTxs, ownerOfName, nameExists, transferPrice, storageFee, network) => {
+    console.log("generateAtomicNameTradingPSBT", {
+        name,
+        fundingUtxoAddresses,
+        nameOpTxs,
+        ownerOfName,
+        nameExists,
+        transferPrice,
+        storageFee,
+        network
+    });
     if(!nameExists) return
     if(!fundingUtxoAddresses || fundingUtxoAddresses.length === 0) return
     if(!nameOpTxs || nameOpTxs.length === 0) return
@@ -38,7 +48,7 @@ export const generateAtomicNameTradingPSBT = async (name, fundingUtxoAddresses, 
     console.log("generateAtomicNameTradingPSBT:nameExists", nameExists)
 
     // Filter nameOpTxs to include only transactions for the specified name
-    const filteredNameOpTxs = nameOpTxs.filter(tx => tx.name === name);
+    const filteredNameOpTxs = nameOpTxs.filter(tx => tx.nameOp.name === name);
     console.log("generateAtomicNameTradingPSBT:filteredNameOpTxs", filteredNameOpTxs)
     if(!filteredNameOpTxs || filteredNameOpTxs.length === 0) return
 
@@ -61,22 +71,30 @@ export const generateAtomicNameTradingPSBT = async (name, fundingUtxoAddresses, 
     if(!ownerOfName){
         fundingUtxoAddresses.forEach(utxo => {
             console.log("fundingUtxoAddresses->",utxo)
-            const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash" || utxo?.scriptPubKey.hex?.startsWith('0014') || utxo.scriptPubKey.hex?.startsWith('0020');
+            console.log("utxo.fullTx.type",utxo?.scriptPubKey?.type)
+            // if (!utxo.scriptPubKey.nameOp) {
+            const scriptPubKeyHex = utxo.hex;
+            const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash" || scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
+            // const isSegWit =  scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
             if (isSegWit) {
-                psbt.addInput({
+                const input = {
                     hash: utxo.hash,
                     index: utxo.n,
                     witnessUtxo: {
                         script: Buffer.from(utxo.scriptPubKey.hex, 'hex'),
                         value: utxo.value,
                     }
-                });
+                }
+                psbt.addInput(input);
+                console.log("adding segwit coin utxo as input",input)
             } else {
-                psbt.addInput({
+                const input = {
                     hash: utxo.hash,
                     index: utxo.n,
                     nonWitnessUtxo: Buffer.from(utxo.hex, 'hex')
-                });
+                }
+                console.log("adding non-segwit coin utxo as input",input)
+                psbt.addInput(input);
             }
             totalInputAmount += utxo.value;
             // }
@@ -84,13 +102,14 @@ export const generateAtomicNameTradingPSBT = async (name, fundingUtxoAddresses, 
     }
 
     filteredNameOpTxs.forEach(utxo => {
-        console.log("filteredNameOpTxs->",utxo)
-        console.log("utxo.fullTx.scriptPubKey.type",utxo?.fullTx?.scriptPubKey?.type)
+        console.log("filteredNameOpTxs->", utxo)
+        console.log("utxo.scriptPubKey.type", utxo?.scriptPubKey?.type)
         const scriptPubKeyHex = utxo.hex;
-        const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash" || scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
+        const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash" || 
+                         utxo?.scriptPubKey?.type === "witness_v0_scripthash" ||
+                         scriptPubKeyHex?.startsWith('0014') || 
+                         scriptPubKeyHex?.startsWith('0020');
 
-        // const isSegWit = scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
-        
         const input = {
             hash: utxo.hash,
             index: utxo.n,
@@ -98,25 +117,37 @@ export const generateAtomicNameTradingPSBT = async (name, fundingUtxoAddresses, 
         };
 
         if (isSegWit) {
-            console.log("adding segwit name_op as input", utxo);
-            input.witnessUtxo = {
-                script: Buffer.from(utxo.scriptPubKey.hex, 'hex'),
-                value: utxo.value,
-            };
+            if (utxo.scriptPubKey && utxo.value !== undefined) {
+                input.witnessUtxo = {
+                    script: Buffer.from(utxo.scriptPubKey.hex, 'hex'),
+                    value: utxo.value,
+                };
+            } else {
+                console.error("Missing required data for segwit input", utxo);
+                return; // Skip this input if we don't have the required data
+            }
+            
+            // Add witnessScript for P2WSH
             if (utxo.witnessScript) {
                 input.witnessScript = Buffer.from(utxo.witnessScript, 'hex');
             }
         } else {
-            console.log("adding non-segwit name_op as input", utxo);
-            input.nonWitnessUtxo = Buffer.from(utxo.hex, 'hex');
+            if (utxo.hex) {
+                input.nonWitnessUtxo = Buffer.from(utxo.hex, 'hex');
+            } else {
+                console.error("Missing full transaction data for non-segwit input", utxo);
+                return; // Skip this input if we don't have the full transaction data
+            }
         }
 
+        // Add redeemScript for P2SH or P2SH-wrapped SegWit
         if (utxo.redeemScript) {
             input.redeemScript = Buffer.from(utxo.redeemScript, 'hex');
         }
 
+        console.log("Adding input:", input);
         psbt.addInput(input);
-        totalInputAmount += utxo.value;
+        totalInputAmount += Math.floor(utxo.value);
     })
     if( _transferPrice < 0 ) return
     // console.log("_transferPrice",_transferPrice)
@@ -132,8 +163,11 @@ export const generateAtomicNameTradingPSBT = async (name, fundingUtxoAddresses, 
     if(!ownerOfName){ //don't add  change if we don't know the buyer address
         const transactionFee = getTransactionFee(fundingUtxoAddresses.length+1)
         console.log("transactionFee", transactionFee)
-        const changeAmount = totalInputAmount-storageFee-transactionFee-_transferPrice
-        console.log("changeAmount", changeAmount)
+        const changeAmount = Math.floor(totalInputAmount - storageFee - transactionFee - _transferPrice)
+        if (changeAmount < 0) {
+            console.error("Error: Negative change amount calculated")
+            return // or throw an error, depending on how you want to handle this situation
+        }
         psbt.addOutput({
             address: changeAddress,
             value: changeAmount

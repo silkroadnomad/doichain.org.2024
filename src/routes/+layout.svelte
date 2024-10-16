@@ -86,6 +86,7 @@
 		} catch(ex){ console.log("helia.libp2p.dial.exeption",ex) }
 	})
 </script>
+
 <body class="bg-white text-gray-900 flex flex-col min-h-screen">
 	<section class="flex items-center justify-center mt-8">
 		<div class="text-center max-w-4xl mx-auto px-4">
@@ -98,15 +99,17 @@
 		</div>
 	</section>
 
-	<main class="flex-grow">
+	<main class="flex-grow mb-16">
 		<slot />
 	</main>
 
-	<Navigation />
+	<div class="fixed bottom-0 left-0 right-0 z-50">
+		<Navigation />
+	</div>
 </body>
 
 <style>
-    body {
-        font-family: 'Poppins', sans-serif;
-    }
+	body {
+		font-family: 'Poppins', sans-serif;
+	}
 </style>

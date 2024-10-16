@@ -1,7 +1,7 @@
 import { Psbt } from "bitcoinjs-lib";
 import { getNameOPStackScript } from "./getNameOPStackScript.js";
 import { VERSION } from "./doichain.js";
-import { getTransactionFee } from "$lib/doichain/getTransactionFee.js";
+import {getTransactionFee} from "$lib/doichain/getTransactionFee.js";
 
 /**
  * Creates and signs a Partially Signed Bitcoin Transaction (PSBT) for registering a Doichain name.
@@ -30,10 +30,12 @@ export function signTransaction(_utxoAddresses, _name, _network, _storageFee, _r
     let changeAmount;
 
     _utxoAddresses.forEach(utxo => {
-        const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash" || utxo?.scriptPubKey.hex?.startsWith('0014') || utxo?.scriptPubKey.hex?.startsWith('0020');
+        const scriptPubKeyHex = utxo.hex;
+        const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash" || scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
+        // const isSegWit =  scriptPubKeyHex?.startsWith('0014') || scriptPubKeyHex?.startsWith('0020');
         if (isSegWit) {
             psbt.addInput({
-                hash: utxo.hash, // Changed from utxo.hex to utxo.hash
+                hash: utxo.hash,
                 index: utxo.n,
                 witnessUtxo: {
                     script: Buffer.from(utxo.scriptPubKey.hex, 'hex'),
@@ -42,7 +44,7 @@ export function signTransaction(_utxoAddresses, _name, _network, _storageFee, _r
             });
         } else {
             psbt.addInput({
-                hash: utxo.hash, // Changed from utxo.hex to utxo.hash
+                hash: utxo.hash,
                 index: utxo.n,
                 nonWitnessUtxo: Buffer.from(utxo.hex, 'hex')
             });
@@ -58,6 +60,7 @@ export function signTransaction(_utxoAddresses, _name, _network, _storageFee, _r
                 script: opCodesStackScript,
                 value: _storageFee
             });
+            console.log("added nameOp", _name, opCodesStackScript);
             totalOutputAmount = totalOutputAmount + _storageFee;
         }catch( ex ) { console.error(ex) }
     }
@@ -76,10 +79,12 @@ export function signTransaction(_utxoAddresses, _name, _network, _storageFee, _r
         address: _changeAddress || doichainAddress,
         value: changeAmount,
     });
+    console.log("added change", changeAmount, _changeAddress);
 
     const psbtFile = psbt.toBase64();
 
     return {
+        psbt,
         psbtBase64: psbtFile,
         totalInputAmount,
         totalOutputAmount,

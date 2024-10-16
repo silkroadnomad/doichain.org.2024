@@ -14,7 +14,7 @@ export async function _checkName(electrumClient, currentNameAddress, _name, tota
     let utxoErrorMessage = '';
     let isNameValid = true;
     let isUTXOAddressValid = true;
-    let currentNameOp = true;
+    let currentNameOp
     let currentNameUtxo
     let nameExists;
 
@@ -34,9 +34,15 @@ export async function _checkName(electrumClient, currentNameAddress, _name, tota
                 const scriptPubKey = utxo.scriptPubKey;
                 if (scriptPubKey && scriptPubKey.nameOp) {
                     currentNameAddress = scriptPubKey.addresses[0];
-                    currentNameOp = scriptPubKey.nameOp
-                    currentNameUtxo = utxo
-                    nameExists = true
+                    currentNameOp = scriptPubKey.nameOp;
+                    currentNameUtxo = {
+                        ...utxo,
+                        nameOp: currentNameOp,
+                        address: currentNameAddress,
+                        hash: utxo.txid || utxo.hash || utxo.tx_hash // Add this line
+                    };
+                    nameExists = true;
+                    break;
                 }
             }
             nameErrorMessage = `Name "${_name}" already registered under address ${currentNameAddress}`;
