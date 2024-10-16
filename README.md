@@ -1,6 +1,8 @@
 # Doichain.org
 
 # Todo
+- [ ] ipfs doesn't publish
+- [ ] add doichain.le-space.de for demonstration reasons
 - [ ] add change and total utxo value below
 - [ ] download psbt file (keep psbt into clipboard)
 - [ ] fix ipfs pinning service
