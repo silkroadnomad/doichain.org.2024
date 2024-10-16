@@ -2,9 +2,10 @@
 
 # Todo
 - [ ] add change and total utxo value below
-- [ ] download psbt file (keep psbt into clipboard) 
+- [ ] download psbt file (keep psbt into clipboard)
 - [ ] fix ipfs pinning service
   - [x] fix libs in +layout.js
+  - [ ] call pubsub for current name_ops and display as nft cards (such as on OpenSea)
 - [x] fix toggle 
 - [ ] fix meta info for social media posts og:type twitter:type
 - [ ] remove / fade out messages from nameInput
