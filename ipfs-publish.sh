@@ -22,4 +22,4 @@ git tag -a "v$version" -m "Version $version"
 git push origin main
 git push origin --tags
 
-echo "Changes committed and pushed to GitHub. Tagged as v$version
+echo "Changes committed and pushed to GitHub. Tagged as v$version"

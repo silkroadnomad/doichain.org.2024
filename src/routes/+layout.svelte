@@ -112,7 +112,15 @@
 							!$nameOps.some(existingNameOp => existingNameOp.id === newNameOp.id)
 						);
 
-						$nameOps = [...$nameOps, ...uniqueNameOps];
+						// Add new unique nameOps and sort the entire array by blocktime
+						$nameOps = [...$nameOps, ...uniqueNameOps].sort((a, b) => {
+							// Assuming the blocktime is stored in currentNameUtxo.blocktime
+							// Adjust the path if your data structure is different
+							const timeA = a.currentNameUtxo?.blocktime || 0;
+							const timeB = b.currentNameUtxo?.blocktime || 0;
+							return timeB - timeA; // Sort in descending order (newest first)
+						});
+
 						console.log("nameOps", $nameOps)
 						}
 					} catch (e) {
@@ -252,3 +260,4 @@
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
