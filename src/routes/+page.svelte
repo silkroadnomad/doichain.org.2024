@@ -155,14 +155,11 @@
 	class="relative overflow-hidden py-20"
 	style="min-height: 100vh; {gradientStyle}"
 >
-	<div 
-		class="absolute inset-0 flex items-center justify-center"
-		style="transform: translateY({parallaxOffset}px);"
-	>
+	<div class="absolute inset-0 flex items-center justify-center" style="transform: translateY({parallaxOffset}px);">
 		<h2 class="text-6xl font-bold text-white opacity-10">NameOps</h2>
 	</div>
 	<div class="relative z-10 max-w-6xl mx-auto px-4">
-		<h2 class="text-4xl font-bold mb-8 text-center text-white">Recent {$nameOps.length} NameOps</h2>
+		<h2 class="poppins-heading text-4xl font-bold mb-8 text-center text-white">Recent {$nameOps.length} NameOps</h2>
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{#each $nameOps as nameOp}
 				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} />
@@ -172,6 +169,7 @@
 </section>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;800&display=swap');
+    .poppins-heading {
+      font-family: 'Poppins', sans-serif;
+    }
 </style>
-
