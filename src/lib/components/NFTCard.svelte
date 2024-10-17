@@ -54,37 +54,29 @@
         return false;
     }
 
-    $: cardBackgroundColor = currentNameOp?.name?.startsWith('e/') 
-        ? (isConfirmedDOI(currentNameOp) ? 'bg-green-100' : 'bg-yellow-100')
-        : 'bg-blue-100';
+    $: cardBackgroundColor = 
+        currentNameOp?.name?.startsWith('e/') 
+            ? (isConfirmedDOI(currentNameOp) ? 'bg-green-100' : 'bg-yellow-100')
+            : currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')
+                ? 'bg-orange-100'
+                : currentNameOp?.name?.startsWith('nft/')
+                    ? 'bg-blue-100'
+                    : 'bg-gray-800'; // Dark background for non-standard nameOps
+
+    $: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
 
     $:console.log(currentNameOp)
 </script>
 
-<div class="{cardBackgroundColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
+<div class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
     <div class="mb-4">
-        <h2 class="text-xl font-semibold text-gray-800" title={currentNameOp?.name ?? ''}>
-            {(currentNameOp?.name ?? '').slice(0, 20)}
+        <h2 class="text-xl font-semibold" title={currentNameOp?.name ?? ''}>
+            {(currentNameOp?.name ?? '').slice(0, 19)}
         </h2>
     </div>
 
-    {#if isIPFS}
-        <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl h-96">
-            <img src={imageUrl} alt="NFT image" class="object-cover w-full h-full" />
-        </div>
-        <div class="p-6">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 opacity-75">
-                {#if nftMetadata}
-                    <p>NFC: {nftMetadata.name}</p>
-                    <p>Description: {nftMetadata.description}</p>
-                {:else}
-                    <p>Loading NFT data from {$connectedPeers} peers...</p>
-                {/if}
-            </p>
-        </div>
-    {:else}
-        <div class="p-6 text-center">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 opacity-75">
+    <div class="p-6">
+        <p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
             {#if currentNameOp?.name?.startsWith('e/')}
                 {#if isConfirmedDOI(currentNameOp)}
                     <span class="font-semibold">Email Double Opt-In (Confirmed)</span>
@@ -98,51 +90,17 @@
             {:else if isIPFS}
                 <span class="font-semibold">IPFS content</span>
             {:else}
-                <span class="font-semibold">Non-Standard NameOp</span> {currentNameOp?.name}  
+                <span class="font-semibold">Non-Standard NameOp</span>
             {/if}
-            </p>
-            <p class="mt-2 text-xs text-gray-600">
-                {currentNameOp?.currentNameUtxo?.formattedBlocktime}
-            </p>
-        </div>
-    {/if}
+        </p>
+        <p class="mt-2 text-xs opacity-75">
+            {currentNameOp?.currentNameUtxo?.formattedBlocktime}
+        </p>
+    </div>
 
     <div class="p-6 pt-0">
         <button
-            on:click={() => showDetails = !showDetails}
-            class="mb-2 w-full text-sm text-blue-500 hover:text-blue-700"
-            type="button">
-            {showDetails ? 'Hide' : 'Show'} Details
-        </button>
-        {#if showDetails}
-            <div class="text-xs mb-4 max-h-40 overflow-y-auto">
-                <div class="space-y-1 overflow-y-auto">
-                    <div class="text-gray-600 whitespace-nowrap">
-                        wallet address: <span class="text-gray-800">{currentNameUtxo?.scriptPubKey?.addresses?.[0]}</span>
-                    </div>
-                    <div class="text-gray-600 whitespace-nowrap">
-                        txid: <span class="text-gray-800">{currentNameUtxo?.txid}</span>
-                    </div>
-                    <div class="text-gray-600 whitespace-nowrap">
-                        block time: <span class="text-gray-800">{currentNameUtxo?.formattedBlocktime}</span>
-                    </div>
-                    <div class="text-gray-600 whitespace-nowrap overflow-x-auto">
-                        expires: <span class="text-gray-800">{currentNameUtxo?.expires}</span>
-                    </div>
-                    <div class="text-gray-600 whitespace-nowrap">
-                        name: <span class="text-gray-800">{currentNameOp?.name}</span>
-                    </div>
-                    <div class="text-gray-600 whitespace-nowrap">
-                        value: <span class="text-gray-800">{currentNameOp?.value}</span>
-                    </div>
-                    <div class="text-gray-600 whitespace-nowrap">
-                        amount (burned): <span class="text-gray-800">{currentNameUtxo?.value} DOI</span>
-                    </div>
-                </div>
-            </div>
-        {/if}
-        <button
-            class="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg shadow-gray-900/10 hover:shadow-gray-900/20 focus:opacity-[0.85] active:opacity-[0.85] active:shadow-none block w-full bg-blue-gray-900/10 text-blue-gray-900 shadow-none hover:scale-105 hover:shadow-none focus:scale-105 focus:shadow-none active:scale-100"
+            class="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg shadow-gray-900/10 hover:shadow-gray-900/20 focus:opacity-[0.85] active:opacity-[0.85] active:shadow-none block w-full bg-blue-gray-900/10 shadow-none hover:scale-105 hover:shadow-none focus:scale-105 focus:shadow-none active:scale-100"
             type="button">
             Buy with DoiWallet
         </button>
