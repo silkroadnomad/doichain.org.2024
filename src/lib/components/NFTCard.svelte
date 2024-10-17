@@ -102,7 +102,7 @@
             {/if}
             </p>
             <p class="mt-2 text-xs text-gray-600">
-                Block time: {currentNameOp?.blocktime ? moment.unix(currentNameOp.blocktime).format('YYYY-MM-DD HH:mm:ss') : 'Unknown date'}
+                Block time: {currentNameOp?.currentNameUtxo?.formattedBlocktime
             </p>
         </div>
     {/if}
