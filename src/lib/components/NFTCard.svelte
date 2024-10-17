@@ -68,14 +68,35 @@
     $:console.log(currentNameOp)
 </script>
 
-<div class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
+<div class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
     <div class="mb-4">
         <h2 class="text-xl font-semibold" title={currentNameOp?.name ?? ''}>
             {(currentNameOp?.name ?? '').slice(0, 19)}
         </h2>
     </div>
 
-    <div class="p-6">
+    {#if isIPFS}
+        <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square">
+            <img src={imageUrl} alt="NFT image" class="object-cover w-full h-full" />
+        </div>
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-2">
+                <p class="block font-sans text-base antialiased font-medium leading-relaxed">
+                    {currentNameOp?.name}
+                </p>
+            </div>
+            <p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
+                {#if nftMetadata}
+                    <p>Name: {nftMetadata.name}</p>
+                    <p>Description: {nftMetadata.description}</p>
+                {:else}
+                    <p>Loading NFT data from {$connectedPeers} peers...</p>
+                {/if}
+            </p>
+        </div>
+    {/if}
+
+    <div class="p-6 flex-grow">
         <p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
             {#if currentNameOp?.name?.startsWith('e/')}
                 {#if isConfirmedDOI(currentNameOp)}
@@ -87,8 +108,6 @@
                 <span class="font-semibold">Proof-Of-Existence</span>
             {:else if currentNameOp?.name?.startsWith('nft/')}
                 <span class="font-semibold">NFT</span>
-            {:else if isIPFS}
-                <span class="font-semibold">IPFS content</span>
             {:else}
                 <span class="font-semibold">Non-Standard NameOp</span>
             {/if}
@@ -98,7 +117,7 @@
         </p>
     </div>
 
-    <div class="p-6 pt-0">
+    <div class="p-6 pt-0 mt-auto">
         <button
             class="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg shadow-gray-900/10 hover:shadow-gray-900/20 focus:opacity-[0.85] active:opacity-[0.85] active:shadow-none block w-full bg-blue-gray-900/10 shadow-none hover:scale-105 hover:shadow-none focus:scale-105 focus:shadow-none active:scale-100"
             type="button">
