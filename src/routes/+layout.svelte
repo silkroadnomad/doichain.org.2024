@@ -107,20 +107,20 @@
 					try {
 						if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:')){
 						const jsonMessage = JSON.parse(message)
-						if (Array.isArray(jsonMessage)) {
-							$nameOps = [...$nameOps, ...jsonMessage];
-							console.log("nameOps", $nameOps)
-						}
-						else{
-							console.log("message", message)
-						}
+						// Assuming each nameOp has a unique 'id' field
+						const uniqueNameOps = jsonMessage.filter(newNameOp => 
+							!$nameOps.some(existingNameOp => existingNameOp.id === newNameOp.id)
+						);
+
+						$nameOps = [...$nameOps, ...uniqueNameOps];
+						console.log("nameOps", $nameOps)
 						}
 					} catch (e) {
 						console.error('Failed to parse message:', e);
 					}
 				}else{
 					// console.log("message", new TextDecoder().decode(event.detail.data));	
-				}
+					}
 			});
 		
 			$libp2p.addEventListener('connection:open',  (p) => {
