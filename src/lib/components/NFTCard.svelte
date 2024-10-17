@@ -7,6 +7,8 @@
 
     export let currentNameOp
     export let currentNameUtxo;
+    const defaultImageUrl = "https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80";
+
 
     let nftMetadata = null;
     let imageUrl = null;
@@ -77,7 +79,11 @@
 
     {#if isIPFS}
         <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square">
-            <img src={imageUrl} alt="NFT image" class="object-cover w-full h-full" />
+            <img 
+                src={imageUrl || defaultImageUrl} 
+                alt="NFT image" 
+                class="object-cover w-full h-full" 
+            />
         </div>
         <div class="p-6">
             <div class="flex items-center justify-between mb-2">
