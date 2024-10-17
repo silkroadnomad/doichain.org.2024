@@ -83,13 +83,13 @@
             </p>
         </div>
     {:else}
-        <div class="p-6">
+        <div class="p-6 text-center">
             <p class="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 opacity-75">
             {#if currentNameOp?.name?.startsWith('e/')}
                 {#if isConfirmedDOI(currentNameOp)}
-                    <span class="font-semibold">Confirmed Email Double Opt-In</span>
+                    <span class="font-semibold">Email Double Opt-In (Confirmed)</span>
                 {:else}
-                    <span class="font-semibold">Requested Email Double Opt-In</span>
+                    <span class="font-semibold">Email Double Opt-In (Requested)</span>
                 {/if}
             {:else if currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')}
                 <span class="font-semibold">Proof-Of-Existence</span>
@@ -102,7 +102,7 @@
             {/if}
             </p>
             <p class="mt-2 text-xs text-gray-600">
-                Block time: {currentNameOp?.currentNameUtxo?.formattedBlocktime
+                {currentNameOp?.currentNameUtxo?.formattedBlocktime}
             </p>
         </div>
     {/if}
