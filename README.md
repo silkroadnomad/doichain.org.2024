@@ -1,8 +1,8 @@
 # Doichain.org
 
 # Todo
-- [x] last 100 name-ops should be indexedin parallel on relay
-- [x] last 100 name-ops message should be called
+- [x] LIST_LAST_100 should be indexed in parallel on relay
+- [x] LIST_LAST_100 100 name-ops message should be called
 - [x] relay doesn't publish
 - [x] deploy on vercel 
 - [x] deploy on ipfs
