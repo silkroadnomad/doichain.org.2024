@@ -112,8 +112,8 @@
                 {/if}
             {:else if currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')}
                 <span class="font-semibold">Proof-Of-Existence</span>
-            {:else if currentNameOp?.name?.startsWith('nft/')}
-                <span class="font-semibold">NFT</span>
+            {:else if isIPFS}
+                <span class="font-semibold">Non Fungible Coin</span>
             {:else}
                 <span class="font-semibold">Non-Standard NameOp</span>
             {/if}
