@@ -92,7 +92,7 @@
 			listenOnly: false
 		})
 	]]
-
+	let hasProcessedList100 = false;
 	config.peerDiscovery = newPubSubPeerDiscovey
 
 	onMount(async () => {
@@ -109,29 +109,24 @@
 				pubsub.addEventListener('message', (event) => {
 				if (event.detail.topic === CONTENT_TOPIC) {
 						const message = new TextDecoder().decode(event.detail.data);
-						// console.log("message", message)
-					try {
-						if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:') && !message.startsWith('LIST_LAST_100')){
-						const jsonMessage = JSON.parse(message)
-						// Assuming each nameOp has a unique 'id' field
-						const uniqueNameOps = jsonMessage.filter(newNameOp => 
-							!$nameOps.some(existingNameOp => existingNameOp.id === newNameOp.id)
-						);
+						if (!hasProcessedList100) {
+							$nameOps = []
+							try {
+								if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:') && !message.startsWith('LIST_LAST_100')){
+									const jsonMessage = JSON.parse(message)
+									$nameOps = $nameOps.sort((a, b) => {
+										const timeA = a.currentNameUtxo?.blocktime || 0;
+										const timeB = b.currentNameUtxo?.blocktime || 0;
+										return timeB - timeA;
+									});
 
-						// Add new unique nameOps and sort the entire array by blocktime
-						$nameOps = [...$nameOps, ...uniqueNameOps].sort((a, b) => {
-							// Assuming the blocktime is stored in currentNameUtxo.blocktime
-							// Adjust the path if your data structure is different
-							const timeA = a.currentNameUtxo?.blocktime || 0;
-							const timeB = b.currentNameUtxo?.blocktime || 0;
-							return timeB - timeA; // Sort in descending order (newest first)
-						});
-
-						console.log("nameOps", $nameOps)
+									console.log("Total nameOps after update:", $nameOps.length);
+									hasProcessedList100 = true;
+								}
+							} catch (e) {
+								console.error('Failed to parse message:', e);
+							}
 						}
-					} catch (e) {
-						console.error('Failed to parse message:', e);
-					}
 				}else{
 					// console.log("message", new TextDecoder().decode(event.detail.data));	
 					}
@@ -273,4 +268,5 @@
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
 
