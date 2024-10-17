@@ -4,14 +4,13 @@
 	import NFTCard from '$lib/components/NFTCard.svelte';
 	import NameDoi from '$lib/components/nameDoi.svelte';
 	import { onMount } from 'svelte';
-	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	let showHeroSection = true;
 	let inputValue = '';
 	let currentNameOp
 	let currentNameUtxo;
 	$: updatedCurrentNameOp = currentNameOp;
 	$: updatedCurrentNameUtxo = currentNameUtxo;
-	$: console.log("updatedCurrentNameUtxo",updatedCurrentNameUtxo)
+	
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to see observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
 
@@ -26,7 +25,7 @@
 	let description = "Simple name registration for Doichain";
 	const url = "ipns://name-on-chain.com"
 	let image = "/nasa-Q1p7bh3SHj8-unsplash.jpg"
-	const favicon = "./favicon.ico"
+	const favicon = "./favicon.svg"
 
 	const flyAndFade = (node, params) => {
 		return {
@@ -148,9 +147,9 @@
 	bind:this={nameOpsSection}
 	class="relative overflow-hidden py-20"
 	style="min-height: 100vh; background: linear-gradient(135deg, 
-		rgb(255, {255 - gradientProgress * 255}, 0), 
-		rgb(255, {128 - gradientProgress * 128}, 0), 
-		rgb(255, 0, 0));"
+		rgb(173, {220 + gradientProgress * 35}, 255), 
+		rgb(90, {198 + gradientProgress * 57}, 255), 
+		rgb(0, 174, 255));"
 >
 	<div 
 		class="absolute inset-0 flex items-center justify-center"
@@ -159,7 +158,7 @@
 		<h2 class="text-6xl font-bold text-white opacity-10">NameOps</h2>
 	</div>
 	<div class="relative z-10 max-w-6xl mx-auto px-4">
-		<h2 class="text-4xl font-bold mb-8 text-center text-white">Recent NameOps</h2>
+		<h2 class="text-4xl font-bold mb-8 text-center text-white">Recent {$nameOps.length} NameOps</h2>
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{#each $nameOps as nameOp}
 				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} />
@@ -171,3 +170,4 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;800&display=swap');
 </style>
+

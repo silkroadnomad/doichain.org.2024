@@ -1,33 +1,30 @@
-<script>
+<script lang="ts">
     import { getMetadataFromIPFS } from "$lib/doichain/nfc/getMetadataFromIPFS.js";
     import { getImageUrlFromIPFS } from "$lib/doichain/nfc/getImageUrlFromIPFS.js";
     import { helia, connectedPeers } from "../doichain/doichain-store.js";
     import { adaptNameOp } from "$lib/doichain/utxoHelpers.js";
+    import moment from 'moment';
 
-    export let currentNameOp;
+    export let currentNameOp
     export let currentNameUtxo;
-    let adaptedNameOp;
+
     let nftMetadata = null;
     let imageUrl = null;
     let showDetails = false;
     let isIPFS = false;
 
     $: {
-        if (currentNameOp.nameId && currentNameOp.nameValue) {
-            // This is a new-style NameOp, adapt it
-            adaptedNameOp = adaptNameOp(currentNameOp);
-            currentNameOp = adaptedNameOp;
-            currentNameUtxo = adaptedNameOp.currentNameUtxo;
+        if (currentNameOp.nameId) {
+            currentNameOp = adaptNameOp(currentNameOp) 
+            currentNameUtxo = currentNameOp.currentNameUtxo;
         }
         
-        if (currentNameOp) {
-            isIPFS = currentNameOp.value.startsWith('ipfs://');
-            if (isIPFS) {
-                loadNFTData();
-                showDetails = false;
-            } else {
-                showDetails = true;
-            }
+        isIPFS = typeof currentNameOp.value === 'string' && currentNameOp.value.startsWith('ipfs://');
+        if (isIPFS) {
+            loadNFTData();
+            showDetails = false;
+        } else {
+            showDetails = false;
         }
     }
 
@@ -44,20 +41,38 @@
             console.error("Error loading NFT data:", error);
         }
     }
-    $:console.log("currentNameUtxo",currentNameUtxo)
+
+    function isConfirmedDOI(nameOp) {
+        if (typeof nameOp.value === 'string') {
+            try {
+                const valueObj = JSON.parse(nameOp.value);
+                return valueObj.doiSignature && valueObj.doiTimestamp;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    $: cardBackgroundColor = currentNameOp?.name?.startsWith('e/') 
+        ? (isConfirmedDOI(currentNameOp) ? 'bg-green-100' : 'bg-yellow-100')
+        : 'bg-blue-100';
+
+    $:console.log(currentNameOp)
 </script>
 
-<div class="relative flex flex-col text-gray-700 bg-white shadow-md bg-clip-border rounded-xl w-96">
+<div class="{cardBackgroundColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
+    <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-800" title={currentNameOp?.name ?? ''}>
+            {(currentNameOp?.name ?? '').slice(0, 20)}
+        </h2>
+    </div>
+
     {#if isIPFS}
         <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl h-96">
             <img src={imageUrl} alt="NFT image" class="object-cover w-full h-full" />
         </div>
         <div class="p-6">
-            <div class="flex items-center justify-between mb-2">
-                <p class="block font-sans text-base antialiased font-medium leading-relaxed text-blue-gray-900">
-                    {currentNameOp?.name}
-                </p>
-            </div>
             <p class="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 opacity-75">
                 {#if nftMetadata}
                     <p>NFC: {nftMetadata.name}</p>
@@ -67,7 +82,31 @@
                 {/if}
             </p>
         </div>
+    {:else}
+        <div class="p-6">
+            <p class="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 opacity-75">
+            {#if currentNameOp?.name?.startsWith('e/')}
+                {#if isConfirmedDOI(currentNameOp)}
+                    <span class="font-semibold">Confirmed Email Double Opt-In</span>
+                {:else}
+                    <span class="font-semibold">Requested Email Double Opt-In</span>
+                {/if}
+            {:else if currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')}
+                <span class="font-semibold">Proof-Of-Existence</span>
+            {:else if currentNameOp?.name?.startsWith('nft/')}
+                <span class="font-semibold">NFT</span>
+            {:else if isIPFS}
+                <span class="font-semibold">IPFS content</span>
+            {:else}
+                <span class="font-semibold">Non-Standard NameOp</span> {currentNameOp?.name}  
+            {/if}
+            </p>
+            <p class="mt-2 text-xs text-gray-600">
+                Block time: {currentNameOp?.blocktime ? moment.unix(currentNameOp.blocktime).format('YYYY-MM-DD HH:mm:ss') : 'Unknown date'}
+            </p>
+        </div>
     {/if}
+
     <div class="p-6 pt-0">
         <button
             on:click={() => showDetails = !showDetails}

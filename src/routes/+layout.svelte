@@ -106,7 +106,6 @@
 						// console.log("message", message)
 					try {
 						if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:')){
-							console.log("message", message)
 						const jsonMessage = JSON.parse(message)
 						if (Array.isArray(jsonMessage)) {
 							$nameOps = [...$nameOps, ...jsonMessage];
@@ -144,25 +143,69 @@
 		// console.log("dialed istanbul (159.69.119.82)")// await $libp2p.dial(multiaddr('/ip4/65.21.180.203/udp/4001/quic-v1/webtransport/certhash/uEiDk1JxhhAhI3c3Q_90QiRUdw5WDyxDLjzeDvg94_Zz4yQ/certhash/uEiDnxUwThh3AGQtzaojyo5CX6o0WJcQEE4NAdCFpbKUP4w/p2p/12D3KooWALjeG5hYT9qtBtqpv1X3Z4HVgjDrBamHfo37Jd61uW1t'))
 			const targetPeerId = '12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
 
+			let datesToRequest = [];
+			let currentDate = new Date();
+			const daysToGoBack = 30; // Adjust this value as needed
+
+			// Populate the initial list of dates
+			for (let i = 0; i < daysToGoBack; i++) {
+				let date = new Date(currentDate);
+				date.setDate(currentDate.getDate() - i);
+				datesToRequest.push(date.toISOString().split('T')[0]);
+			}
+
 			$libp2p.addEventListener('peer:connect', (event) => {
 				if (event.detail.toString() === targetPeerId) {
 					console.log(`Connected to target peer: ${targetPeerId}`)
 					
 					// Set up interval to publish messages every 5 seconds
 					const publishInterval = setInterval(async () => {
-						try {
-							await $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(`LIST_DATE:${new Date().toISOString().split('T')[0]}`))
-							console.log("Published first message")
-
-							await $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(`LIST_DATE:2024-10-04`))
-							console.log("Published second message")
-						} catch (error) {
-							console.error("Error publishing messages:", error)
+						if (datesToRequest.length > 0) {
+							const dateToRequest = datesToRequest[0];
+							try {
+								await $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(`LIST_DATE:${dateToRequest}`));
+								console.log(`Published request for date: ${dateToRequest}`);
+							} catch (error) {
+								console.error("Error publishing message:", error);
+							}
+						} else {
+							console.log("All dates have been requested and processed.");
+							clearInterval(publishInterval);
 						}
-					}, 5000) // 5000 milliseconds = 5 seconds
+					}, 5000); // 5000 milliseconds = 5 seconds
 
 					// Clean up the interval when the component is destroyed
 					return () => clearInterval(publishInterval)
+				}
+			})
+
+			// Update the message event listener
+			$libp2p.services.pubsub.addEventListener('message', (event) => {
+				if (event.detail.topic === CONTENT_TOPIC) {
+					const message = new TextDecoder().decode(event.detail.data);
+					try {
+						if (message.startsWith('LIST_DATE:')) {
+							const date = message.split(':')[1];
+							const index = datesToRequest.indexOf(date);
+							if (index > -1) {
+								datesToRequest.splice(index, 1);
+								console.log(`Received response for date: ${date}`);
+							}
+						} else if (!message.endsWith(':NONE')) {
+							console.log("Received message:", message);
+							const jsonMessage = JSON.parse(message);
+							if (Array.isArray(jsonMessage)) {
+								$nameOps = [...$nameOps, ...jsonMessage];
+								console.log("nameOps", $nameOps);
+							} else {
+								console.log("Unexpected message format:", message);
+							}
+						} else {
+							console.log("Received NONE response");
+						}
+					} catch (e) {
+						console.error('Failed to parse message:', e);
+					}
 				}
 			})
 
