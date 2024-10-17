@@ -59,7 +59,13 @@
 		maxConnections: 50,
 	}
 
-	const newPubsub = {...config.services.pubsub, ...{ services: { pubsub: gossipsub({ emitSelf: true, allowPublishToZeroTopicPeers: true, canRelayMessage: true }) } }}
+	const newPubsub = {...config.services.pubsub, ...{ services: { 
+		pubsub: gossipsub({ 
+			emitSelf: false, 
+			allowPublishToZeroTopicPeers: true, 
+			canRelayMessage: true 
+		}) 
+	} }}
 	config.services.pubsub = newPubsub.services.pubsub
 	delete config.services['delegatedRouting']
 
@@ -105,7 +111,7 @@
 						const message = new TextDecoder().decode(event.detail.data);
 						// console.log("message", message)
 					try {
-						if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:')){
+						if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:') && !message.startsWith('LIST_LAST_100')){
 						const jsonMessage = JSON.parse(message)
 						// Assuming each nameOp has a unique 'id' field
 						const uniqueNameOps = jsonMessage.filter(newNameOp => 
@@ -166,8 +172,15 @@
 				if (event.detail.toString() === targetPeerId) {
 					console.log(`Connected to target peer: ${targetPeerId}`)
 					
+					// Publish LIST_LAST100 request once
+					try {
+						$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode('LIST_LAST_100'));
+						console.log('Published request for LIST_LAST_100');
+					} catch (error) {
+						console.error("Error publishing LIST_LAST100 message:", error);
+					}
 					// Set up interval to publish messages every 5 seconds
-					const publishInterval = setInterval(async () => {
+					/*const publishInterval = setInterval(async () => {
 						if (datesToRequest.length > 0) {
 							const dateToRequest = datesToRequest[0];
 							try {
@@ -180,7 +193,7 @@
 							console.log("All dates have been requested and processed.");
 							clearInterval(publishInterval);
 						}
-					}, 5000); // 5000 milliseconds = 5 seconds
+					}, 5000); // 5000 milliseconds = 5 seconds*/
 
 					// Clean up the interval when the component is destroyed
 					return () => clearInterval(publishInterval)

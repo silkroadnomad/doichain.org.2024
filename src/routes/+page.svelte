@@ -112,8 +112,8 @@
 			</p>
 
 			<p class="text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-				Doichain names have many applications: from securing fingerprints of documents and decentralized email-double-opt-ins to
-				trading non-fungible-coins for renewable-energy-proofs and digital art.
+				Doichain names have many applications: from securing fingerprints of documents and decentralized email double opt-ins to
+				trading non-fungible-coins for renewable energy-proofs and digital art.
 			</p>
 
 			<p class="text-xl mb-6 max-w-2xl mx-auto leading-relaxed">
