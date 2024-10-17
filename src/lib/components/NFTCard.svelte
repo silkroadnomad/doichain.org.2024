@@ -2,21 +2,32 @@
     import { getMetadataFromIPFS } from "$lib/doichain/nfc/getMetadataFromIPFS.js";
     import { getImageUrlFromIPFS } from "$lib/doichain/nfc/getImageUrlFromIPFS.js";
     import { helia, connectedPeers } from "../doichain/doichain-store.js";
+    import { adaptNameOp } from "$lib/doichain/utxoHelpers.js";
 
     export let currentNameOp;
     export let currentNameUtxo;
+    let adaptedNameOp;
     let nftMetadata = null;
     let imageUrl = null;
     let showDetails = false;
     let isIPFS = false;
 
-    $: if (currentNameOp) {
-        isIPFS = currentNameOp.value.startsWith('ipfs://');
-        if (isIPFS) {
-            loadNFTData();
-            showDetails = false;
-        }else{
-            showDetails = true;
+    $: {
+        if (currentNameOp.nameId && currentNameOp.nameValue) {
+            // This is a new-style NameOp, adapt it
+            adaptedNameOp = adaptNameOp(currentNameOp);
+            currentNameOp = adaptedNameOp;
+            currentNameUtxo = adaptedNameOp.currentNameUtxo;
+        }
+        
+        if (currentNameOp) {
+            isIPFS = currentNameOp.value.startsWith('ipfs://');
+            if (isIPFS) {
+                loadNFTData();
+                showDetails = false;
+            } else {
+                showDetails = true;
+            }
         }
     }
 

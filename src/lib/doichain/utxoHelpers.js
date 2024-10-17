@@ -53,3 +53,16 @@ export async function getUtxosAndNamesOfAddress(electrumClient, doichainAddress)
     }
     return { nameOpTxs, utxoAddresses, totalUtxoValue }
 }
+
+export function adaptNameOp(nameOp) {
+    return {
+        name: nameOp.nameId,
+        value: nameOp.nameValue,
+        currentNameUtxo: {
+            scriptPubKey: { addresses: [nameOp.address] },
+            txid: nameOp.txid,
+            formattedBlocktime: nameOp.formattedBlocktime,
+            value: nameOp.value
+        }
+    };
+}
