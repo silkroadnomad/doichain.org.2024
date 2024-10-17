@@ -106,9 +106,9 @@
         <p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
             {#if currentNameOp?.name?.startsWith('e/')}
                 {#if isConfirmedDOI(currentNameOp)}
-                    <span class="font-semibold">Email Double Opt-In (Confirmed)</span>
+                    <span class="font-semibold">Email Double Opt-In (confirmed)</span>
                 {:else}
-                    <span class="font-semibold">Email Double Opt-In (Requested)</span>
+                    <span class="font-semibold">Email Double Opt-In (requested)</span>
                 {/if}
             {:else if currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')}
                 <span class="font-semibold">Proof-Of-Existence</span>

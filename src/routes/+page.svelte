@@ -61,7 +61,14 @@
 		return () => window.removeEventListener('scroll', handleScroll);
 	});
 
-	$: gradientPercentage = Math.round(gradientProgress * 100);
+	$: gradientStyle = `
+		background: linear-gradient(
+			135deg,
+			#18D685 ${gradientProgress * 0 }%,
+			#0390CB ${gradientProgress * 57.5}%,
+			#0B3E74 ${gradientProgress * 100}%
+		);
+	`;
 </script>
 
 <svelte:head>
@@ -146,10 +153,7 @@
 <section 
 	bind:this={nameOpsSection}
 	class="relative overflow-hidden py-20"
-	style="min-height: 100vh; background: linear-gradient(135deg, 
-		rgb(173, {220 + gradientProgress * 35}, 255), 
-		rgb(90, {198 + gradientProgress * 57}, 255), 
-		rgb(0, 174, 255));"
+	style="min-height: 100vh; {gradientStyle}"
 >
 	<div 
 		class="absolute inset-0 flex items-center justify-center"
