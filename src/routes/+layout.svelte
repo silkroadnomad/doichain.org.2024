@@ -56,7 +56,7 @@
 
 	// Add connection manager to limit connections
 	config.connectionManager = {
-		maxConnections: 50,
+		maxConnections: 1,
 	}
 
 	const newPubsub = {...config.services.pubsub, ...{ services: { 
@@ -69,23 +69,23 @@
 	config.services.pubsub = newPubsub.services.pubsub
 	delete config.services['delegatedRouting']
 
-	// config.connectionGater =  {
-	// 	denyDialMultiaddr: (multiaddr) => {
-	// 		// by default we refuse to dial local addresses from browsers since they
-	// 		// are usually sent by remote peers broadcasting undialable multiaddrs and
-	// 		// cause errors to appear in the console but in this example we are
-	// 		// explicitly connecting to a local node so allow all addresses
-	// 		return false;
-	// 	}
-	// }
+	config.connectionGater =  {
+		denyDialMultiaddr: (multiaddr) => {
+			// by default we refuse to dial local addresses from browsers since they
+			// are usually sent by remote peers broadcasting undialable multiaddrs and
+			// cause errors to appear in the console but in this example we are
+			// explicitly connecting to a local node so allow all addresses
+			return false;
+		}
+	}
 
 	const newPubSubPeerDiscovey = [...config.peerDiscovery, ...[
-		// bootstrap({ list: 
-		// 	[
-		// 		'/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
-		// 		'/ip4/127.0.0.1/tcp/9092/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
-		// 	]
-		// }),
+		bootstrap({ list: 
+			[
+				'/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
+				// '/ip4/127.0.0.1/tcp/9092/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
+			]
+		}),
 		pubsubPeerDiscovery({
 			interval: 10000,
 			topics: [pubsubPeerDiscoveryTopics], // defaults to ['_peer-discovery._p2p._pubsub'] //if we enable this too many will connect to us!
@@ -109,26 +109,34 @@
 				pubsub.addEventListener('message', (event) => {
 				if (event.detail.topic === CONTENT_TOPIC) {
 						const message = new TextDecoder().decode(event.detail.data);
-						if (!hasProcessedList100) {
-							$nameOps = []
-							try {
-								if(!message.endsWith(':NONE') && !message.startsWith('LIST_DATE:') && !message.startsWith('LIST_LAST_100')){
-									const jsonMessage = JSON.parse(message)
-									$nameOps = $nameOps.sort((a, b) => {
-										const timeA = a.currentNameUtxo?.blocktime || 0;
-										const timeB = b.currentNameUtxo?.blocktime || 0;
-										return timeB - timeA;
-									});
+						console.log("message", message)
+						if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')){
+							console.log("ignoring cid messages for now", message)
+						} 
+						else if(message.startsWith('LIST_DATE:') || message.startsWith('LIST_LAST_100') || message.startsWith('LIST_ALL') || message.endsWith(':NONE')){
+							console.log("ignoring list messages for now", message)
+						}
+						else {
+							if (!hasProcessedList100) {
+									$nameOps = []
+									try {
+										const jsonMessage = JSON.parse(message)
+										$nameOps = $nameOps.sort((a, b) => {
+											const timeA = a.currentNameUtxo?.blocktime || 0;
+											const timeB = b.currentNameUtxo?.blocktime || 0;
+											return timeB - timeA;
+										});
 
-									console.log("Total nameOps after update:", $nameOps.length);
-									hasProcessedList100 = true;
-								}
-							} catch (e) {
-								console.error('Failed to parse message:', e);
+										console.log("Total nameOps after update:", $nameOps.length);
+										hasProcessedList100 = true;
+									} catch (e) {
+										console.log("message", message)
+										console.error('Failed to parse message:', e);
+									}
 							}
 						}
-				}else{
-					// console.log("message", new TextDecoder().decode(event.detail.data));	
+					} else{
+						// console.log("message", new TextDecoder().decode(event.detail.data));	
 					}
 			});
 		
@@ -195,38 +203,9 @@
 				}
 			})
 
-			// Update the message event listener
-			$libp2p.services.pubsub.addEventListener('message', (event) => {
-				if (event.detail.topic === CONTENT_TOPIC) {
-					const message = new TextDecoder().decode(event.detail.data);
-					try {
-						if (message.startsWith('LIST_DATE:')) {
-							const date = message.split(':')[1];
-							const index = datesToRequest.indexOf(date);
-							if (index > -1) {
-								datesToRequest.splice(index, 1);
-								console.log(`Received response for date: ${date}`);
-							}
-						} else if (!message.endsWith(':NONE')) {
-							console.log("Received message:", message);
-							const jsonMessage = JSON.parse(message);
-							if (Array.isArray(jsonMessage)) {
-								$nameOps = [...$nameOps, ...jsonMessage];
-								console.log("nameOps", $nameOps);
-							} else {
-								console.log("Unexpected message format:", message);
-							}
-						} else {
-							console.log("Received NONE response");
-						}
-					} catch (e) {
-						console.error('Failed to parse message:', e);
-					}
-				}
-			})
-
 			// Attempt to connect to the target peer
-			const relayAddr = multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
+			// const relayAddr = multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
+			const relayAddr = multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
 			try {
 				await $libp2p.dial(relayAddr)
 				console.log("Dialed relay successfully")
