@@ -136,7 +136,6 @@
 				pubsub.addEventListener('message', (event) => {
 				if (event.detail.topic === CONTENT_TOPIC) {
 						const message = new TextDecoder().decode(event.detail.data);
-						console.log("message", message)
 						if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')){
 							console.log("ignoring cid messages for now", message)
 						} 
