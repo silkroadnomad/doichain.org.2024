@@ -46,6 +46,34 @@
 	let parallaxOffset = 0;
 	let gradientProgress = 0;
 
+	let selectedFilter;
+
+	const filters = [
+		{ id: 'all', label: 'All' },
+		{ id: 'other', label: 'Non-fungible coins' },
+		{ id: 'e', label: 'DOI (e/)' },
+		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
+		// { id: 'nft', label: 'NFT (nft/)' },
+	];
+
+	onMount(() => {
+		// Retrieve the stored filter from localStorage or use 'other' as default
+		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
+	});
+
+	$: if (selectedFilter) {
+		localStorage.setItem('selectedFilter', selectedFilter);
+	}
+
+	$: filteredNameOps = $nameOps.filter(nameOp => {
+		if (selectedFilter === 'all') return true;
+		if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
+		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
+		// if (selectedFilter === 'nft') return nameOp.nameId.startsWith('nft/');
+		if (selectedFilter === 'other') return !nameOp.nameId.startsWith('e/') && !nameOp.nameId.startsWith('pe/') && !nameOp.nameId.startsWith('poe/') && !nameOp.nameId.startsWith('nft/');
+		return true;
+	});
+
 	onMount(async () => {
 		const handleScroll = () => {
 			if (nameOpsSection) {
@@ -112,8 +140,8 @@
 			</p>
 
 			<p class="text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-				Doichain names have many applications: from securing fingerprints of documents and decentralized email double opt-ins to
-				trading non-fungible-coins for renewable energy-proofs and digital art.
+				Doichain NameOps have many applications: from securing fingerprints of documents and decentralized email double opt-ins to
+				trading non-fungible-coins for renewable energy-certificates and digital art.
 			</p>
 
 			<p class="text-xl mb-6 max-w-2xl mx-auto leading-relaxed">
@@ -160,8 +188,24 @@
 	</div>
 	<div class="relative z-10 max-w-6xl mx-auto px-4">
 		<h2 class="poppins-heading text-4xl font-bold mb-8 text-center text-white">Recent {$nameOps.length} NameOps</h2>
+		
+		<!-- Filter tags -->
+		<div class="flex justify-center flex-wrap gap-2 mb-8">
+			{#each filters as filter}
+				<button
+					class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ease-in-out
+						{selectedFilter === filter.id 
+							? 'bg-white text-gray-800' 
+							: 'bg-gray-800 text-white hover:bg-gray-700'}"
+					on:click={() => selectedFilter = filter.id}
+				>
+					{filter.label}
+				</button>
+			{/each}
+		</div>
+		
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-			{#each $nameOps as nameOp}
+			{#each filteredNameOps as nameOp}
 				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} />
 			{/each}
 		</div>
@@ -173,3 +217,4 @@
       font-family: 'Poppins', sans-serif;
     }
 </style>
+
