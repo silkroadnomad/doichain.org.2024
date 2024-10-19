@@ -95,6 +95,33 @@
 	let hasProcessedList100 = false;
 	config.peerDiscovery = newPubSubPeerDiscovey
 
+	let hasReceivedList100 = false;
+	const maxAttempts = 5;
+	let attemptCount = 0;
+
+	function publishList100Request() {
+		if (!hasReceivedList100 && attemptCount < maxAttempts) {
+			try {
+				$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode('LIST_LAST_100'));
+				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`);
+				attemptCount++;
+				
+				// Schedule next attempt after 5 seconds if no response
+				setTimeout(() => {
+					if (!hasReceivedList100) {
+						publishList100Request();
+					}
+				}, 5000);
+			} catch (error) {
+				console.error("Error publishing LIST_LAST100 message:", error);
+			}
+		} else if (hasReceivedList100) {
+			console.log("Received LIST_LAST_100 response, stopping requests.");
+		} else {
+			console.log("Max attempts reached, stopping LIST_LAST_100 requests.");
+		}
+	}
+
 	onMount(async () => {
 		$libp2p = await createLibp2p(config)
 		window.libp2p = $libp2p
@@ -113,7 +140,12 @@
 						if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')){
 							console.log("ignoring cid messages for now", message)
 						} 
-						else if(message.startsWith('LIST_DATE:') || message.startsWith('LIST_LAST_100') || message.startsWith('LIST_ALL') || message.endsWith(':NONE')){
+						else if (
+							message.startsWith('LIST_DATE:') 
+							|| message.startsWith('LIST_LAST_100') 
+							|| message.startsWith('LIST_ALL') 
+							|| message.endsWith(':NONE')
+						){
 							console.log("ignoring list messages for now", message)
 						}
 						else {
@@ -121,7 +153,7 @@
 									$nameOps = []
 									try {
 										const jsonMessage = JSON.parse(message)
-										$nameOps = $nameOps.sort((a, b) => {
+										$nameOps = jsonMessage.sort((a, b) => {
 											const timeA = a.currentNameUtxo?.blocktime || 0;
 											const timeB = b.currentNameUtxo?.blocktime || 0;
 											return timeB - timeA;
@@ -175,13 +207,7 @@
 				if (event.detail.toString() === targetPeerId) {
 					console.log(`Connected to target peer: ${targetPeerId}`)
 					
-					// Publish LIST_LAST100 request once
-					try {
-						$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode('LIST_LAST_100'));
-						console.log('Published request for LIST_LAST_100');
-					} catch (error) {
-						console.error("Error publishing LIST_LAST100 message:", error);
-					}
+					publishList100Request();
 					// Set up interval to publish messages every 5 seconds
 					/*const publishInterval = setInterval(async () => {
 						if (datesToRequest.length > 0) {
@@ -247,5 +273,6 @@
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
 
 
