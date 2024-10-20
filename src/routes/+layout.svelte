@@ -17,6 +17,9 @@
 	import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery'
 	import { webTransport } from '@libp2p/webtransport';
 	import { ping } from '@libp2p/ping'
+	import { identify } from '@libp2p/identify'
+	import { autoNAT } from '@libp2p/autonat'
+	import { dcutr } from '@libp2p/dcutr'
 	import { multiaddr } from '@multiformats/multiaddr'
 	import { noise } from '@chainsafe/libp2p-noise'
 	import { yamux } from '@chainsafe/libp2p-yamux'
@@ -34,6 +37,9 @@
 		ping: ping({
 				protocolPrefix: 'doi-libp2p', // default
 			}),
+		identify: identify(),
+		autoNAT: autoNAT(),
+		dcutr: dcutr(),
 	}
 
 	let blockstore = new LevelBlockstore("./helia-blocks")
@@ -80,24 +86,23 @@
 	}
 
 	const newPubSubPeerDiscovey = [...config.peerDiscovery, ...[
-		bootstrap({ list: 
-			[
-				'/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
-				// '/ip4/127.0.0.1/tcp/9092/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
-			]
-		}),
+		// bootstrap({ list: 
+		// 	[
+		// 		// '/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
+		// 		// '/ip4/127.0.0.1/tcp/9092/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
+		// 	]
+		// }),
 		pubsubPeerDiscovery({
 			interval: 10000,
 			topics: [pubsubPeerDiscoveryTopics], // defaults to ['_peer-discovery._p2p._pubsub'] //if we enable this too many will connect to us!
 			listenOnly: false
 		})
 	]]
-	let hasProcessedList100 = false;
+	let hasReceivedList100 = false;
 	config.peerDiscovery = newPubSubPeerDiscovey
 
-	let hasReceivedList100 = false;
-	const maxAttempts = 5;
 	let attemptCount = 0;
+	const maxAttempts = 5;
 
 	function publishList100Request() {
 		if (!hasReceivedList100 && attemptCount < maxAttempts) {
@@ -148,7 +153,7 @@
 							console.log("ignoring list messages for now", message)
 						}
 						else {
-							if (!hasProcessedList100) {
+							if (!hasReceivedList100) {
 									$nameOps = []
 									try {
 										const jsonMessage = JSON.parse(message)
@@ -159,7 +164,7 @@
 										});
 
 										console.log("Total nameOps after update:", $nameOps.length);
-										hasProcessedList100 = true;
+										hasReceivedList100 = true;
 									} catch (e) {
 										console.log("message", message)
 										console.error('Failed to parse message:', e);
@@ -272,6 +277,7 @@
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
 
 
 

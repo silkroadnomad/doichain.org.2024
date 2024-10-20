@@ -67,7 +67,6 @@
 
     $: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
 
-    $:console.log(currentNameOp)
 </script>
 
 <div class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
