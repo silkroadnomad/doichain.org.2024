@@ -5,7 +5,8 @@ const config = {
 	kit: {
 		adapter: adapter({
 			pages: 'public',
-			fallback: '404.html',
+			assets: 'public',
+			fallback: 'offline.html',
 			precompress: true,
 			strict: false
 		}),

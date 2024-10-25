@@ -3,6 +3,7 @@
 	import "../app.css";
 	import Navigation from './navigation.svelte'
 	import { onMount } from "svelte";
+	import { browser } from '$app/environment';
 
 	import { createLibp2p } from 'libp2p'
 	import { bootstrap } from '@libp2p/bootstrap'
@@ -275,6 +276,18 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 
 		} catch(ex){ console.log("helia.libp2p.exception", ex) }
 	})
+
+	onMount(() => {
+		if (browser && 'serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/service-worker.js')
+				.then((registration) => {
+					console.log('Service Worker registered with scope:', registration.scope);
+				})
+				.catch((error) => {
+					console.error('Service Worker registration failed:', error);
+				});
+		}
+	});
 </script>
 
 <body class="bg-white text-gray-900 flex flex-col min-h-screen">
@@ -303,6 +316,7 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
 
 
 

@@ -331,7 +331,7 @@
                 <div>wallet address:</div>
                 <div>{utxo.fullTx?.address?utxo.fullTx?.address:utxo.fullTx?.scriptPubKey.addresses[0]}</div>
                 <div>wallet amount:</div>
-                <div>{sb.toBitcoin(utxo.value)} BTC</div>
+                <div>{sb.toBitcoin(utxo.value)} DOI</div>
                 <div><b>Activate this UTXO:</b></div>
                 <div>
                   {#key selectedUtxosCount}
