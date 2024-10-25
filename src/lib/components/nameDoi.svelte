@@ -307,9 +307,8 @@
       <h3 class="font-bold">2. Wallet Address</h3>
       {#if activeTimeLine===1}
         <p class="text-sm text-gray-500">
-          Enter your wallet address which contains the UTXOs to use for the transaction.
-          Add spendable coins as inputs to the transaction.
-          NameOp transactions are spendable too, but make sure you are not accidentally transfering them.
+          Enter your wallet address which contains the UTXOs to be used for the transaction.
+          Toggle to spendable coins as inputs to the transaction. NameOps are utxos too but not spendable, since burned.
         </p>
         <p class="mt-4">&nbsp;</p>
         <div class="grid grid-cols-2 gap-4">

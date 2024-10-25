@@ -21,7 +21,7 @@
         if (currentNameOp.nameId) {
             currentNameOp = adaptNameOp(currentNameOp) 
             currentNameUtxo = currentNameOp.currentNameUtxo;
-        }else{
+        } else{
             currentNameOp.currentNameUtxo = currentNameUtxo;
         }
         
@@ -69,6 +69,9 @@
                     : 'bg-gray-800'; // Dark background for non-standard nameOps
 
     $: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
+    
+    console.log("currentNameOp", currentNameOp)
+
     function toggleTransactionDetails() {
         showTransactionDetails = !showTransactionDetails;
     }
@@ -165,8 +168,10 @@
             <div class="p-6 bg-gray-100 transaction-details">
                 <SimpleGrid cols={2}>
                     <div class="font-semibold">wallet address:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.address || 'N/A', 'Wallet address')}>
-                        {currentNameOp.currentNameUtxo?.address || 'N/A'}
+                    <div class="clickable" on:click={() => copyToClipboard(
+                        currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A'
+                    )}>
+                        { currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A' }
                     </div>
                     <div class="font-semibold">txid:</div>
                     <div class="clickable" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.txid || 'N/A', 'Transaction ID')}>
