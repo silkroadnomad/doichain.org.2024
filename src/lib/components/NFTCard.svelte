@@ -19,12 +19,9 @@
 
     $: {
         if (currentNameOp.nameId) {
-            console.log("currentNameOp before change", currentNameOp)
             currentNameOp = adaptNameOp(currentNameOp) 
-            console.log("currentNameOp after change", currentNameOp)
             currentNameUtxo = currentNameOp.currentNameUtxo;
         }else{
-            console.log("currentNameOp is not adapted but we should add the currentNameUtxo", currentNameUtxo)
             currentNameOp.currentNameUtxo = currentNameUtxo;
         }
         

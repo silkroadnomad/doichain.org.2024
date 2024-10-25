@@ -140,38 +140,63 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 				$libp2p.services.pubsub.subscribe(CONTENT_TOPIC)
 				console.log("libp2p is available")
 				const pubsub = $libp2p.services.pubsub;
-				pubsub.addEventListener('message', (event) => {
+				pubsub.addEventListener('message', async (event) => {
 				if (event.detail.topic === CONTENT_TOPIC) {
 						const message = new TextDecoder().decode(event.detail.data);
 						if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')){
 							console.log("ignoring cid messages for now", message)
 						} 
+						else if (message === 'LIST_LAST_100') {
+							console.log("Received request for LIST_LAST_100");
+							if ($nameOps.length > 0) {
+								const lastNameOps = $nameOps.slice(0, 100); // Get the last 100 items
+								console.log(`Publishing last ${lastNameOps.length} NameOps`,lastNameOps);
+								const jsonString = JSON.stringify(lastNameOps);
+								$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(jsonString));
+							} else {
+								console.log("No NameOps found");
+								$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode("LAST_100_CIDS:NONE"));
+							}
+						}
 						else if (
 							message.startsWith('LIST_DATE:') 
-							|| message.startsWith('LIST_LAST_100') 
 							|| message.startsWith('LIST_ALL') 
 							|| message.endsWith(':NONE')
 						){
-							console.log("ignoring list messages for now", message)
+							console.log("ignoring other list messages for now", message)
 						}
 						else {
-							if (!hasReceivedList100) {
+							// if (!hasReceoivedList100) {
+							console.log("received message", message)
 									$nameOps = []
 									try {
-										const jsonMessage = JSON.parse(message)
-										$nameOps = jsonMessage.sort((a, b) => {
-											const timeA = a.currentNameUtxo?.blocktime || 0;
-											const timeB = b.currentNameUtxo?.blocktime || 0;
-											return timeB - timeA;
+										const jsonMessage = JSON.parse(message);
+										const newNameOps = jsonMessage.filter(newOp => {
+											// Check if this operation already exists in $nameOps
+											return !$nameOps.some(existingOp => 
+												existingOp.currentNameUtxo?.txid === newOp.currentNameUtxo?.txid
+											);
 										});
 
-										console.log("Total nameOps after update:", $nameOps.length);
+										if (newNameOps.length > 0) {
+											// Combine existing and new unique nameOps, then sort
+											$nameOps = [...$nameOps, ...newNameOps].sort((a, b) => {
+												const timeA = a.currentNameUtxo?.blocktime || 0;
+												const timeB = b.currentNameUtxo?.blocktime || 0;
+												return timeB - timeA;
+											});
+
+											console.log(`Added ${newNameOps.length} new unique nameOps. Total nameOps after update:`, $nameOps.length);
+										} else {
+											console.log("No new unique nameOps to add.");
+										}
+
 										hasReceivedList100 = true;
 									} catch (e) {
-										console.log("message", message)
+										console.log("message", message);
 										console.error('Failed to parse message:', e);
 									}
-							}
+							// }
 						}
 					} else{
 						// console.log("message", new TextDecoder().decode(event.detail.data));	
@@ -188,14 +213,6 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 			});
 
 
-  		// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/udp/9092/webrtc-direct/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
-		// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/tcp/9091/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
- 		// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/udp/9093/quic-v1/webtransport/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
-	
-		// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
-		// await $helia.libp2p.dial(multiaddr('/ip4/159.69.119.82/udp/4001/quic-v1/webtransport/certhash/uEiCJm1b3Z_aLNu9lBcYJ64C7mgeQmOojkYjrFne0VSMY2Q/certhash/uEiDl2NHHKh-V4jr5hckVHZ74ygXPxNliaivVsVXqMo7GZw/p2p/12D3KooWK8X8tjKHDyoXyR4EH4FBuqgWQnhRuuAm5SSNLr4zAQp2'))
-	    // await $helia.libp2p.dial(multiaddr('/ip4/159.69.119.82/udp/4001/quic-v1/webtransport/certhash/uEiCJm1b3Z_aLNu9lBcYJ64C7mgeQmOojkYjrFne0VSMY2Q/certhash/uEiDl2NHHKh-V4jr5hckVHZ74ygXPxNliaivVsVXqMo7GZw/p2p/12D3KooWK8X8tjKHDyoXyR4EH4FBuqgWQnhRuuAm5SSNLr4zAQp2'))
-		// console.log("dialed istanbul (159.69.119.82)")// await $libp2p.dial(multiaddr('/ip4/65.21.180.203/udp/4001/quic-v1/webtransport/certhash/uEiDk1JxhhAhI3c3Q_90QiRUdw5WDyxDLjzeDvg94_Zz4yQ/certhash/uEiDnxUwThh3AGQtzaojyo5CX6o0WJcQEE4NAdCFpbKUP4w/p2p/12D3KooWALjeG5hYT9qtBtqpv1X3Z4HVgjDrBamHfo37Jd61uW1t'))
 			const targetPeerId = '12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
 
 			let datesToRequest = [];
@@ -286,6 +303,8 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
+
 
 
 

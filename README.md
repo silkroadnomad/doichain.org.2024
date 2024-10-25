@@ -1,6 +1,8 @@
 # Doichain.org
 
 # Todo
+- [ ] when reading TOP 100 NameOps other peers then relay can answer too
+- [ ] when receiving name_ops they must be checked if they are trustworthy (anybody could send nameOps arond and claim they are from the blockchain) 
 - [ ] when entering a Doichain address in to find name field inside nameInput.svelte, scan address for nameOps and use them in currentNameOp and currentNameUtxo
 - [ ] pub-sub messages from relay (CID-ADDING, CID-ADDED) seem not reliable. Should we repeat them? 
 - [x] LIST_LAST_100 should be indexed in parallel on relay
