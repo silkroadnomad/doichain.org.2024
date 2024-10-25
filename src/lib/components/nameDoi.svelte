@@ -20,9 +20,6 @@
   export let nftName
   $:nameId = nftName
 
-  /**
-   * @type {number} storageFee - The fee for storing the name on the Doichain network, in swartz. Default is 1,000,000 (0.01 DOI).
-   */
   let nftDescription
   let utxos = []
   let psbtBaseText;
@@ -56,7 +53,6 @@
   let metadataJSON
 
   async function writeMetadata() {
-
     const encoder = new TextEncoder()
     const fs = unixfs($helia)
 
@@ -166,8 +162,6 @@
     }
   }
 
-  let imageUrl = "https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80";
-
   let activePanel = 'psbtQR';
 
   function copyToClipboard(text) {
@@ -177,31 +171,16 @@
       console.error('Failed to copy: ', err);
     });
   }
-  /**
-   * @type {number|null} animationTimeout - Holds the timeout ID for the QR code animation.
-   */
-  let animationTimeout;
 
-  /**
-   * @type {number} currentSvgIndex - The index of the currently displayed SVG in the QR code animation.
-   */
+  let animationTimeout;
   let currentSvgIndex;
-  /**
-   * Initializes and starts the QR code animation.
-   * Resets the animation if it's already running.
-   */
+
   function displayQrCodes() {
     currentSvgIndex = 0;
     if (animationTimeout) clearTimeout(animationTimeout);
     animateQrCodes();
   }
 
-  /**
-   * Animates through the QR code SVGs.
-   * This function is called recursively to create a loop through all QR code frames.
-   *
-   * @throws {Error} Implicitly throws an error if qrCodeData is not an array or is empty.
-   */
   function animateQrCodes() {
     qrCode = qrCodeData[currentSvgIndex];
     currentSvgIndex = (currentSvgIndex + 1) % qrCodeData.length;
@@ -211,15 +190,32 @@
   onDestroy(() => {
     if (animationTimeout) clearTimeout(animationTimeout);
   });
+
+  let cidStatus = 'idle'; // Can be 'idle', 'adding', or 'added'
+
+  onMount(() => {
+    if ($libp2p) {
+      $libp2p.services.pubsub.addEventListener('message', (event) => {
+        if (event.detail.topic === CONTENT_TOPIC) {
+          const message = new TextDecoder().decode(event.detail.data);
+          if (message.startsWith('ADDING-CID')) {
+            cidStatus = 'adding';
+          } else if (message.startsWith('ADDED-CID')) {
+            cidStatus = 'added';
+          }
+        }
+      });
+    }
+  });
 </script>
 
 <p class="mt-4">&nbsp;</p>
 <div class="nameShow">
 {#if $electrumClient }
-<div class="relative border-l-2 border-gray-200 ml-3 max-w-3xl mx-auto"> <!-- Added max-w-3xl and mx-auto -->
+<div class="relative border-l-2 border-gray-200 ml-3 max-w-3xl mx-auto">
   <div class="mb-8 flex items-center">
     <div class="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 border-4 border-white"></div>
-    <div class="ml-6 w-full"> <!-- Added w-full -->
+    <div class="ml-6 w-full">
       <h3 class="font-bold">1. Data Definition</h3>
       {#if activeTimeLine === 0}
         <p class="text-sm text-gray-500">
@@ -244,7 +240,7 @@
             <div class="font-semibold text-left self-start">Image:</div>
             <div class="w-64 h-64 text-left overflow-hidden">
               <img
-                src={previewImgSrc || imageUrl}
+                src={previewImgSrc || "https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80"}
                 alt="Image preview"
                 class="w-full h-full object-cover"
               />
@@ -270,6 +266,15 @@
                 <div class="font-semibold text-left pr-4 pt-2 min-w-[60px]">cid:</div>
                 <div class="text-left pt-2">
                   <div class="truncate">{imageCID}</div>
+                </div>
+                <div class="font-semibold text-left pr-4 pt-2 min-w-[60px]">status:</div>
+                <div class="text-left pt-2 flex items-center">
+                  {#if cidStatus !== 'idle'}
+                    <div class={`w-4 h-4 rounded-full mr-2 ${cidStatus === 'adding' ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></div>
+                    <span>{cidStatus === 'adding' ? 'Adding to pinning service' : 'Added to pinning service'}</span>
+                  {:else}
+                    <span>Waiting for CID</span>
+                  {/if}
                 </div>
               </div>
             {/if}
@@ -468,7 +473,6 @@
         color: var(--text-3);
     }
 
-    /* Add these new styles */
     .nameShow {
         overflow-x: hidden;
     }
@@ -476,5 +480,13 @@
     .nameShow input[type="text"],
     .nameShow textarea {
         max-width: 100%;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .animate-pulse {
+      animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 </style>
