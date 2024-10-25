@@ -17,7 +17,6 @@ export default defineConfig({
 				Buffer: true,
 				global: true,
 				process: true,
-				crypto: true
 			},
 			protocolImports: true
 		})

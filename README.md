@@ -1,6 +1,8 @@
 # Doichain.org
 
 # Todo
+- [ ] when entering a Doichain address in to find name field inside nameInput.svelte, scan address for nameOps and use them in currentNameOp and currentNameUtxo
+- [ ] pub-sub messages from relay (CID-ADDING, CID-ADDED) seem not reliable. Should we repeat them? 
 - [x] LIST_LAST_100 should be indexed in parallel on relay
 - [x] LIST_LAST_100 100 name-ops message should be called
 - [x] relay doesn't publish
