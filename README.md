@@ -11,6 +11,7 @@
 - [x] relay doesn't publish
 - [x] deploy on vercel 
 - [x] deploy on ipfs
+- [ ] add apple-touch-icon to app.html
 - [ ] add change and total utxo value below
 - [ ] download psbt file (keep psbt into clipboard)
 - [x] fix ipfs pinning service
