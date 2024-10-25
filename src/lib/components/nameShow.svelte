@@ -3,6 +3,7 @@
 	import { nameShow } from '../doichain/nameShow.js'
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
+	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core' //https://svelteui.dev/core/card
 	let nameToCheck = 'PeaceDove-CC'
 	let results = [];
 </script>
@@ -47,7 +48,7 @@
 									(can take some time - helia node needs to find enough peers!)</p>
 							{:then img}
 								{#if img}
-									<img src={img} alt={nft.name} />
+									<img src={img} alt={nft.name} style="max-width: 300px; max-height: 300px; object-fit: contain;" />
 								{/if}
 							{:catch error}
 
@@ -56,28 +57,28 @@
 						{/await}
 					</Text>
 					<p>&nbsp;</p>
-					<SimpleGrid  cols={2}>
-						<div>wallet address:</div>
-						<div>{tx.scriptPubKey.addresses[0]}</div>
-						<div>txid:</div>
-						<div>{tx.txid}</div>
-						<div>time:</div>
-						<div>{tx.formattedBlocktime}</div>
-						<div>name:</div>
-						<div>{tx.scriptPubKey.nameOp.name}</div>
-						<div>value:</div>
-						<div>{tx.scriptPubKey.nameOp.value}</div>
-						<div>DOI amount:</div>
-						<div>{tx.value}</div>
-					</SimpleGrid>
-					<p>&nbsp;</p>
-					<Button variant='light' color='blue' fullSize on:click={()=>alert('coming soon')}>Buy</Button>
-				</Card>
-			{/if}
-		{/each}
-	{:else}
-		<p>No NameId found for given entry.</p>
-	{/if}
+						<SimpleGrid  cols={2}>
+							<div>wallet address:</div>
+							<div>{tx.scriptPubKey.addresses[0]}</div>
+							<div>txid:</div>
+							<div>{tx.txid}</div>
+							<div>time:</div>
+							<div>{tx.formattedBlocktime}</div>
+							<div>name:</div>
+							<div>{tx.scriptPubKey.nameOp.name}</div>
+							<div>value:</div>
+							<div>{tx.scriptPubKey.nameOp.value}</div>
+							<div>DOI amount:</div>
+							<div>{tx.value}</div>
+						</SimpleGrid>
+						<p>&nbsp;</p>
+						<Button variant='light' color='blue' fullSize on:click={()=>alert('coming soon')}>Buy</Button>
+					</Card>
+				{/if}
+			{/each}
+		{:else}
+			<p>No NameId found for given entry.</p>
+		{/if}
 </div>
 <style>
     :global(.nameShow) {
@@ -96,5 +97,9 @@
     .nameShow button {
         margin-left: 8px;
     }
+    .nameShow img {
+        max-width: 300px;
+        max-height: 300px;
+        object-fit: contain;
+    }
 </style>
-

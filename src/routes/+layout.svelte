@@ -23,9 +23,10 @@
 	import { multiaddr } from '@multiformats/multiaddr'
 	import { noise } from '@chainsafe/libp2p-noise'
 	import { yamux } from '@chainsafe/libp2p-yamux'
+	import { peerIdFromString } from '@libp2p/peer-id'
 
 	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB || 'doichain._peer-discovery._p2p._pubsub'
-
+console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 
 	const config = libp2pDefaults()
@@ -34,9 +35,9 @@
 	// If you want to ensure the ping service is included:
 	config.services = {
 		...config.services,
-		ping: ping({
-				protocolPrefix: 'doi-libp2p', // default
-			}),
+		// ping: ping({
+		// 		protocolPrefix: 'doi-libp2p', // default
+		// 	}),
 		identify: identify(),
 		autoNAT: autoNAT(),
 		dcutr: dcutr(),
@@ -45,10 +46,10 @@
 	let blockstore = new LevelBlockstore("./helia-blocks")
 	let datastore = new LevelDatastore("./helia-data")
 
-	config.addresses = { listen: ['/webrtc','/webrtc-direct','/wss']}
+	config.addresses = { listen: ['/p2p-circuit','/webrtc','/webrtc-direct','/wss','/ws']}
 	config.transports =  [
 		webSockets({ filter: filters.all}),
-		webTransport(),
+		// webTransport(),
 		webRTC(),
 		webRTCDirect(),
 		circuitRelayTransport({
@@ -60,10 +61,10 @@
 	config.connectionEncrypters = [noise()]
 	config.streamMuxers = [yamux()]
 
-	// Add connection manager to limit connections
-	config.connectionManager = {
-		maxConnections: 1,
-	}
+	// // Add connection manager to limit connections
+	// config.connectionManager = {
+	// 	maxConnections: 1,
+	// }
 
 	const newPubsub = {...config.services.pubsub, ...{ services: { 
 		pubsub: gossipsub({ 
@@ -85,21 +86,22 @@
 		}
 	}
 
-	const newPubSubPeerDiscovey = [...config.peerDiscovery, ...[
-		// bootstrap({ list: 
-		// 	[
-		// 		// '/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
-		// 		// '/ip4/127.0.0.1/tcp/9092/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
-		// 	]
-		// }),
+	const newPubSubPeerDiscovery = [...config.peerDiscovery, ...[
+		bootstrap({ list: 
+			[
+				// '/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
+			'/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
+			]
+		}),
 		pubsubPeerDiscovery({
 			interval: 10000,
-			topics: [pubsubPeerDiscoveryTopics], // defaults to ['_peer-discovery._p2p._pubsub'] //if we enable this too many will connect to us!
+			topics: [pubsubPeerDiscoveryTopics,'_peer-discovery._p2p._pubsub'], // defaults to ['_peer-discovery._p2p._pubsub'] //if we enable this too many will connect to us!
 			listenOnly: false
 		})
 	]]
+
 	let hasReceivedList100 = false;
-	config.peerDiscovery = newPubSubPeerDiscovey
+	config.peerDiscovery = newPubSubPeerDiscovery
 
 	let attemptCount = 0;
 	const maxAttempts = 5;
@@ -234,14 +236,21 @@
 			})
 
 			// Attempt to connect to the target peer
-			const relayAddr = multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
-			// const relayAddr = multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
-			try {
-				await $libp2p.dial(relayAddr)
-				console.log("Dialed relay successfully")
-			} catch (error) {
-				console.error("Failed to dial relay:", error)
-			}
+				/// const relayAddr = multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
+			// 	const relayAddr = multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
+			// try {
+			// 	await $libp2p.dial(relayAddr)
+			// 	console.log("Dialed relay successfully")
+			// } catch (error) {
+			// 	console.error("Failed to dial relay:", error)
+			// }
+
+			// Add event listeners for pubsub peer discovery
+			$libp2p.addEventListener('peer:discovery', (event) => {
+				const peerId = peerIdFromString(event.detail.id.toString())
+				//console.log(`Discovered peer: ${peerId.toString()}`)
+			})
+
 		}
 		// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
 			// console.log("topics",$helia.libp2p.services.pubsub.getTopics())
@@ -255,11 +264,11 @@
 	<section class="flex items-center justify-center mt-8">
 		<div class="text-center max-w-4xl mx-auto px-4">
 			<!-- Logo -->
-			<div class="flex justify-center mb-12">
+			<!-- <div class="flex justify-center mb-12">
 				<div class="bg-gray-900 rounded-full p-4">
 					<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
 				</div>
-			</div>
+			</div> -->
 		</div>
 	</section>
 
@@ -277,6 +286,10 @@
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
+
+
+
 
 
 

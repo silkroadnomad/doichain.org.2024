@@ -1,14 +1,13 @@
 import { nameShow } from "$lib/doichain/nameShow.js";
-import sb from "satoshi-bitcoin";
 import { debounce } from 'lodash';
 
-export const checkName = debounce((electrumClient, currentNameAddress , name, totalUtxoValue, totalAmount, callback) => {
-    _checkName(electrumClient, currentNameAddress, name, totalUtxoValue, totalAmount).then(result => {
+export const checkName = debounce((electrumClient, currentNameAddress , name, callback) => {
+    _checkName(electrumClient, currentNameAddress, name).then(result => {
         callback(result);
     });
 }, 300);
 
-export async function _checkName(electrumClient, currentNameAddress, _name, totalUtxoValue, totalAmount) {
+export async function _checkName(electrumClient, currentNameAddress, _name) {
 
     let nameErrorMessage = '';
     let utxoErrorMessage = '';
@@ -48,11 +47,6 @@ export async function _checkName(electrumClient, currentNameAddress, _name, tota
             nameErrorMessage = `Name "${_name}" already registered under address ${currentNameAddress}`;
             isNameValid = false;
             return { currentNameAddress, currentNameOp, currentNameUtxo, nameErrorMessage, utxoErrorMessage, nameExists, isNameValid, isUTXOAddressValid }
-        }
-        else if(totalUtxoValue <= totalAmount){ //TODO why is this here inside? Please move
-            utxoErrorMessage = `Funds on ${currentNameAddress} are insufficient for this Doichain name`;
-            isUTXOAddressValid = false;
-            return { currentNameAddress, nameErrorMessage, utxoErrorMessage, isNameValid, isUTXOAddressValid }
         }
         else {
             isNameValid = true;

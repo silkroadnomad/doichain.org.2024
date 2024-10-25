@@ -130,11 +130,9 @@
 		class="flex items-center justify-center flex-grow"
 	>
 		<div class="text-center max-w-4xl mx-auto px-4">
-			<!-- Title -->
-			<h1 class="text-6xl font-medium mb-2 tracking-tight">Meet Doichain:</h1>
+			<!-- <h1 class="text-6xl font-medium mb-2 tracking-tight">Meet Doichain:</h1>
 			<h1 class="text-3xl font-mediumtext-gray-600 mb-12">Simplified name-value storage</h1>
 
-			<!-- Description -->
 			<p class="text-xl mb-6 max-w-2xl mx-auto leading-relaxed">
 				The Doichain network is like Bitcoin: Just for names.
 			</p>
@@ -147,7 +145,7 @@
 			<p class="text-xl mb-6 max-w-2xl mx-auto leading-relaxed">
 				Smooth name transaction setup, quick to find.
 				Doichain leverages CO2-neutral, merge-mine-PoW of Bitcoin.
-			</p>
+			</p> -->
 		</div>
 	</section>
 {/if}
@@ -166,7 +164,7 @@
 <section>
 	<div class="flex justify-center mt-4">
 		{#if currentNameOp && !showHeroSection}
-			<NFTCard currentNameOp={updatedCurrentNameOp} currentNameUtxo={updatedCurrentNameUtxo} />
+				<NFTCard currentNameOp={updatedCurrentNameOp} currentNameUtxo={updatedCurrentNameUtxo} />
 		{:else}
 			{#if !currentNameOp && inputValue}
 				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">

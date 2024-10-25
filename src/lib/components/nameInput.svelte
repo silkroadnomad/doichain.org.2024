@@ -1,9 +1,10 @@
 <script>
     import { getConnectionStatus } from "../doichain/connectElectrum.js";
     import { checkName } from "$lib/doichain/nameValidation.js";
-    import { electrumClient, connectedServer } from "../doichain/doichain-store.js";
+    import { electrumClient, connectedServer, network } from "../doichain/doichain-store.js";
     import { createEventDispatcher } from 'svelte';
     import { fade } from 'svelte/transition';
+    import { getAddressTxs } from "$lib/doichain/getAddressTxs.js";
 
     const dispatch = createEventDispatcher();
     export let name = '';
@@ -38,15 +39,48 @@
     }
 
     async function nameCheckCallback(result) {
-        console.log("result",result)
+        console.log("result", result);
         doichainAddress = result.currentNameAddress || doichainAddress;
         isNameValid = result.isNameValid;
-        currentNameOp = result.currentNameOp
-        currentNameUtxo = result.currentNameUtxo
+        currentNameOp = result.currentNameOp;
+        currentNameUtxo = result.currentNameUtxo;
         nameErrorMessage = result.nameErrorMessage;
+
+        // Check if currentNameOp and currentNameUtxo are empty arrays
+        if (Array.isArray(currentNameOp) && currentNameOp.length === 0 &&
+            Array.isArray(currentNameUtxo) && currentNameUtxo.length === 0) {
+            // The input might be a Doichain address
+            try {
+                const addressTxs = await getAddressTxs(doichainAddress, null, $electrumClient, $network);
+                const nameOps = addressTxs.filter(tx => tx.nameId && tx.nameValue);
+                
+                if (nameOps.length > 0) {
+                    // Sort nameOps by blocktime in descending order (latest first)
+                    nameOps.sort((a, b) => b.blocktime - a.blocktime);
+                    
+                    // Set currentNameOp to the latest name operation
+                    currentNameOp = nameOps[0];
+                    isNameValid = true;
+                    nameErrorMessage = '';
+                } else {
+                    nameErrorMessage = 'No name operations found for this address';
+                    isNameValid = false;
+                }
+            } catch (error) {
+                console.error('Error fetching transactions:', error);
+                nameErrorMessage = 'Error fetching transactions for this address';
+                isNameValid = false;
+            }
+        }
+
+        // Add UTXO balance check here 
+        if (totalUtxoValue < totalAmount) {
+            nameErrorMessage = `Funds on ${doichainAddress} are insufficient for this Doichain name`;
+            isNameValid = false;
+        }
     }
 
-    $: name ? checkName($electrumClient, doichainAddress, name, totalUtxoValue, totalAmount, nameCheckCallback) : null;
+    $: name ? checkName($electrumClient, doichainAddress, name, nameCheckCallback) : null;
 
     function handleInput(event) {
         if (event.keyCode === 13) {
