@@ -25,9 +25,9 @@
 	import { noise } from '@chainsafe/libp2p-noise'
 	import { yamux } from '@chainsafe/libp2p-yamux'
 	import { peerIdFromString } from '@libp2p/peer-id'
+	import { logger } from '@libp2p/logger'
 
 	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB || 'doichain._peer-discovery._p2p._pubsub'
-console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 
 	const config = libp2pDefaults()
@@ -87,16 +87,18 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 		}
 	}
 
+	const log = logger('doichain:pubsub')
+
 	const newPubSubPeerDiscovery = [...config.peerDiscovery, ...[
 		bootstrap({ list: 
 			[
-				// '/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo',
+			'/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWRBemKo6NDuXZfpxuHJZ5UNEVamgBN5geoVq6Vk62NREH',
 			'/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
 			]
 		}),
 		pubsubPeerDiscovery({
 			interval: 10000,
-			topics: [pubsubPeerDiscoveryTopics,'_peer-discovery._p2p._pubsub'], // defaults to ['_peer-discovery._p2p._pubsub'] //if we enable this too many will connect to us!
+			topics: [ pubsubPeerDiscoveryTopics, '_peer-discovery._p2p._pubsub'],
 			listenOnly: false
 		})
 	]]
@@ -168,7 +170,6 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 						}
 						else {
 							// if (!hasReceoivedList100) {
-							console.log("received message", message)
 									$nameOps = []
 									try {
 										const jsonMessage = JSON.parse(message);
@@ -182,8 +183,8 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 										if (newNameOps.length > 0) {
 											// Combine existing and new unique nameOps, then sort
 											$nameOps = [...$nameOps, ...newNameOps].sort((a, b) => {
-												const timeA = a.currentNameUtxo?.blocktime || 0;
-												const timeB = b.currentNameUtxo?.blocktime || 0;
+												const timeA = a.blocktime || 0;
+												const timeB = b.blocktime || 0;
 												return timeB - timeA;
 											});
 
@@ -205,16 +206,19 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 			});
 		
 			$libp2p.addEventListener('connection:open',  (p) => {
-					$connectedPeers = $connectedPeers + 1
-					// console.log("connectedPeers",$connectedPeers)
+				console.log("connection:open",p)
+					$connectedPeers = [...$connectedPeers,p.detail]
+					// add the connected peer to $connectedPeers
+					console.log("connectedPeers",$connectedPeers)
 			});
-				//
-			$libp2p.addEventListener('connection:close', () => {
-					$connectedPeers = $connectedPeers - 1
+			
+			$libp2p.addEventListener('connection:close', (p) => {
+				// $connectedPeers = $connectedPeers - 1
+				// remove the closed peer from $connectedPeers 
+				$connectedPeers = $connectedPeers.filter(peer => peer.id !== p.detail.id)
 			});
 
 
-			const targetPeerId = '12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
 
 			let datesToRequest = [];
 			let currentDate = new Date();
@@ -228,9 +232,7 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 			}
 
 			$libp2p.addEventListener('peer:connect', (event) => {
-				if (event.detail.toString() === targetPeerId) {
-					console.log(`Connected to target peer: ${targetPeerId}`)
-					
+				 $connectedPeers 
 					publishList100Request();
 					// Set up interval to publish messages every 5 seconds
 					/*const publishInterval = setInterval(async () => {
@@ -250,23 +252,29 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 
 					// Clean up the interval when the component is destroyed
 					return () => clearInterval(publishInterval)
+				// }
+			})
+
+			// Log when we're publishing a peer discovery message
+			$libp2p.services.pubsub.addEventListener('publish', (evt) => {
+				if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
+					log('Publishing peer discovery message on topic:', evt.detail.topic)
 				}
 			})
 
-			// Attempt to connect to the target peer
-				/// const relayAddr = multiaddr('/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
-			// 	const relayAddr = multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo')
-			// try {
-			// 	await $libp2p.dial(relayAddr)
-			// 	console.log("Dialed relay successfully")
-			// } catch (error) {
-			// 	console.error("Failed to dial relay:", error)
-			// }
+			// Log when we receive a peer discovery message
+			$libp2p.services.pubsub.addEventListener('message', (evt) => {
+				if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
+					log('Received peer discovery message on topic:', evt.detail.topic)
+					// You can add more detailed logging here if needed
+					// const message = new TextDecoder().decode(evt.detail.data)
+					// log('Peer discovery message content:', message)
+				}
+			})
 
-			// Add event listeners for pubsub peer discovery
-			$libp2p.addEventListener('peer:discovery', (event) => {
-				const peerId = peerIdFromString(event.detail.id.toString())
-				//console.log(`Discovered peer: ${peerId.toString()}`)
+			// Log when we discover a new peer
+			$libp2p.addEventListener('peer:discovery', (evt) => {
+				log('Discovered new peer:', evt.detail.id.toString())
 			})
 
 		}
@@ -316,6 +324,7 @@ console.log('pubsubPeerDiscoveryTopics',pubsubPeerDiscoveryTopics)
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
+
 
 
 

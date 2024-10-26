@@ -1,10 +1,10 @@
 const CACHE_NAME = 'doichain-cache-v1';
 const urlsToCache = [
   '/',
-  '/index.html',
-  '/global.css',
-  '/build/bundle.css',
-  '/build/bundle.js'
+//   '/index.html',
+//   '/global.css',
+//   '/build/bundle.css',
+//   '/build/bundle.js'
 ];
 
 self.addEventListener('install', (event) => {

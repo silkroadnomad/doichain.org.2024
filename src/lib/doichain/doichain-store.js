@@ -32,7 +32,7 @@ export const networks = [
 
 export const libp2p = writable()
 export const helia = writable()
-export const connectedPeers = writable(0);
+export const connectedPeers = writable([]);
 export const nameOps = writable([]);
 export const scanOpen = writable(false)
 export const scanData = writable()

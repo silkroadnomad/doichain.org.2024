@@ -70,7 +70,6 @@
 
     $: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
     
-    console.log("currentNameOp", currentNameOp)
 
     function toggleTransactionDetails() {
         showTransactionDetails = !showTransactionDetails;
@@ -120,7 +119,7 @@
                         <p>Name: {nftMetadata.name}</p>
                         <p>Description: {nftMetadata.description}</p>
                     {:else}
-                        <p>Loading NFT data from {$connectedPeers} peers...</p>
+                        <p>Loading NFT data from {$connectedPeers.length} peers...</p>
                     {/if}
                 </p>
             </div>
