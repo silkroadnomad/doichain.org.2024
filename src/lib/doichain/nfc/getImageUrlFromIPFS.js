@@ -5,7 +5,7 @@ export const getImageUrlFromIPFS = async (helia,tokenURI) => {
 	if (tokenURI.startsWith('ipfs://') || tokenURI.startsWith('ipns://')) {
 		cid = tokenURI.split('//')[1];
 	}
-	console.log("loading image from cid",cid)
+	// console.log("loading image from cid",cid)
 	const fs = unixfs(helia)
 	const chunks = []
 	for await (const chunk of fs.cat(cid)) {

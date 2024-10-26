@@ -2,9 +2,9 @@
 	import { helia, libp2p, connectedPeers, nameOps} from '$lib/doichain/doichain-store.js'
 	import "../app.css";
 	import Navigation from './navigation.svelte'
-	import { onMount } from "svelte";
+	import { onMount, onDestroy } from "svelte";
 	import { browser } from '$app/environment';
-
+	import { decodeMessage } from 'protons-runtime'
 	import { createLibp2p } from 'libp2p'
 	import { bootstrap } from '@libp2p/bootstrap'
 	import { createHelia, libp2pDefaults } from 'helia'
@@ -13,7 +13,9 @@
 	import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 	import { webSockets } from '@libp2p/websockets'
 	import * as filters from '@libp2p/websockets/filters'
-	import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
+	import { noise } from '@chainsafe/libp2p-noise'
+	// import { tls } from '@libp2p/tls'
+	import { circuitRelayTransport, circuitRelayServer } from '@libp2p/circuit-relay-v2'
 	import { webRTC, webRTCDirect } from '@libp2p/webrtc'
 	import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery'
 	import { webTransport } from '@libp2p/webtransport';
@@ -22,23 +24,19 @@
 	import { autoNAT } from '@libp2p/autonat'
 	import { dcutr } from '@libp2p/dcutr'
 	import { multiaddr } from '@multiformats/multiaddr'
-	import { noise } from '@chainsafe/libp2p-noise'
 	import { yamux } from '@chainsafe/libp2p-yamux'
-	import { peerIdFromString } from '@libp2p/peer-id'
 	import { logger } from '@libp2p/logger'
 
-	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB || 'doichain._peer-discovery._p2p._pubsub'
+	//const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub','_peer-discovery._p2p._pubsub']
+	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub']
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 
 	const config = libp2pDefaults()
-	console.log("config", config)
 
 	// If you want to ensure the ping service is included:
 	config.services = {
 		...config.services,
-		// ping: ping({
-		// 		protocolPrefix: 'doi-libp2p', // default
-		// 	}),
+		ping: ping(),
 		identify: identify(),
 		autoNAT: autoNAT(),
 		dcutr: dcutr(),
@@ -46,12 +44,25 @@
 
 	let blockstore = new LevelBlockstore("./helia-blocks")
 	let datastore = new LevelDatastore("./helia-data")
-
+//https://github.com/libp2p/js-libp2p/blob/3244ed08625516b25716485c936c26a34b69466a/doc/migrations/v0.42-v0.43.md
 	config.addresses = { listen: ['/p2p-circuit','/webrtc','/webrtc-direct','/wss','/ws']}
+
 	config.transports =  [
 		webSockets({ filter: filters.all}),
 		// webTransport(),
-		webRTC(),
+		webRTC({ //https://www.npmjs.com/package/@libp2p/webrtc
+			rtcConfiguration: {
+				iceServers: [
+					{ urls: 'stun:stun.l.google.com:19302' },
+					{ urls: 'stun:stun1.l.google.com:19302' },
+					{ urls: 'stun:stun2.l.google.com:19302' },
+					{ urls: 'stun:stun3.l.google.com:19302' },
+					{ urls: 'stun:stun4.l.google.com:19302' },
+					// Add a TURN server if possible
+					// { urls: 'turn:your-turn-server.com:3478', username: 'username', credential: 'password' }
+				]
+			}
+		}),
 		webRTCDirect(),
 		circuitRelayTransport({
 			discoverRelays: 1
@@ -59,13 +70,23 @@
 	]
 
 	// Ensure proper connection encryption and stream multiplexing
-	config.connectionEncrypters = [noise()]
-	config.streamMuxers = [yamux()]
+	config.connectionEncrypters = [
+   	 noise()
+  	]
+	config.streamMuxers = [
+		yamux({
+			enableKeepAlive: true,
+			keepAliveInterval: 10000, // 10 seconds
+			keepAliveTimeout: 30000, // 30 seconds
+		})
+	]
 
-	// // Add connection manager to limit connections
-	// config.connectionManager = {
-	// 	maxConnections: 1,
-	// }
+	config.connectionManager = {
+		...config.connectionManager,
+		maxConnections: 50, // Adjust as needed
+		autoDialInterval: 10000, // 10 seconds
+		autoDial: true,
+	}
 
 	const newPubsub = {...config.services.pubsub, ...{ services: { 
 		pubsub: gossipsub({ 
@@ -89,19 +110,32 @@
 
 	const log = logger('doichain:pubsub')
 
-	const newPubSubPeerDiscovery = [...config.peerDiscovery, ...[
+	// const newPubSubPeerDiscovery = [...config.peerDiscovery, ...[
+	// 	bootstrap({ list: 
+	// 		[
+	// 		'/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWRBemKo6NDuXZfpxuHJZ5UNEVamgBN5geoVq6Vk62NREH',
+	// 		// '/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
+	// 		]
+	// 	}),
+	// 	pubsubPeerDiscovery({
+	// 		interval: 10000,
+	// 		topics: pubsubPeerDiscoveryTopics,
+	// 		listenOnly: false
+	// 	})
+	// ]]
+	const newPubSubPeerDiscovery = [
 		bootstrap({ list: 
 			[
-			'/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWRBemKo6NDuXZfpxuHJZ5UNEVamgBN5geoVq6Vk62NREH',
+				// '/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2',
 			'/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'
 			]
 		}),
 		pubsubPeerDiscovery({
 			interval: 10000,
-			topics: [ pubsubPeerDiscoveryTopics, '_peer-discovery._p2p._pubsub'],
+			topics: pubsubPeerDiscoveryTopics,
 			listenOnly: false
 		})
-	]]
+	]
 
 	let hasReceivedList100 = false;
 	config.peerDiscovery = newPubSubPeerDiscovery
@@ -132,18 +166,93 @@
 		}
 	}
 
+	const CLEAR_PEERSTORE_ON_START = true // or false, or make it an environment variable
+
+	let nodeAddresses = [];
+
+	const peerCodec = {
+  encode: () => {
+    throw new Error('Encoding not implemented')
+  },
+  decode: (reader) => {
+    const obj = {
+      publicKey: new Uint8Array(0),
+      addrs: []
+    }
+
+    while (reader.pos < reader.len) {
+      const tag = reader.uint32()
+
+      switch (tag >>> 3) {
+        case 1:
+          obj.publicKey = reader.bytes()
+          break
+        case 2:
+          obj.addrs.push(reader.bytes())
+          break
+        default:
+          reader.skipType(tag & 7)
+          break
+      }
+    }
+
+    return obj
+  }
+}
+
 	onMount(async () => {
 		$libp2p = await createLibp2p(config)
 		window.libp2p = $libp2p
+
+		// Print node's multiaddresses
+		nodeAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
+		console.log('Our node addresses:', nodeAddresses);
+
+		if (CLEAR_PEERSTORE_ON_START) {
+			await clearPeerStore($libp2p)
+		}
+
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore})
 		window.helia = $helia
 
 		try {
 			if($libp2p) {
 				$libp2p.services.pubsub.subscribe(CONTENT_TOPIC)
-				console.log("libp2p is available")
 				const pubsub = $libp2p.services.pubsub;
 				pubsub.addEventListener('message', async (event) => {
+				console.log(`Received pubsub message from ${event.detail.from} on topic ${event.detail.topic}`)
+				
+
+				if (event.detail.topic === 'doichain._peer-discovery._p2p._pubsub') {
+					try {
+						const peer = decodeMessage(event.detail.data, peerCodec)
+						console.log("peer",peer)
+						// Format the public key as a hex string
+						const publicKeyHex = Buffer.from(peer.publicKey).toString('hex')
+						console.log("publicKeyHex",publicKeyHex)
+						// Format the addresses
+						const formattedAddrs = peer.addrs.map(addr => {
+							try {
+								//dial the address
+								$libp2p.dial(multiaddr(addr))
+								return multiaddr(addr).toString()
+							} catch (err) {
+								return `<invalid multiaddr: ${Buffer.from(addr).toString('hex')}>`
+							}
+						})
+
+						// console.info('Discovered peer on %s:', topic)
+						// console.info('  Public Key: %s', publicKeyHex)
+						console.info('  Addresses:')
+						formattedAddrs.forEach((addr, index) => {
+							console.info(`    ${index + 1}. ${addr}`)
+						})
+
+					} catch(err) {
+						console.error('Error processing peer discovery message:', err)
+					}
+				} 
+
 				if (event.detail.topic === CONTENT_TOPIC) {
 						const message = new TextDecoder().decode(event.detail.data);
 						if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')){
@@ -206,10 +315,9 @@
 			});
 		
 			$libp2p.addEventListener('connection:open',  (p) => {
-				console.log("connection:open",p)
 					$connectedPeers = [...$connectedPeers,p.detail]
 					// add the connected peer to $connectedPeers
-					console.log("connectedPeers",$connectedPeers)
+					console.log("connectedPeers",p.detail.remoteAddr.toString())
 			});
 			
 			$libp2p.addEventListener('connection:close', (p) => {
@@ -218,7 +326,24 @@
 				$connectedPeers = $connectedPeers.filter(peer => peer.id !== p.detail.id)
 			});
 
+$libp2p.addEventListener('peer:discovery', async (evt) => {
+  const peer = evt.detail
+  console.log('Discovered peer:', peer.id.toString())
+  console.log('Peer multiaddrs:', peer.multiaddrs.map(ma => ma.toString()))
 
+  for (const addr of peer.multiaddrs) {
+    try {
+      const connection = await $libp2p.dial(addr)
+      console.log('Connected to discovered peer:', peer.id.toString())
+      console.log('Using multiaddr:', addr.toString())
+      break // Exit the loop if successful
+    } catch (err) {
+      console.error('Failed to connect to discovered peer:', peer.id.toString())
+      console.error('Failed multiaddr:', addr.toString())
+      console.error('Error:', err)
+    }
+  }
+})
 
 			let datesToRequest = [];
 			let currentDate = new Date();
@@ -283,7 +408,27 @@
 
 
 		} catch(ex){ console.log("helia.libp2p.exception", ex) }
+
+		// Set up an interval to periodically update the addresses
+		const addressUpdateInterval = setInterval(() => {
+			nodeAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
+			console.log('Updated node addresses:', nodeAddresses);
+		}, 60000); // Update every minute
+
+		// Clean up the interval when the component is destroyed
+		onDestroy(() => {
+			clearInterval(addressUpdateInterval);
+		});
 	})
+
+	async function clearPeerStore(libp2p) {
+		const peers = await libp2p.peerStore.all()
+		for (const peer of peers) {
+			await libp2p.peerStore.delete(peer.id)
+		}
+		console.log('PeerStore cleared')
+	}
+
 
 	onMount(() => {
 		if (browser && 'serviceWorker' in navigator) {
@@ -317,6 +462,16 @@
 	<div class="fixed bottom-0 left-0 right-0 z-50">
 		<Navigation />
 	</div>
+
+	<!-- Add this section to display the addresses -->
+	<section class="mt-4 px-4">
+		<h2 class="text-xl font-bold mb-2">Node Addresses:</h2>
+		<ul class="list-disc pl-5">
+			{#each nodeAddresses as address}
+				<li class="mb-1">{address}</li>
+			{/each}
+		</ul>
+	</section>
 </body>
 
 <style>
@@ -324,15 +479,4 @@
 		font-family: 'Poppins', sans-serif;
 	}
 </style>
-
-
-
-
-
-
-
-
-
-
-
 

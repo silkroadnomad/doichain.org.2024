@@ -12,7 +12,7 @@ export async function getMetadataFromIPFS(helia, tokenURI) {
 	const decoder = new TextDecoder()
 	let text = ''
 	let cid
-	console.log("loading...",tokenURI)
+	// console.log("loading...",tokenURI)
 	if (tokenURI.startsWith('ipfs://') || tokenURI.startsWith('ipns://')) {
 		cid = tokenURI.split('//')[1];
 	}
@@ -21,6 +21,6 @@ export async function getMetadataFromIPFS(helia, tokenURI) {
 			stream: true
 		})
 	}
-	console.log("loaded",text)
+	// console.log("loaded",text)
 	return JSON.parse(text);
 }
