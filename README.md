@@ -1,6 +1,8 @@
 # Doichain.org
 
 # Todo
+- [x] retry publish NEW-CID if no ADDED response from relay 
+- [x] add button "overwrite" in transaction details, when clicked the NFTCard should open as the name would be not yet defined 
 - [x] toggle between local and public relay when in svelte development mode 
 - [ ] enable mpg, mp4, mov support in NFT upload und display. 
   - [ ] when uploading movies to IPFS, is it possible to stream them.

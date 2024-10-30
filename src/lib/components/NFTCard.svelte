@@ -5,6 +5,7 @@
     import { adaptNameOp } from "$lib/doichain/utxoHelpers.js";
     import moment from 'moment';
     import { Button, SimpleGrid, Notification } from '@svelteuidev/core';
+    import { createEventDispatcher } from 'svelte';
 
     export let currentNameOp
     export let currentNameUtxo;
@@ -59,6 +60,7 @@
         }
         return false;
     }
+    
     $: cardBackgroundColor = 
         currentNameOp?.name?.startsWith('e/') 
             ? (isConfirmedDOI(currentNameOp) ? 'bg-green-100' : 'bg-yellow-100')
@@ -89,6 +91,17 @@
         }).catch(err => {
             console.error('Failed to copy: ', err);
         });
+    }
+
+    export let overWriteValue
+
+    function handleOverwrite() {
+        console.log('handleOverwrite', currentNameOp.name);
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+        overWriteValue = currentNameOp.name;
     }
 </script>
 
@@ -191,6 +204,16 @@
                         {currentNameOp.currentNameUtxo?.value || 'N/A'}
                     </div>
                 </SimpleGrid>
+
+                <div class="mt-4">
+                    <Button 
+                        variant="filled" 
+                        color="red" 
+                        fullSize 
+                        on:click={handleOverwrite}>
+                        Overwrite
+                    </Button>
+                </div>
             </div>
         {/if}
 

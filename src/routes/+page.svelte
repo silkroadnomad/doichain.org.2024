@@ -144,6 +144,15 @@
 	function hideAddresses() {
 		hoveredType = null;
 	}
+	let overWriteValue;
+	$:{
+		if(overWriteValue){ 
+			console.log('overwrite handler called', overWriteValue);
+			inputValue = overWriteValue;
+			currentNameOp = null;
+			currentNameUtxo = null;
+		} 
+	}
 </script>
 
 <svelte:head>
@@ -211,7 +220,10 @@
 <section>
 	<div class="flex justify-center mt-4">
 		{#if currentNameOp && !showHeroSection}
-				<NFTCard currentNameOp={updatedCurrentNameOp} currentNameUtxo={updatedCurrentNameUtxo} />
+				<NFTCard 
+				currentNameOp={updatedCurrentNameOp} 
+				currentNameUtxo={updatedCurrentNameUtxo}
+				/>
 		{:else}
 			{#if !currentNameOp && inputValue}
 				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
@@ -293,7 +305,7 @@
 		
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{#each filteredNameOps as nameOp}
-				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} />
+				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} bind:overWriteValue />
 			{/each}
 		</div>
 	</div>

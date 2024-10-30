@@ -52,6 +52,35 @@
   let metadataCID;
   let metadataJSON
 
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds
+
+  async function publishCID(cid, type = 'NEW') {
+    const message = `${type}-CID:${cid}`;
+    let success = false;
+    retryCount = 0;
+
+    const attemptPublish = async () => {
+      try {
+        await $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
+        success = true;
+        console.log(`Successfully published ${message} on attempt ${retryCount + 1}`);
+      } catch (error) {
+        console.error(`Failed to publish ${message} on attempt ${retryCount + 1}:`, error);
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`Retrying in ${RETRY_DELAY}ms...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          await attemptPublish();
+        }
+      }
+    };
+
+    await attemptPublish();
+    return success;
+  }
+
   async function writeMetadata() {
     const encoder = new TextEncoder()
     const fs = unixfs($helia)
@@ -65,7 +94,7 @@
     metadataCID = await fs.addBytes(encoder.encode(JSON.stringify(metadataJSON)))
     nameValue=`ipfs://${metadataCID.toString()}`
     console.log('Added metadata file to IPFS:', metadataCID.toString())
-    await $helia.libp2p.services.pubsub.publish(CONTENT_TOPIC,new TextEncoder().encode("NEW-CID:"+metadataCID.toString()))
+    await publishCID(metadataCID.toString());
   }
 
   async function previewFile() {
@@ -87,10 +116,10 @@
             onProgress: (evt) => {
               console.info('add event', evt.type, evt.detail)
             }
-          }).then((cid) => {
+          }).then(async (cid) => {
             imageCID = cid.toString()
             console.log('Added file to IPFS:', imageCID)
-            $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode("NEW-CID:"+imageCID.toString()))
+            await publishCID(imageCID.toString());
             writeMetadata()
           })}else{
             console.log("not ArrayBuffer")
