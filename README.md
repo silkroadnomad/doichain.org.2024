@@ -1,6 +1,10 @@
 # Doichain.org
 
 # Todo
+- [x] toggle between local and public relay when in svelte development mode 
+- [ ] enable mpg, mp4, mov support in NFT upload und display. 
+  - [ ] when uploading movies to IPFS, is it possible to stream them.
+    - https://ipfs.video/
 - [ ] test a deployed version is receiving all nameOps from locally running browsers via istanbul
 - [x] when reading TOP 100 NameOps other peers then relay can answer too
 - [ ] when receiving name_ops they must be checked if they are trustworthy (anybody could send nameOps arond and claim they are from the blockchain) 
