@@ -8,8 +8,12 @@
   import { DOICHAIN } from "$lib/doichain/doichain.js";
   import { unixfs } from '@helia/unixfs'
   import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
-
+  import ScanModal from "$lib/doichain/ScanModal.svelte";
   const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || "/doichain-nfc/1/message/proto"
+
+  let scanOpen = false;
+  let scanTarget = ''; // will be 'wallet', 'recipient', or 'change'
+  let scanData = ''; // new variable to bind to
 
   export let walletAddress = ''
   $:recipientsAddress = walletAddress
@@ -236,8 +240,24 @@
       });
     }
   });
-</script>
 
+  $: if (scanData) {
+    if (scanTarget === 'wallet') {
+      walletAddress = scanData;
+    } else if (scanTarget === 'recipient') {
+      recipientsAddress = scanData;
+    } else if (scanTarget === 'change') {
+      changeAddress = scanData;
+    }
+    scanData = ''; // Reset after use
+  }
+</script>
+{#if scanOpen}
+  <ScanModal 
+    bind:scanOpen
+    bind:scanData
+  /> 
+{/if}
 <p class="mt-4">&nbsp;</p>
 <div class="nameShow">
 {#if $electrumClient }
@@ -341,15 +361,38 @@
         </p>
         <p class="mt-4">&nbsp;</p>
         <div class="grid grid-cols-2 gap-4">
-          <div>
-            <input type="text" bind:value={walletAddress} on:keydown={ async (event) => {
-              if (event.key === 'Enter') {
-                utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
-              }
-            }} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <div class="flex">
+            <input type="text" 
+              bind:value={walletAddress} 
+              on:keydown={ async (event) => {
+                if (event.key === 'Enter') {
+                  utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
+                }
+              }} 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+            <button on:click={() => { scanTarget = 'wallet'; scanOpen = true; }} class="ml-2">
+              <svg class="h-8 w-8 text-orange-600" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z"/>
+                <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
           </div>
           <div>
-            <button on:click={ async () => utxos = await getUTXOSFromAddress($electrumClient,walletAddress)} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Show Coins</button>
+            <button 
+              on:click={async () => {
+                console.log("Fetching UTXOs for address:", walletAddress);
+                utxos = await getUTXOSFromAddress($electrumClient, walletAddress);
+                console.log("Received UTXOs:", utxos);
+              }} 
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            >
+              Show Coins
+            </button>
           </div>
         </div>
         <p class="mt-4">&nbsp;</p>
@@ -413,7 +456,25 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="recipientsAddress">
                   Recipient
                 </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="recipientsAddress" type="text" placeholder="Recipient address" bind:value={recipientsAddress}>
+                <div class="flex">
+                  <input 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                    id="recipientsAddress" 
+                    type="text" 
+                    placeholder="Recipient address" 
+                    bind:value={recipientsAddress}
+                  >
+                  <button on:click={() => { scanTarget = 'recipient'; scanOpen = true; }} class="ml-2">
+                    <svg class="h-8 w-8 text-orange-600" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z"/>
+                      <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                      <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                      <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                      <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
             <div>&nbsp;</div>
@@ -422,7 +483,25 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="changeAddress">
                   Change Address
                 </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="changeAddress" type="text" placeholder="Change address" bind:value={changeAddress}>
+                <div class="flex">
+                  <input 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                    id="changeAddress" 
+                    type="text" 
+                    placeholder="Change address" 
+                    bind:value={changeAddress}
+                  >
+                  <button on:click={() => { scanTarget = 'change'; scanOpen = true; }} class="ml-2">
+                    <svg class="h-8 w-8 text-orange-600" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z"/>
+                      <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                      <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                      <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                      <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
             <div>&nbsp;</div>

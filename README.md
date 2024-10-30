@@ -1,7 +1,11 @@
 # Doichain.org
 
 # Todo
+- [ ] if a nameOp appears in the mempool and it coherent with a just signed psbt nameop transaction.
+- [x] add address scan function to nameDOI utxo input addreses
+- [ ] when entering a Doichain address in to find name field inside nameInput.svelte, scan address for nameOps and use them in currentNameOp and currentNameUtxo
 - [x] retry publish NEW-CID if no ADDED response from relay 
+- [ ] pub-sub messages from relay (CID-ADDING, CID-ADDED) seem not reliable. Should we repeat them? 
 - [x] add button "overwrite" in transaction details, when clicked the NFTCard should open as the name would be not yet defined 
 - [x] toggle between local and public relay when in svelte development mode 
 - [ ] enable mpg, mp4, mov support in NFT upload und display. 
@@ -10,8 +14,6 @@
 - [ ] test a deployed version is receiving all nameOps from locally running browsers via istanbul
 - [x] when reading TOP 100 NameOps other peers then relay can answer too
 - [ ] when receiving name_ops they must be checked if they are trustworthy (anybody could send nameOps arond and claim they are from the blockchain) 
-- [ ] when entering a Doichain address in to find name field inside nameInput.svelte, scan address for nameOps and use them in currentNameOp and currentNameUtxo
-- [ ] pub-sub messages from relay (CID-ADDING, CID-ADDED) seem not reliable. Should we repeat them? 
 - [x] LIST_LAST_100 should be indexed in parallel on relay
 - [x] LIST_LAST_100 100 name-ops message should be called
 - [x] relay doesn't publish
