@@ -1,6 +1,8 @@
 # Doichain.org
 
 # Todo
+- [ ] Doichain RegTest + Electrumx 
+- [ ] 
 - [ ] if a nameOp appears in the mempool and it coherent with a just signed psbt nameop transaction.
 - [x] add address scan function to nameDOI utxo input addreses
 - [ ] when entering a Doichain address in to find name field inside nameInput.svelte, scan address for nameOps and use them in currentNameOp and currentNameUtxo

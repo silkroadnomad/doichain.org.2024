@@ -50,10 +50,10 @@
 
 	const filters = [
 		{ id: 'all', label: 'All' },
+		{ id: 'names', label: 'Names' },
 		{ id: 'other', label: 'Non-fungible coins' },
 		{ id: 'e', label: 'DOI (e/)' },
 		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
-		// { id: 'nft', label: 'NFT (nft/)' },
 	];
 
 
@@ -65,8 +65,17 @@
 		if (selectedFilter === 'all') return true;
 		if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
 		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
-		// if (selectedFilter === 'nft') return nameOp.nameId.startsWith('nft/');
-		if (selectedFilter === 'other') return !nameOp.nameId.startsWith('e/') && !nameOp.nameId.startsWith('pe/') && !nameOp.nameId.startsWith('poe/') && !nameOp.nameId.startsWith('nft/');
+		if (selectedFilter === 'names') {
+			return !nameOp.value || nameOp.value === '' || nameOp.value === undefined;
+		}
+		if (selectedFilter === 'other') {
+			const hasValue = nameOp.value && nameOp.value !== '';
+			const isNotSpecialPrefix = !nameOp.nameId.startsWith('e/') && 
+				!nameOp.nameId.startsWith('pe/') && 
+				!nameOp.nameId.startsWith('poe/') && 
+				!nameOp.nameId.startsWith('nft/');
+			return hasValue && isNotSpecialPrefix;
+		}
 		return true;
 	});
 
