@@ -66,7 +66,7 @@
 		if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
 		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
 		if (selectedFilter === 'names') {
-			return !nameOp.value || nameOp.value === '' || nameOp.value === undefined;
+			return !nameOp.value || nameOp.value === ' ' || nameOp.value === '' || nameOp.value === undefined;
 		}
 		if (selectedFilter === 'other') {
 			const hasValue = nameOp.value && nameOp.value !== '';
