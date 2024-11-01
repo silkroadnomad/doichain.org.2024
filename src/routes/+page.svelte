@@ -50,7 +50,7 @@
 
 	const filters = [
 		{ id: 'all', label: 'All' },
-		{ id: 'other', label: 'Non-fungible coins' },
+		{ id: 'other', label: 'Non-Fungible-Coins (NFC)' },
 		{ id: 'names', label: 'Names' },
 		{ id: 'e', label: 'DOI (e/)' },
 		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
