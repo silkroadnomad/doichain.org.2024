@@ -50,10 +50,11 @@
 
 	const filters = [
 		{ id: 'all', label: 'All' },
-		{ id: 'names', label: 'Names' },
 		{ id: 'other', label: 'Non-fungible coins' },
+		{ id: 'names', label: 'Names' },
 		{ id: 'e', label: 'DOI (e/)' },
 		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
+		{ id: 'bp', label: 'BlockPro (/bp)' },
 	];
 
 
@@ -62,19 +63,26 @@
 	}
 
 	$: filteredNameOps = $nameOps.filter(nameOp => {
+		
+		const hasNameValue = nameOp.nameValue && nameOp.nameValue !== '' && nameOp.nameValue !== ' ';
+		
+		const isNotSpecialPrefix = !nameOp.nameId.startsWith('e/') && 
+				!nameOp.nameId.startsWith('pe/') && 
+				!nameOp.nameId.startsWith('poe/') && 
+				!nameOp.nameId.startsWith('nft/') &&
+				!nameOp.nameId.startsWith('bp/');
+
 		if (selectedFilter === 'all') return true;
 		if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
 		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
+		if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
 		if (selectedFilter === 'names') {
-			return !nameOp.value || nameOp.value === ' ' || nameOp.value === '' || nameOp.value === undefined;
+			console.log('nameOp.value', nameOp.nameValue);
+			return (!hasNameValue && isNotSpecialPrefix);
 		}
 		if (selectedFilter === 'other') {
-			const hasValue = nameOp.value && nameOp.value !== '';
-			const isNotSpecialPrefix = !nameOp.nameId.startsWith('e/') && 
-				!nameOp.nameId.startsWith('pe/') && 
-				!nameOp.nameId.startsWith('poe/') && 
-				!nameOp.nameId.startsWith('nft/');
-			return hasValue && isNotSpecialPrefix;
+			console.log('nameOp.value', nameOp.nameValue);
+			return hasNameValue && isNotSpecialPrefix;
 		}
 		return true;
 	});

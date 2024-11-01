@@ -43,9 +43,14 @@
 		}
 	}
 
-	const CLEAR_PEERSTORE_ON_START = true // or false, or make it an environment variable
-
 	let nodeAddresses = [];
+
+	function updateNodeAddresses() {
+		const newAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
+		// Use Set to remove duplicates
+		nodeAddresses = [...new Set(newAddresses)];
+		console.log('Updated node addresses:', nodeAddresses);
+	}
 
 	onMount(async () => {
 		$libp2p = await createLibp2p(config)
@@ -55,10 +60,6 @@
 		nodeAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
 		console.log('Our node addresses:', nodeAddresses);
 
-		if (CLEAR_PEERSTORE_ON_START) {
-			await clearPeerStore($libp2p)
-		}
-
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore})
 		window.helia = $helia
 
@@ -66,34 +67,14 @@
 			if($libp2p) {
 				setupLibp2pEventHandlers($libp2p, publishList100Request)
 			}
-			// await $helia.libp2p.dial(multiaddr('/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWR7R2mMusGhtsXofgsdY1gzVgG2ykCfS7G5NnNKsAkdCo'))
-				// console.log("topics",$helia.libp2p.services.pubsub.getTopics())
-
-
 			} catch(ex){ console.log("helia.libp2p.exception", ex) }
 
-			// Set up an interval to periodically update the addresses
-			const addressUpdateInterval = setInterval(() => {
-				nodeAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
-				console.log('Updated node addresses:', nodeAddresses);
-			}, 60000); // Update every minute
+			updateNodeAddresses();
 
-			// Clean up the interval when the component is destroyed
-			onDestroy(() => {
-				clearInterval(addressUpdateInterval);
-			});
-		})
+			addressUpdateInterval = setInterval(() => {
+				updateNodeAddresses();
+			}, 60000);
 
-		async function clearPeerStore(libp2p) {
-			const peers = await libp2p.peerStore.all()
-			for (const peer of peers) {
-				await libp2p.peerStore.delete(peer.id)
-			}
-			console.log('PeerStore cleared')
-		}
-
-
-		onMount(() => {
 			if (browser && 'serviceWorker' in navigator) {
 				navigator.serviceWorker.register('/service-worker.js')
 					.then((registration) => {
@@ -103,7 +84,12 @@
 						console.error('Service Worker registration failed:', error);
 					});
 			}
+		})
+		
+		onDestroy(() => {
+			clearInterval(addressUpdateInterval);
 		});
+		
 	</script>
 
 	<body class="bg-white text-gray-900 flex flex-col min-h-screen">
