@@ -19,7 +19,7 @@
 
 	let blockstore = new LevelBlockstore("./helia-blocks")
 	let datastore = new LevelDatastore("./helia-data")
-
+	let addressUpdateInterval;
 
 	let attemptCount = 0;
 	const maxAttempts = 5;
