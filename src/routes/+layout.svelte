@@ -92,7 +92,7 @@
 		
 	</script>
 
-	<body class="bg-white text-gray-900 flex flex-col min-h-screen">
+	<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen">
 		<section class="flex items-center justify-center mt-8">
 			<div class="text-center max-w-4xl mx-auto px-4">
 				<!-- Logo -->

@@ -203,8 +203,8 @@
 		class="flex items-center justify-center flex-grow"
 	>
 		<div class="text-center max-w-4xl mx-auto px-4">
-		 	<h1 class="text-6xl font-medium mb-2 tracking-tight">Meet Doichain:</h1>
-			<h1 class="text-3xl font-mediumtext-gray-600 mb-12">Simplified name-value storage</h1>
+		 	<h1 class="text-6xl font-bold mb-4 tracking-tight">Meet Doichain:</h1>
+			<h1 class="text-3xl font-semibold text-gray-600 mb-12">Simplified name-value storage</h1>
 
 			<p class="text-xl mb-6 max-w-2xl mx-auto leading-relaxed">
 				The Doichain network is like Bitcoin: Just for names.
@@ -255,7 +255,7 @@
 <section 
 	bind:this={nameOpsSection}
 	class="relative overflow-hidden py-20"
-	style="min-height: 100vh; {gradientStyle}"
+	style="min-height: 100vh; background: linear-gradient(135deg, #E0F7FA, #B3E5FC, #0288D1);"
 >
 	<div class="absolute inset-0 flex items-center justify-center" style="transform: translateY({parallaxOffset}px);">
 		<h2 class="text-6xl font-bold text-white opacity-10">NameOps</h2>
@@ -265,7 +265,7 @@
 		
 		<div class="flex justify-center flex-wrap gap-2 mb-6 relative">
 			<span 
-				class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded-full cursor-pointer"
+				class="px-2 py-1 bg-blue-400 text-white hover:bg-blue-500 text-xs font-semibold rounded-full cursor-pointer"
 				on:mouseenter={() => showAddresses('webrtc')}
 				on:mouseleave={hideAddresses}
 			>
@@ -312,7 +312,7 @@
 					class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ease-in-out
 						{selectedFilter === filter.id 
 							? 'bg-white text-gray-800' 
-							: 'bg-gray-800 text-white hover:bg-gray-700'}"
+							: 'bg-gray-700 text-white hover:bg-gray-600'}"
 					on:click={() => selectedFilter = filter.id}
 				>
 					{filter.label}

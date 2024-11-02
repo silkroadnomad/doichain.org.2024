@@ -18,8 +18,33 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
         console.log("connectedPeers", p.detail.remoteAddr.toString())
     })
 
+    async function attemptReconnection() {
+        console.log('No connected peers, attempting to reconnect...')
+        try {
+            await libp2p.start()
+            // Attempt to connect to bootstrap/relay nodes
+            const bootstrapAddrs = libp2p.config?.bootstrap || []
+            for (const addr of bootstrapAddrs) {
+                try {
+                    await libp2p.dial(addr)
+                } catch (err) {
+                    console.warn(`Failed to connect to bootstrap node ${addr}:`, err)
+                }
+            }
+        } catch (err) {
+            console.error('Reconnection attempt failed:', err)
+        }
+    }
+
     libp2p.addEventListener('connection:close', (p) => {
-        connectedPeers.update(peers => peers.filter(peer => peer.id !== p.detail.id))
+        connectedPeers.update(peers => {
+            const updatedPeers = peers.filter(peer => peer.id !== p.detail.id)
+            // If this was our last peer, attempt reconnection
+            if (updatedPeers.length === 0) {
+                setTimeout(attemptReconnection, 60000) // Wait 1 minute before attempting reconnection
+            }
+            return updatedPeers
+        })
     })
 
     // Peer discovery and connection
