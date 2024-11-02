@@ -203,7 +203,7 @@
 		class="flex items-center justify-center flex-grow"
 	>
 		<div class="text-center max-w-4xl mx-auto px-4">
-		 	<h1 class="text-6xl font-bold mb-4 tracking-tight">Meet Doichain:</h1>
+		 	<!-- <h1 class="text-6xl font-bold mb-4 tracking-tight">Meet Doichain:</h1> -->
 			<h1 class="text-3xl font-semibold text-gray-600 mb-12">Simplified name-value storage</h1>
 
 			<p class="text-xl mb-6 max-w-2xl mx-auto leading-relaxed">
