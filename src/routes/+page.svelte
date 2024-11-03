@@ -1,4 +1,5 @@
 <script>
+	const __APP_VERSION__ = import.meta.env.VITE_APP_VERSION || '1.0.0';
 	import { helia, libp2p, connectedPeers, nameOps} from '$lib/doichain/doichain-store.js'
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
