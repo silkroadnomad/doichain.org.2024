@@ -14,7 +14,7 @@
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to see observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
 
-	let overwriteMode = true;
+	let overwriteMode = false;
 
 	function handleInput(event) {
 		inputValue = event.detail;
@@ -79,11 +79,9 @@
 		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
 		if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
 		if (selectedFilter === 'names') {
-			console.log('nameOp.value', nameOp.nameValue);
 			return (!hasNameValue && isNotSpecialPrefix);
 		}
 		if (selectedFilter === 'other') {
-			console.log('nameOp.value', nameOp.nameValue);
 			return hasNameValue && isNotSpecialPrefix;
 		}
 		return true;
@@ -162,15 +160,18 @@
 
 	function hideAddresses() {
 		hoveredType = null;
-	}
-	let overWriteValue;
-	$:{
-		if(overWriteValue){ 
-			console.log('overwrite handler called', overWriteValue);
-			inputValue = overWriteValue;
-			currentNameOp = null;
-			currentNameUtxo = null;
-		} 
+	}	
+
+	async function handleOverwrite(event) {
+		const { name, nameOp, nameUtxo } = event.detail;
+		console.log('overwrite handler called', name, nameOp, nameUtxo);
+		overwriteMode = true;
+		currentNameOp = nameOp;
+		currentNameUtxo = nameUtxo;
+		window.scrollTo({
+			top: 0,
+			behavior: 'smooth'
+		});
 	}
 </script>
 
@@ -239,32 +240,33 @@
 <section>
 	<div class="flex justify-center mt-4">
 		{#if currentNameOp && !showHeroSection}
+			<!-- Show NFTCard and NameDoi for existing NFT -->
 			<div class="space-y-8">
-				<!-- Show existing NFT info -->
 				<NFTCard 
 					currentNameOp={updatedCurrentNameOp} 
 					currentNameUtxo={updatedCurrentNameUtxo}
+					on:overwrite={handleOverwrite}
 				/>
 				
-				<!-- Add overwrite section -->
-				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
-					<div class="bg-white p-4 rounded-lg shadow">
-						<h3 class="text-lg font-semibold mb-4">Transfer this Name</h3>
-						<NameDoi 
-							nftName={inputValue}
-							{overwriteMode}
-							existingNameOp={currentNameOp}
-                            existingNameUtxo={currentNameUtxo}
-						/>
+				{#if overwriteMode}
+					<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
+						<div class="bg-white p-4 rounded-lg shadow">
+							<h3 class="text-lg font-semibold mb-4">Overwrite or Sell</h3>
+							<NameDoi 
+								nftName={inputValue}
+								{overwriteMode}
+								existingNameOp={currentNameOp}
+								existingNameUtxo={currentNameUtxo}
+							/>
+						</div>
 					</div>
-				</div>
+				{/if}
 			</div>
-		{:else}
-			{#if !currentNameOp && inputValue}
-				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
-					<NameDoi nftName={inputValue} />
-				</div>
-			{/if}
+		{:else if inputValue?.trim()}
+			<!-- Show NameDoi only when inputValue exists and is not empty -->
+			<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
+				<NameDoi nftName={inputValue} />
+			</div>
 		{/if}
 	</div>
 </section>
@@ -340,7 +342,11 @@
 		
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{#each filteredNameOps as nameOp}
-				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} bind:overWriteValue />
+				<NFTCard 
+					currentNameOp={nameOp} 
+					currentNameUtxo={null} 
+					on:overwrite={handleOverwrite}
+				/>
 			{/each}
 		</div>
 	</div>
@@ -351,4 +357,3 @@
       font-family: 'Poppins', sans-serif;
     }
 </style>
-

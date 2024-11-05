@@ -49,7 +49,6 @@
 		const newAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
 		// Use Set to remove duplicates
 		nodeAddresses = [...new Set(newAddresses)];
-		console.log('Updated node addresses:', nodeAddresses);
 	}
 
 	onMount(async () => {

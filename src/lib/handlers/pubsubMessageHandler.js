@@ -6,8 +6,6 @@ import { multiaddr } from '@multiformats/multiaddr'
 const CONTENT_TOPIC = '/doichain-nfc/1/message/proto'
 
 export function handlePubsubMessage(event, libp2p) {
-    console.log(`Received pubsub message from ${event.detail.from} on topic ${event.detail.topic}`)
-
     if (event.detail.topic === 'doichain._peer-discovery._p2p._pubsub') {
         handlePeerDiscoveryMessage(event, libp2p)
     } else if (event.detail.topic === CONTENT_TOPIC) {
@@ -43,7 +41,6 @@ function handleContentMessage(event, libp2p) {
     
     if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || 
        message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')) {
-        console.log("ignoring cid messages for now", message)
     } 
     else if (message === 'LIST_LAST_100') {
         handleList100Request(libp2p)

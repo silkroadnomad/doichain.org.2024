@@ -8,21 +8,29 @@ import { getNameOpUTXOsOfTxHash } from '../getNameOpUTXOsOfTxHash.js'
  *
  * @param electrumClient
  * @param utxoAddress
+ * @param excludeNameOp - When true, filters out nameOp transactions
  * @returns {Promise<*>}
  */
-export const getUTXOSFromAddress = async (electrumClient, utxoAddress) => {
+export const getUTXOSFromAddress = async (electrumClient, utxoAddress, excludeNameOp = false) => {
 	if(!electrumClient || !utxoAddress) return []
 	let script = address.toOutputScript(utxoAddress, DOICHAIN);
 	let hash = crypto.sha256(script);
 	let reversedHash = Buffer.from(hash.reverse()).toString("hex");
 
 	const utxos = await electrumClient.request('blockchain.scripthash.listunspent', [reversedHash]);
+	const filteredUtxos = [];
+	
 	for (let i = 0; i < utxos.length; i++) {
 		const utxo = utxos[i];
 		const fullTX = await getNameOpUTXOsOfTxHash(electrumClient, utxo.tx_hash, utxo.tx_pos);
-		utxo.fullTx = fullTX
+		
+		// Skip nameOp transactions if excludeNameOp is true
+		if (excludeNameOp && fullTX.scriptPubKey.nameOp) continue;
+		
+		utxo.fullTx = fullTX;
+		filteredUtxos.push(utxo);
 	}
-	return utxos
+	return filteredUtxos;
 }
 
 export const generatePSBT = async (electrumClient,selectedUtxos,nameId,nameValue,changeAddress,recipientAddress) => {

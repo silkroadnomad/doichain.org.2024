@@ -1,73 +1,93 @@
 <script>
+  // Svelte imports
   import { onDestroy, onMount } from 'svelte';
+  
+  // External library imports
   import Dropzone from "svelte-file-dropzone";
-  import { helia, libp2p, electrumClient} from '$lib/doichain/doichain-store.js'
-  import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js'
-  import { getUTXOSFromAddress } from '$lib/doichain/nfc/nameDoi.js'
-  import { renderBCUR } from '../doichain/renderQR.js'
-  import { DOICHAIN } from "$lib/doichain/doichain.js";
   import { unixfs } from '@helia/unixfs'
-  import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
+  import * as sb from 'satoshi-bitcoin';
+  
+  // Local store imports
+  import { helia, libp2p, electrumClient } from '$lib/doichain/doichain-store.js'
+  import { DOICHAIN } from "$lib/doichain/doichain.js";
+  
+  // Local component imports
   import ScanModal from "$lib/doichain/ScanModal.svelte";
+  
+  // Local utility imports
+  import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js'
   import { preparePurchaseTransaction } from '$lib/doichain/preparePurchaseTransaction.js'
+  import { getUTXOSFromAddress } from '$lib/doichain/nfc/nameDoi.js'
+  import { getMetadataFromIPFS } from "$lib/doichain/nfc/getMetadataFromIPFS.js";
+  import { getImageUrlFromIPFS } from "$lib/doichain/nfc/getImageUrlFromIPFS.js";
+  import { renderBCUR } from '../doichain/renderQR.js'
+
+  // Environment variables
   const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || "/doichain-nfc/1/message/proto"
 
-  let scanOpen = false;
-  let scanTarget = ''; // will be 'wallet', 'recipient', or 'change'
-  let scanData = ''; // new variable to bind to
-
+  // Props
   export let walletAddress = ''
-  $:recipientsAddress = walletAddress
-  $:changeAddress = walletAddress
-  let changeAmount
   export let nameId
   export let nameValue
   export let nftName
-  $:nameId = nftName
+  export let overwriteMode = false
+  export let existingNameOp = null
+  export let existingNameUtxo = null
 
+  // Reactive declarations
+  $: overwriteMode && existingNameUtxo && (walletAddress = existingNameUtxo?.address)
+  $: recipientsAddress = walletAddress
+  $: changeAddress = walletAddress
+  $: nameId = nftName
+
+  // State variables
+  let scanOpen = false
+  let scanTarget = '' // will be 'wallet', 'recipient', or 'change'
+  let scanData = ''
+  let changeAmount
   let nftDescription
   let utxos = []
-  let psbtBaseText;
-  let utxoErrorMessage;
+  let psbtBaseText
+  let utxoErrorMessage
   let qrCodeData
   let qrCode
-  let transactionFee;
-  let totalAmount;
-  let errorMessage;
-  let storageFee = 1000000;
+  let transactionFee
+  let totalAmount
+  let errorMessage
+  let storageFee = 1000000
+  let price = 0 // in satoshis
+  let sellerRecipientAddress = '' // Address where payment should go
 
-  let price = 0; // in satoshis
-  export let overwriteMode = false;
-  let sellerRecipientAddress = ''; // Address where payment should go
+  // When in overwrite mode, populate the form with existing NFT data
+  $: if (overwriteMode && existingNameOp) {
+    nameId = existingNameOp.name;  // Set the name field
+    nameValue = existingNameOp.value;  // Set the value field
+    nftName = existingNameOp.name;  // Set the NFT name
 
-  export let existingNameOp = null;
-  export let existingNameUtxo = null;
-
-  // Log on mount
-  onMount(() => {
-    console.log('Component mounted with:', {
-      overwriteMode,
-      existingNameOp,
-      existingNameUtxo
-    });
-  });
-
-  // Group the logs in a single reactive statement
-  $: {
-    console.group('NameDoi Props Update');
-    console.log('overwriteMode:', overwriteMode);
-    console.log('existingNameOp:', existingNameOp);
-    console.log('existingNameUtxo:', existingNameUtxo);
-    console.groupEnd();
+    // Parse metadata from IPFS value and populate image/description
+    if (existingNameOp.value?.startsWith('ipfs://')) {
+        getMetadataFromIPFS($helia, existingNameOp.value)
+            .then(metadata => {
+                if (metadata) {
+                    nftDescription = metadata.description;
+                    // Get and set image
+                    if (metadata.image?.startsWith('ipfs://')) {
+                        getImageUrlFromIPFS($helia, metadata.image)
+                            .then(url => {
+                                previewImgSrc = url;
+                            });
+                    }
+                }
+            });
+    }
   }
 
   // In overwrite mode, automatically use the existing name UTXO
   $: if (overwriteMode && existingNameUtxo) {
     selectedUtxos = [existingNameUtxo];
   }
-
   // Modify the UTXO display section to only show the current name UTXO in overwrite mode
-  $: displayUtxos = overwriteMode ? [existingNameUtxo] : utxos;
+  $: displayUtxos = existingNameUtxo?[existingNameUtxo] : utxos;
 
   onMount(async ()=>{
     utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
@@ -182,17 +202,17 @@
   let selectedUtxos = [];
   $: selectedUtxosCount = selectedUtxos.length;
   function toggleUtxoSelection(utxo) {
+    console.log("toggleUtxoSelection",utxo)
     const index = selectedUtxos.findIndex(u => u.tx_hash === utxo.tx_hash && u.tx_pos === utxo.tx_pos);
     if (index !== -1) {
       selectedUtxos = selectedUtxos.filter((_, i) => i !== index);
     } else {
       selectedUtxos = [...selectedUtxos, utxo];
     }
+    console.log("selectedUtxos",selectedUtxos)
   }
 
-  function isUtxoSelected(utxo) {
-    return selectedUtxos.some(u => u.tx_hash === utxo.tx_hash && u.tx_pos === utxo.tx_pos);
-  }
+
 
   $: {
     if(selectedUtxosCount > 0 && nameId && nameValue) {
@@ -295,6 +315,22 @@
     }
     scanData = ''; // Reset after use
   }
+
+  // When in overwrite mode, fetch complete UTXO data
+  $: if (overwriteMode && existingNameUtxo && $electrumClient) {
+    getUTXOSFromAddress($electrumClient, existingNameUtxo.address)
+        .then(utxos => {
+            const matchingUtxo = utxos.find(u => 
+                u.tx_hash === existingNameUtxo.tx_hash && 
+                u.tx_pos === existingNameUtxo.tx_pos
+            );
+            if (matchingUtxo) {
+                existingNameUtxo = matchingUtxo;
+            }
+        });
+  }
+
+  $: displayUtxos = existingNameUtxo ? [existingNameUtxo] : utxos;
 </script>
 {#if scanOpen}
   <ScanModal 
@@ -429,9 +465,9 @@
             <div>
               <button 
                 on:click={async () => {
-                  console.log("Fetching UTXOs for address:", walletAddress);
-                  utxos = await getUTXOSFromAddress($electrumClient, walletAddress);
-                  console.log("Received UTXOs:", utxos);
+                  existingNameUtxo = undefined;
+                  utxos = await getUTXOSFromAddress($electrumClient, walletAddress,true);
+                  console.log("utxos",utxos)
                 }} 
                 class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
               >
@@ -442,57 +478,45 @@
           <p class="mt-4">&nbsp;</p>
           <div class="grid grid-cols-1 gap-4">
             {#each displayUtxos as utxo}
-              {#if utxo} <!-- Add null check -->
                 <div class="bg-white p-4 rounded-lg shadow">
                   <div class="grid grid-cols-2 gap-2">
                     <div class="font-semibold">UTXO:</div>
-                    <div class="truncate">{utxo.tx_hash}:{utxo.tx_pos}</div>
+                    <div class="truncate">{utxo.tx_hash ?? utxo.hash}:{utxo.tx_pos ?? utxo.n}</div>
                     
                     <div class="font-semibold">Address:</div>
-                    <div class="truncate">{utxo.fullTx?.address || utxo.fullTx?.scriptPubKey.addresses[0]}</div>
+                    <div class="truncate">{utxo.address || utxo.fullTx?.scriptPubKey.addresses[0]}</div>
                     
                     <div class="font-semibold">Amount:</div>
-                    <div>{sb.toBitcoin(utxo.value)} DOI</div>
+                    <div>{utxo.value.toString().includes('.') ? utxo.value : sb.toBitcoin(utxo.value)} DOI</div>
 
-                    {#if overwriteMode}
-                      <div class="font-semibold">Name:</div>
-                      <div class="truncate">{existingNameOp.nameId}</div>
-                      <div class="col-span-2">
-                        <div class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm inline-block">
-                          Selected for Transfer
-                        </div>
-                      </div>
-                    {:else}
                       <div class="col-span-2">
                         <button
                           on:click={() => toggleUtxoSelection(utxo)}
                           type="button" 
                           class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
                           role="switch" 
-                          aria-checked={isUtxoSelected(utxo)}
+                          aria-checked={selectedUtxos.some(u => (u.tx_hash ?? u.hash) === (utxo.tx_hash ?? utxo.hash) && (u.tx_pos ?? u.n) === (utxo.tx_pos ?? utxo.n))}
                         >
                           <span
                             aria-hidden="true"
                             class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
-                            class:bg-indigo-600={isUtxoSelected(utxo)}
-                            class:bg-gray-200={!isUtxoSelected(utxo)}
+                            class:bg-indigo-600={selectedUtxos.some(u => (u.tx_hash ?? u.hash) === (utxo.tx_hash ?? utxo.hash) && (u.tx_pos ?? u.n) === (utxo.tx_pos ?? utxo.n))}
+                            class:bg-gray-200={!selectedUtxos.some(u => (u.tx_hash ?? u.hash) === (utxo.tx_hash ?? utxo.hash) && (u.tx_pos ?? u.n) === (utxo.tx_pos ?? utxo.n))}
                           ></span>
                           <span
                             aria-hidden="true"
                             class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
-                            class:translate-x-5={isUtxoSelected(utxo)}
-                            class:translate-x-0={!isUtxoSelected(utxo)}
+                            class:translate-x-5={selectedUtxos.some(u => (u.tx_hash ?? u.hash) === (utxo.tx_hash ?? utxo.hash) && (u.tx_pos ?? u.n) === (utxo.tx_pos ?? utxo.n))}
+                            class:translate-x-0={!selectedUtxos.some(u => (u.tx_hash ?? u.hash) === (utxo.tx_hash ?? utxo.hash) && (u.tx_pos ?? u.n) === (utxo.tx_pos ?? utxo.n))}
                           ></span>
                         </button>
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              {/if}
+                        </div>
+                    </div>              
+                  </div>              
             {/each}
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
             <div><button disabled={selectedUtxos.length===0} on:click={() => activeTimeLine++} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Next</button></div>
           </div>
         {/if}
@@ -573,8 +597,8 @@
   <div class="mb-8 flex items-center">
     <div class="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 border-4 border-white"></div>
     <div class="ml-6">
-      <h3 class="font-bold">{overwriteMode ? '3' : '4'}. Review, Scan or Copy PSBT Transaction</h3>
-      {#if activeTimeLine === (overwriteMode ? 2 : 3)}
+      <h3 class="font-bold">4. Review, Scan or Copy PSBT Transaction</h3>
+      {#if activeTimeLine === 3 }
         <div class="border-b border-gray-200">
           <nav class="-mb-px flex">
             <a class="border-b-2 {activePanel === 'psbtQR' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-2 px-4 text-sm font-medium hover:text-gray-700 hover:border-gray-300" href="#" on:click|preventDefault={() => activePanel = 'psbtQR'}>PSBT QR</a>

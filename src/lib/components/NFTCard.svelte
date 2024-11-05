@@ -6,6 +6,7 @@
     import moment from 'moment';
     import { Button, SimpleGrid, Notification } from '@svelteuidev/core';
     import { createEventDispatcher } from 'svelte';
+    import * as sb from 'satoshi-bitcoin';
 
     export let currentNameOp
     export let currentNameUtxo;
@@ -95,13 +96,19 @@
 
     export let overWriteValue
 
+    const dispatch = createEventDispatcher();
+
     function handleOverwrite() {
-        console.log('handleOverwrite', currentNameOp.name);
+        console.log('handleOverwrite', currentNameOp);
         window.scrollTo({
             top: 0,
             behavior: 'smooth'
         });
-        overWriteValue = currentNameOp.name;
+        dispatch('overwrite', {
+            name: currentNameOp.name,
+            nameOp: currentNameOp,
+            nameUtxo: currentNameOp.currentNameUtxo
+        });
     }
 </script>
 
@@ -180,28 +187,33 @@
             <div class="p-6 bg-gray-100 transaction-details">
                 <SimpleGrid cols={2}>
                     <div class="font-semibold">wallet address:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(
-                        currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A'
-                    )}>
+                    
+                    <div class="clickable" on:click={() => 
+                    copyToClipboard(currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A', "Wallet Address")}>
                         { currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A' }
                     </div>
+                    
                     <div class="font-semibold">txid:</div>
                     <div class="clickable" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.txid || 'N/A', 'Transaction ID')}>
                         {currentNameOp.currentNameUtxo?.txid || 'N/A'}
                     </div>
+
                     <div class="font-semibold">time:</div>
                     <div>{currentNameOp.currentNameUtxo?.formattedBlocktime || 'N/A'}</div>
+
                     <div class="font-semibold">name:</div>
                     <div class="clickable" on:click={() => copyToClipboard(currentNameOp.name || 'N/A', 'Name')}>
                         {currentNameOp.name || 'N/A'}
                     </div>
+
                     <div class="font-semibold">value:</div>
                     <div class="clickable" on:click={() => copyToClipboard(currentNameOp.value || 'N/A', 'Value')}>
                         {currentNameOp.value || 'N/A'}
                     </div>
+                    
                     <div class="font-semibold">DOI amount:</div>
                     <div class="clickable" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.value || 'N/A', 'DOI amount')}>
-                        {currentNameOp.currentNameUtxo?.value || 'N/A'}
+                        {currentNameOp?.currentNameUtxo?.value || 0} DOI
                     </div>
                 </SimpleGrid>
 

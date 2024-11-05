@@ -45,43 +45,46 @@ export class ElectrumxClient {
 		return this.status;
 	}
 
-	connect() {
+	async connect() {
 		if (this.status === 1) {
 			return Promise.resolve();
 		}
 		this.status = 1;
-		return this.connectSocket(this.port, this.host, this._protocol);
+
+		if (typeof WebSocket === 'undefined') {
+			const wsModule = await import('ws')
+			return this.connectSocket(wsModule.WebSocket, this.port, this.host, this._protocol);
+		} else {
+			return this.connectSocket(WebSocket, this.port, this.host, this._protocol);
+		}
 	}
 
-	connectSocket(port, host, protocol) {
+	connectSocket(wsModule, port, host, protocol) {
 		return new Promise((resolve, reject) => {
-			let ws = new WebSocket(`${protocol}://${host}:${port}/`);
-			this.ws = ws;
 
-			ws.onopen = () => {
-				console.log("connected websocket main component");
+			this.ws = new wsModule(`${protocol}://${host}:${port}/`);
+			this.ws.onopen = () => {
+				console.log(`[ElectrumX] Connected to ${host}:${port}`);
 				resolve();
 			};
 
-			ws.onmessage = (messageEvent) => {
+			this.ws.onmessage = (messageEvent) => {
 				this.onMessage(messageEvent.data);
 			}
 
-			ws.onclose = e => {
-				console.log('Socket is closed: ' + JSON.stringify(e));
+			this.ws.onclose = e => {
+				console.log(`[ElectrumX] Connection closed: ${e.code ? `Code ${e.code}` : ''} ${e.reason || ''}`);
 				this.status = 0;
 				this.onClose();
 			};
 
 			const errorHandler = e => reject(e);
-			ws.onerror = err => {
+			this.ws.onerror = err => {
 				console.error(
-					"Socket encountered error: ",
-					err.message,
-					"Closing socket"
+					`[ElectrumX] Connection error: ${err.message || 'Unknown error'}`
 				);
 				this.status = 0;
-				ws.close();
+				this.ws.close();
 				errorHandler();
 			};
 		});
@@ -155,7 +158,7 @@ export class ElectrumxClient {
 				callback(null, msg.result || msg);
 			}
 		} else {
-			console.log("Can't get callback"); // can't get callback
+			console.warn('[ElectrumX] Missing callback for message:', msg.id);
 		}
 	}
 

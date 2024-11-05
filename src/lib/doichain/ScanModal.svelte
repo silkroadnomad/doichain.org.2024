@@ -47,20 +47,12 @@
     }
 </script>
 
-<div class="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <!--
-      Background backdrop, show/hide based on modal state.
+<div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop with higher z-index -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-40" aria-hidden="true"></div>
 
-      Entering: "ease-out duration-300"
-        From: "opacity-0"
-        To: "opacity-100"
-      Leaving: "ease-in duration-200"
-        From: "opacity-100"
-        To: "opacity-0"
-    -->
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
-    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <!-- Modal content with highest z-index -->
+    <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
             <!--
               Modal panel, show/hide based on modal state.
@@ -96,3 +88,14 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Ensure modal is always on top of other elements */
+    :global(.relative.z-50) {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+</style>
