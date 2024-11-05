@@ -35,7 +35,7 @@
   export let existingNameUtxo = null
 
   // Reactive declarations
-  $: overwriteMode && existingNameUtxo && (walletAddress = existingNameUtxo?.address)
+  // $: overwriteMode && existingNameUtxo && (walletAddress = existingNameUtxo?.address)
   $: recipientsAddress = walletAddress
   $: changeAddress = walletAddress
   $: nameId = nftName
@@ -213,20 +213,10 @@
   }
 
 
-
   $: {
     if(selectedUtxosCount > 0 && nameId && nameValue) {
       console.log("prepare signing transaction",selectedUtxos)
-      const result = overwriteMode 
-        ? preparePurchaseTransaction(
-            selectedUtxos,
-            nameId,
-            nameValue,
-            DOICHAIN,
-            price,
-            sellerRecipientAddress
-          )
-        : prepareSignTransaction(
+      const result = prepareSignTransaction(
             selectedUtxos,
             nameId,
             nameValue,
