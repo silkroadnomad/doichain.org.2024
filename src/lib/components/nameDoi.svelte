@@ -322,7 +322,7 @@
 
   $: displayUtxos = existingNameUtxo ? [existingNameUtxo] : utxos;
 
-  $: if (nftName || nftDescription || nftPrice || files.accepted.length) {
+  $: if (nftName || nftDescription || price || files.accepted.length) {
     isMetadataPinned = false;
   }
 </script>
