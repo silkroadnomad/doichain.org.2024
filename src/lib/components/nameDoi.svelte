@@ -39,6 +39,7 @@
   $: recipientsAddress = walletAddress
   $: changeAddress = walletAddress
   $: nameId = nftName
+  let isMetadataPinned = true;
 
   // State variables
   let scanOpen = false
@@ -70,7 +71,6 @@
             .then(metadata => {
                 if (metadata) {
                   metadataJSON = metadata; 
-                  nftDescription = metadata.description;
                   if (metadata.image?.startsWith('ipfs://')) {
                         getImageUrlFromIPFS($helia, metadata.image)
                             .then(url => {
@@ -148,6 +148,7 @@
       "description": nftDescription,
       "image": `ipfs://${imageCID}`
     }
+    if(price) metadataJSON.price = price
 
     metadataCID = await fs.addBytes(encoder.encode(JSON.stringify(metadataJSON)))
     nameValue=`ipfs://${metadataCID.toString()}`
@@ -196,7 +197,6 @@
   }
 
   $:{ if(files.accepted.length>0) previewFile() }
-  $:{ if(nftName || nftDescription) writeMetadata() }
 
   let activeTimeLine = 0
   let selectedUtxos = [];
@@ -303,7 +303,7 @@
     } else if (scanTarget === 'change') {
       changeAddress = scanData;
     }
-    scanData = ''; // Reset after use
+    scanData = ''; 
   }
 
   // When in overwrite mode, fetch complete UTXO data
@@ -321,6 +321,10 @@
   }
 
   $: displayUtxos = existingNameUtxo ? [existingNameUtxo] : utxos;
+
+  $: if (nftName || nftDescription || nftPrice || files.accepted.length) {
+    isMetadataPinned = false;
+  }
 </script>
 {#if scanOpen}
   <ScanModal 
@@ -355,6 +359,21 @@
             
             <div class="font-semibold text-left">Description:</div>
             <div><input type="text" bind:value={nftDescription} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
+            
+            {#if overwriteMode}
+              <div class="font-semibold text-left">Price (DOI):</div>
+              <div class="flex gap-2 items-center">
+                <input 
+                  type="number" 
+                  bind:value={price} 
+                  min="0"
+                  step="1"
+                  placeholder="Enter price in DOI"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <span class="text-gray-500">DOI</span>
+              </div>
+            {/if}
             
             <div class="font-semibold text-left self-start">Image:</div>
             <div class="w-64 h-64 text-left overflow-hidden">
@@ -413,8 +432,29 @@
         </div>
         <p class="mt-4">&nbsp;</p>
         <div class="grid grid-cols-2 gap-4">
-          <div>&nbsp;</div>
-          <div><button on:click={() => activeTimeLine++} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Next</button></div>
+          <div>
+            {#if !isMetadataPinned}
+              <button 
+                on:click={() => {
+                  console.log("write metadataJSON",metadataJSON)
+                  writeMetadata();
+                  isMetadataPinned = true;
+                }}
+                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Pin Metadata & Non-Fungible Coin
+              </button>
+            {/if}
+          </div>
+          <div>
+            <button 
+              on:click={() => activeTimeLine++} 
+              class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600" 
+              disabled={!isMetadataPinned}
+            >
+              Next
+            </button>
+          </div>
         </div>
       {/if}
     </div>
