@@ -9,6 +9,7 @@
   import { unixfs } from '@helia/unixfs'
   import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
   import ScanModal from "$lib/doichain/ScanModal.svelte";
+  import { preparePurchaseTransaction } from '$lib/doichain/preparePurchaseTransaction.js'
   const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || "/doichain-nfc/1/message/proto"
 
   let scanOpen = false;
@@ -34,6 +35,39 @@
   let totalAmount;
   let errorMessage;
   let storageFee = 1000000;
+
+  let price = 0; // in satoshis
+  export let overwriteMode = false;
+  let sellerRecipientAddress = ''; // Address where payment should go
+
+  export let existingNameOp = null;
+  export let existingNameUtxo = null;
+
+  // Log on mount
+  onMount(() => {
+    console.log('Component mounted with:', {
+      overwriteMode,
+      existingNameOp,
+      existingNameUtxo
+    });
+  });
+
+  // Group the logs in a single reactive statement
+  $: {
+    console.group('NameDoi Props Update');
+    console.log('overwriteMode:', overwriteMode);
+    console.log('existingNameOp:', existingNameOp);
+    console.log('existingNameUtxo:', existingNameUtxo);
+    console.groupEnd();
+  }
+
+  // In overwrite mode, automatically use the existing name UTXO
+  $: if (overwriteMode && existingNameUtxo) {
+    selectedUtxos = [existingNameUtxo];
+  }
+
+  // Modify the UTXO display section to only show the current name UTXO in overwrite mode
+  $: displayUtxos = overwriteMode ? [existingNameUtxo] : utxos;
 
   onMount(async ()=>{
     utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
@@ -163,15 +197,25 @@
   $: {
     if(selectedUtxosCount > 0 && nameId && nameValue) {
       console.log("prepare signing transaction",selectedUtxos)
-      const result = prepareSignTransaction(
-        selectedUtxos,
-        nameId,
-        nameValue,
-        DOICHAIN,
-        storageFee,
-        recipientsAddress,
-        changeAddress,
-        walletAddress);
+      const result = overwriteMode 
+        ? preparePurchaseTransaction(
+            selectedUtxos,
+            nameId,
+            nameValue,
+            DOICHAIN,
+            price,
+            sellerRecipientAddress
+          )
+        : prepareSignTransaction(
+            selectedUtxos,
+            nameId,
+            nameValue,
+            DOICHAIN,
+            storageFee,
+            recipientsAddress,
+            changeAddress,
+            walletAddress
+          );
 
       if (result.error) {
         console.log("error",result.error)
@@ -350,104 +394,116 @@
     </div>
   </div>
   
-  <div class="mb-8 flex items-center">
-    <div class="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 border-4 border-white"></div>
-    <div class="ml-6">
-      <h3 class="font-bold">2. Wallet Address</h3>
-      {#if activeTimeLine===1}
-        <p class="text-sm text-gray-500">
-          Enter your wallet address which contains the UTXOs to be used for the transaction.
-          Toggle to spendable coins as inputs to the transaction. NameOps are utxos too but not spendable, since burned.
-        </p>
-        <p class="mt-4">&nbsp;</p>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex">
-            <input type="text" 
-              bind:value={walletAddress} 
-              on:keydown={ async (event) => {
-                if (event.key === 'Enter') {
-                  utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
-                }
-              }} 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-            <button on:click={() => { scanTarget = 'wallet'; scanOpen = true; }} class="ml-2">
-              <svg class="h-8 w-8 text-orange-600" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z"/>
-                <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
-                <path d="M4 17v1a2 2 0 0 0 2 2h2" />
-                <path d="M16 4h2a2 2 0 0 1 2 2v1" />
-                <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
+    <div class="mb-8 flex items-center">
+      <div class="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 border-4 border-white"></div>
+      <div class="ml-6">
+        <h3 class="font-bold">2. Wallet Address</h3>
+        {#if activeTimeLine===1}
+          <p class="text-sm text-gray-500">
+            Enter your wallet address which contains the UTXOs to be used for the transaction.
+            Toggle to spendable coins as inputs to the transaction. NameOps are utxos too but not spendable, since burned.
+          </p>
+          <p class="mt-4">&nbsp;</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex">
+              <input type="text" 
+                bind:value={walletAddress} 
+                on:keydown={ async (event) => {
+                  if (event.key === 'Enter') {
+                    utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
+                  }
+                }} 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+              <button on:click={() => { scanTarget = 'wallet'; scanOpen = true; }} class="ml-2">
+                <svg class="h-8 w-8 text-orange-600" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z"/>
+                  <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                  <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                  <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                  <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            </div>
+            <div>
+              <button 
+                on:click={async () => {
+                  console.log("Fetching UTXOs for address:", walletAddress);
+                  utxos = await getUTXOSFromAddress($electrumClient, walletAddress);
+                  console.log("Received UTXOs:", utxos);
+                }} 
+                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              >
+                Show Coins
+              </button>
+            </div>
           </div>
-          <div>
-            <button 
-              on:click={async () => {
-                console.log("Fetching UTXOs for address:", walletAddress);
-                utxos = await getUTXOSFromAddress($electrumClient, walletAddress);
-                console.log("Received UTXOs:", utxos);
-              }} 
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            >
-              Show Coins
-            </button>
-          </div>
-        </div>
-        <p class="mt-4">&nbsp;</p>
-        <div class="grid grid-cols-2 gap-4">
-          {#each utxos as utxo}
-            {#if !utxo.fullTx?.scriptPubKey.nameOp }
-              <div class="grid grid-cols-2 gap-4">
-                <div>wallet address:</div>
-                <div>{utxo.fullTx?.address?utxo.fullTx?.address:utxo.fullTx?.scriptPubKey.addresses[0]}</div>
-                <div>wallet amount:</div>
-                <div>{sb.toBitcoin(utxo.value)} DOI</div>
-                <div><b>Activate this UTXO:</b></div>
-                <div>
-                  {#key selectedUtxosCount}
-                    <div>
-                      <button
-                        on:click={() => toggleUtxoSelection(utxo)}
-                        type="button" 
-                        class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
-                        role="switch" 
-                        aria-checked={isUtxoSelected(utxo)}
-                      >
-                        <span
-                          aria-hidden="true"
-                          class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
-                          class:bg-indigo-600={isUtxoSelected(utxo)}
-                          class:bg-gray-200={!isUtxoSelected(utxo)}
-                        ></span>
-                        <span
-                          aria-hidden="true"
-                          class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
-                          class:translate-x-5={isUtxoSelected(utxo)}
-                          class:translate-x-0={!isUtxoSelected(utxo)}
-                        ></span>
-                      </button>
-                    </div>
-                  {/key}
+          <p class="mt-4">&nbsp;</p>
+          <div class="grid grid-cols-1 gap-4">
+            {#each displayUtxos as utxo}
+              {#if utxo} <!-- Add null check -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="font-semibold">UTXO:</div>
+                    <div class="truncate">{utxo.tx_hash}:{utxo.tx_pos}</div>
+                    
+                    <div class="font-semibold">Address:</div>
+                    <div class="truncate">{utxo.fullTx?.address || utxo.fullTx?.scriptPubKey.addresses[0]}</div>
+                    
+                    <div class="font-semibold">Amount:</div>
+                    <div>{sb.toBitcoin(utxo.value)} DOI</div>
+
+                    {#if overwriteMode}
+                      <div class="font-semibold">Name:</div>
+                      <div class="truncate">{existingNameOp.nameId}</div>
+                      <div class="col-span-2">
+                        <div class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm inline-block">
+                          Selected for Transfer
+                        </div>
+                      </div>
+                    {:else}
+                      <div class="col-span-2">
+                        <button
+                          on:click={() => toggleUtxoSelection(utxo)}
+                          type="button" 
+                          class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
+                          role="switch" 
+                          aria-checked={isUtxoSelected(utxo)}
+                        >
+                          <span
+                            aria-hidden="true"
+                            class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
+                            class:bg-indigo-600={isUtxoSelected(utxo)}
+                            class:bg-gray-200={!isUtxoSelected(utxo)}
+                          ></span>
+                          <span
+                            aria-hidden="true"
+                            class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
+                            class:translate-x-5={isUtxoSelected(utxo)}
+                            class:translate-x-0={!isUtxoSelected(utxo)}
+                          ></span>
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
                 </div>
-              </div>
-            {/if}
-          {/each}
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
-          <div><button disabled={selectedUtxos.length===0} on:click={() => activeTimeLine++} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Next</button></div>
-        </div>
-      {/if}
+              {/if}
+            {/each}
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
+            <div><button disabled={selectedUtxos.length===0} on:click={() => activeTimeLine++} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Next</button></div>
+          </div>
+        {/if}
+      </div>
     </div>
-  </div>
   
   <div class="mb-8 flex items-center">
     <div class="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 border-4 border-white"></div>
     <div class="ml-6">
       <h3 class="font-bold">3. Add Recipient and Change Address</h3>
-      {#if activeTimeLine===2}
+      {#if activeTimeLine === (2)}
         <p class="text-sm text-gray-500">
           <p class="mt-4">&nbsp;</p>
           <div class="grid grid-cols-2 gap-4">
@@ -517,8 +573,8 @@
   <div class="mb-8 flex items-center">
     <div class="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 border-4 border-white"></div>
     <div class="ml-6">
-      <h3 class="font-bold">4. Review, Scan or Copy PSBT Transaction</h3>
-      {#if activeTimeLine === 3}
+      <h3 class="font-bold">{overwriteMode ? '3' : '4'}. Review, Scan or Copy PSBT Transaction</h3>
+      {#if activeTimeLine === (overwriteMode ? 2 : 3)}
         <div class="border-b border-gray-200">
           <nav class="-mb-px flex">
             <a class="border-b-2 {activePanel === 'psbtQR' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-2 px-4 text-sm font-medium hover:text-gray-700 hover:border-gray-300" href="#" on:click|preventDefault={() => activePanel = 'psbtQR'}>PSBT QR</a>

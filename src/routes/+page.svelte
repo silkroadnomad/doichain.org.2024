@@ -14,6 +14,8 @@
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to see observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
 
+	let overwriteMode = true;
+
 	function handleInput(event) {
 		inputValue = event.detail;
 		if (inputValue.length > 0) {
@@ -237,10 +239,26 @@
 <section>
 	<div class="flex justify-center mt-4">
 		{#if currentNameOp && !showHeroSection}
+			<div class="space-y-8">
+				<!-- Show existing NFT info -->
 				<NFTCard 
-				currentNameOp={updatedCurrentNameOp} 
-				currentNameUtxo={updatedCurrentNameUtxo}
+					currentNameOp={updatedCurrentNameOp} 
+					currentNameUtxo={updatedCurrentNameUtxo}
 				/>
+				
+				<!-- Add overwrite section -->
+				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
+					<div class="bg-white p-4 rounded-lg shadow">
+						<h3 class="text-lg font-semibold mb-4">Transfer this Name</h3>
+						<NameDoi 
+							nftName={inputValue}
+							{overwriteMode}
+							existingNameOp={currentNameOp}
+                            existingNameUtxo={currentNameUtxo}
+						/>
+					</div>
+				</div>
+			</div>
 		{:else}
 			{#if !currentNameOp && inputValue}
 				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
