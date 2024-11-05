@@ -1,7 +1,11 @@
 # Doichain.org
 
 # Todo
-- [ ] Doichain RegTest + Electrumx 
+- [ ] PWA needs screenshots form-factor wide (see Opera error), not wide and a quadratic symbol
+- [ ] every browser should also index the blockchain for name_ops (like the relay does) and answer for requests
+- [ ] question is: how much should every browser cache
+- [ ] restart elecrumx / libp2p when disconnected
+- [ ] Docker Compose file for Doichain RegTest + Electrumx 
 - [ ] enable "Buy with DoiWallet"
   - [ ] click overwrite to set a price
   - [ ] when a price (and recipient address) is set a new psbt & qr-code is generated which can be scanned by DoiWallet
