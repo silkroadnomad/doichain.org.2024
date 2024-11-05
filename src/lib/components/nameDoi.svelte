@@ -69,9 +69,9 @@
         getMetadataFromIPFS($helia, existingNameOp.value)
             .then(metadata => {
                 if (metadata) {
-                    nftDescription = metadata.description;
-                    // Get and set image
-                    if (metadata.image?.startsWith('ipfs://')) {
+                  metadataJSON = metadata; 
+                  nftDescription = metadata.description;
+                  if (metadata.image?.startsWith('ipfs://')) {
                         getImageUrlFromIPFS($helia, metadata.image)
                             .then(url => {
                                 previewImgSrc = url;
@@ -609,24 +609,58 @@
             <textarea 
               class="w-full h-40 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               readonly
-              on:click={ () => copyToClipboard(psbtBaseText) }
             >{psbtBaseText}</textarea>
-            <p class="text-sm text-gray-500 mt-2">Click on the text area to copy the PSBT to clipboard</p>
           {:else if activePanel === 'metadata'}
             <pre class="bg-gray-100 p-4 rounded-md overflow-auto">
               {JSON.stringify(metadataJSON, null, 2)}
             </pre>
           {/if}
           
+          <!-- Action buttons moved outside tab panels -->
+          {#if psbtBaseText}
+            <div class="flex items-center gap-4 mt-4 text-sm text-gray-500 border-t pt-4">
+              <button 
+                on:click={() => copyToClipboard(psbtBaseText)}
+                class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100"
+                title="Copy to clipboard"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Copy to clipboard
+              </button>
+              <button 
+                on:click={() => {
+                  const blob = new Blob([psbtBaseText], { type: 'text/plain' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${nameId || 'transaction'}.psbt`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                }}
+                class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100"
+                title="Download PSBT"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download PSBT
+              </button>
+            </div>
+          {/if}
+
           {#if transactionFee !== undefined && totalAmount !== undefined}
             <div class="mt-4 text-right">
               <p class="flex justify-end">
                 <span class="font-semibold mr-2">Transaction Fee:</span>
-                <span>{sb.toBitcoin(transactionFee).toFixed(8)} BTC</span>
+                <span>{sb.toBitcoin(transactionFee).toFixed(8)} DOI</span>
               </p>
               <p class="flex justify-end">
                 <span class="font-semibold mr-2">Total Amount:</span>
-                <span>{sb.toBitcoin(totalAmount).toFixed(8)} BTC</span>
+                <span>{sb.toBitcoin(totalAmount).toFixed(8)} DOI</span>
               </p>
             </div>
           {/if}

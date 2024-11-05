@@ -30,21 +30,21 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
     let changeAmount;
 
     _utxoAddresses.forEach(utxo => {
-        const isSegWit = utxo?.fullTx.scriptPubKey?.type === "witness_v0_keyhash" || utxo?.fullTx.scriptPubKey.hex?.startsWith('0014') || utxo?.fullTx.scriptPubKey.hex?.startsWith('0020');
+        const isSegWit = utxo?.fullTx?.scriptPubKey?.type === "witness_v0_keyhash" ||  utxo?.scriptPubKey?.type === "witness_v0_keyhash";
         if (isSegWit) {
             psbt.addInput({
-                hash: utxo.tx_hash,
-                index: utxo.tx_pos,
+                hash: utxo.tx_hash || utxo.hash,
+                index: utxo.tx_pos || utxo.n,
                 witnessUtxo: {
-                    script: Buffer.from(utxo?.fullTx.scriptPubKey.hex, 'hex'),
+                    script: Buffer.from(utxo?.scriptPubKey?.hex || utxo?.hex, 'hex'),
                     value: utxo.value,
                 }
             });
         } else {
             psbt.addInput({
-                hash: utxo.tx_hash,
-                index: utxo.tx_pos,
-                nonWitnessUtxo: Buffer.from(utxo?.fullTx.hex, 'hex')
+                hash: utxo.tx_hash || utxo.hash,
+                index: utxo.tx_pos || utxo.n,
+                nonWitnessUtxo: Buffer.from(utxo?.hex || utxo?.fullTx?.hex, 'hex')
             });
         }
         totalInputAmount += utxo.value;
