@@ -1,5 +1,4 @@
 import { Psbt } from 'bitcoinjs-lib';
-import { noValidateSignature } from './validateSignature';
 
 export function preparePurchaseTransaction(selectedUtxos, price, sellerRecipientAddress, _network) {
   try {
