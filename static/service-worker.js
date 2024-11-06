@@ -8,9 +8,31 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
+  // Automatically take control of clients when new service worker is installed
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  // Automatically claim clients when service worker activates
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      // Clean up old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    ])
   );
 });
 
@@ -22,14 +44,49 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).catch(() => {
-          return caches.match('/offline.html');
-        });
+        // Always try network first, fall back to cache
+        return fetch(event.request)
+          .then(networkResponse => {
+            // Update cache with new response
+            if (networkResponse.ok) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, responseClone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Return cached response if network fails
+            return response || caches.match('/offline.html');
+          });
       })
   );
+});
+
+// Optional: Listen for new content
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'update-content') {
+    event.waitUntil(
+      // Perform background sync
+      updateContent()
+    );
+  }
+});
+
+// Optional: Listen for push notifications
+self.addEventListener('push', (event) => {
+  if (event.data) {
+    const options = {
+      body: event.data.text(),
+      icon: '/icon.png',
+      badge: '/badge.png'
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification('Update Available', options)
+    );
+  }
 });
 
 self.addEventListener('message', (event) => {
