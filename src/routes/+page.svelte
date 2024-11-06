@@ -168,6 +168,8 @@
 		overwriteMode = true;
 		currentNameOp = nameOp;
 		currentNameUtxo = nameUtxo;
+		inputValue = name;
+		showHeroSection = false;
 		window.scrollTo({
 			top: 0,
 			behavior: 'smooth'
@@ -234,7 +236,8 @@
 			on:input={handleInput}
 			bind:customErrorMessage
 			bind:customSuccessMessage
-			/>
+			value={inputValue}
+		/>
 	</div>
 </section>
 <section>
@@ -243,8 +246,8 @@
 			<!-- Show NFTCard and NameDoi for existing NFT -->
 			<div class="space-y-8">
 				<NFTCard 
-					currentNameOp={updatedCurrentNameOp} 
-					currentNameUtxo={updatedCurrentNameUtxo}
+					currentNameOp={currentNameOp} 
+					currentNameUtxo={currentNameUtxo}
 					on:overwrite={handleOverwrite}
 				/>
 				
@@ -265,7 +268,12 @@
 		{:else if inputValue?.trim()}
 			<!-- Show NameDoi only when inputValue exists and is not empty -->
 			<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
-				<NameDoi nftName={inputValue} />
+				<NameDoi 
+					nftName={inputValue}
+					{overwriteMode}
+					existingNameOp={currentNameOp}
+					existingNameUtxo={currentNameUtxo}
+				/>
 			</div>
 		{/if}
 	</div>
