@@ -37,7 +37,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('ws://') || event.request.url.includes('wss://') || event.request.url.includes('libp2p')) {
+  // Skip non-HTTP(S) requests and specific protocols
+  if (
+    event.request.url.includes('libp2p') ||
+    event.request.url.startsWith('chrome-extension://') ||
+    !event.request.url.startsWith('http')
+  ) {
     return;
   }
 
