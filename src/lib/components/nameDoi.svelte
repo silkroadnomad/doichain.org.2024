@@ -59,6 +59,16 @@
   let price = 0 // in satoshis
   let sellerRecipientAddress = '' // Address where payment should go
 
+  // Add new state variables for purchase QR
+  let purchaseQrCodeData;
+  let purchaseQrCode;
+  let purchaseAnimationTimeout;
+  let purchaseCurrentSvgIndex;
+
+  // Add to state variables at the top
+  let showPurchaseQr = false;
+  let signedPurchasePsbt = '';
+
   // When in overwrite mode, populate the form with existing NFT data
   $: if (overwriteMode && existingNameOp) {
     nameId = existingNameOp.name;  // Set the name field
@@ -276,6 +286,7 @@
 
   onDestroy(() => {
     if (animationTimeout) clearTimeout(animationTimeout);
+    if (purchaseAnimationTimeout) clearTimeout(purchaseAnimationTimeout);
   });
 
   let cidStatus = 'idle'; // Can be 'idle', 'adding', or 'added'
@@ -302,6 +313,17 @@
       recipientsAddress = scanData;
     } else if (scanTarget === 'change') {
       changeAddress = scanData;
+    } else if (scanTarget === 'purchase') {
+      signedPurchasePsbt = scanData;
+      // Update metadata with signed purchase transaction
+      if (metadataJSON) {
+        metadataJSON = {
+          ...metadataJSON,
+          signedPurchasePsbt: scanData
+        };
+        // Trigger metadata update if needed
+        writeMetadata();
+      }
     }
     scanData = ''; 
   }
@@ -320,10 +342,51 @@
         });
   }
 
-  $: displayUtxos = existingNameUtxo ? [existingNameUtxo] : utxos;
 
   $: if (nftName || nftDescription || price || files.accepted.length) {
     isMetadataPinned = false;
+  }
+
+  // Modify the price reactive statement
+  $: if (price && existingNameUtxo) {
+    console.log("prepare purchase transaction",existingNameUtxo)
+    console.log("price",price)
+    console.log("sellerRecipientAddress",sellerRecipientAddress)
+    console.log("walletAddress",walletAddress)
+    const result = preparePurchaseTransaction(
+      [existingNameUtxo],
+      price,
+      sellerRecipientAddress || walletAddress,
+      DOICHAIN
+    );
+
+    if (result.error) {
+      console.log("Purchase transaction error:", result.error);
+      errorMessage = result.error;
+      purchaseQrCodeData = undefined;
+    } else {
+      
+      renderBCUR(result).then(_qr => {
+        purchaseQrCodeData = _qr;
+        displayPurchaseQrCodes();
+      }).catch(error => {
+        console.error('Error generating purchase QR code:', error);
+        purchaseQrCodeData = undefined;
+      });
+    }
+  }
+
+  // Add new function for purchase QR animation
+  function displayPurchaseQrCodes() {
+    purchaseCurrentSvgIndex = 0;
+    if (purchaseAnimationTimeout) clearTimeout(purchaseAnimationTimeout);
+    animatePurchaseQrCodes();
+  }
+
+  function animatePurchaseQrCodes() {
+    purchaseQrCode = purchaseQrCodeData[purchaseCurrentSvgIndex];
+    purchaseCurrentSvgIndex = (purchaseCurrentSvgIndex + 1) % purchaseQrCodeData.length;
+    purchaseAnimationTimeout = setTimeout(animatePurchaseQrCodes, 300);
   }
 </script>
 {#if scanOpen}
@@ -362,16 +425,63 @@
             
             {#if overwriteMode}
               <div class="font-semibold text-left">Price (DOI):</div>
-              <div class="flex gap-2 items-center">
-                <input 
-                  type="number" 
-                  bind:value={price} 
-                  min="0"
-                  step="1"
-                  placeholder="Enter price in DOI"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span class="text-gray-500">DOI</span>
+              <div class="flex flex-col gap-2">
+                <div class="flex gap-2 items-center">
+                  <input 
+                    type="number" 
+                    bind:value={price} 
+                    min="0"
+                    step="1"
+                    placeholder="Enter price in DOI"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <span class="text-gray-500">DOI</span>
+                </div>
+                
+                {#if price > 0}
+                  <div class="mt-4">
+                    {#if showPurchaseQr && purchaseQrCode}
+                      <div class="flex flex-col items-center">
+                        <h4 class="font-semibold mb-2">Purchase Transaction QR Code:</h4>
+                        {@html purchaseQrCode}
+                        <button 
+                          on:click={() => { showPurchaseQr = false; }}
+                          class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                        >
+                          Scan Finished - Import Signed Transaction
+                        </button>
+                      </div>
+                    {:else}
+                      <div class="flex items-center gap-2">
+                        <button 
+                          on:click={() => { scanTarget = 'purchase'; scanOpen = true; }}
+                          class="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                        >
+                          <svg class="h-5 w-5" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z"/>
+                            <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                            <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                            <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                            <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Scan Signed Purchase Transaction
+                        </button>
+                        <button 
+                          on:click={() => { showPurchaseQr = true; }}
+                          class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                        >
+                          Show QR Again
+                        </button>
+                      </div>
+                      {#if signedPurchasePsbt}
+                        <div class="mt-2 text-sm text-green-600">
+                          ✓ Signed purchase transaction imported
+                        </div>
+                      {/if}
+                    {/if}
+                  </div>
+                {/if}
               </div>
             {/if}
             
