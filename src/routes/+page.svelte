@@ -8,8 +8,6 @@
 	let inputValue = '';
 	let currentNameOp
 	let currentNameUtxo;
-	$: updatedCurrentNameOp = currentNameOp;
-	$: updatedCurrentNameUtxo = currentNameUtxo;
 	
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to see observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";

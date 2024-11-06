@@ -25,8 +25,10 @@
 	const maxAttempts = 5;
 
 	function publishList100Request() {
+		console.log('Starting publishList100Request', { attemptCount, maxAttempts });
 		if (attemptCount < maxAttempts) {
 			try {
+				console.log('Attempting to publish...');
 				$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode('LIST_LAST_100'));
 				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`);
 				attemptCount++;
@@ -55,15 +57,12 @@
 		$libp2p = await createLibp2p(config)
 		window.libp2p = $libp2p
 
-		// Print node's multiaddresses
-		nodeAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
-		console.log('Our node addresses:', nodeAddresses);
-
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore})
 		window.helia = $helia
 
 		try {
 			if($libp2p) {
+				console.log('Setting up libp2p event handlers...');
 				setupLibp2pEventHandlers($libp2p, publishList100Request)
 			}
 			} catch(ex){ console.log("helia.libp2p.exception", ex) }
