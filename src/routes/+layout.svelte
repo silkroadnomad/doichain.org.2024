@@ -54,35 +54,50 @@
 	}
 
 	onMount(async () => {
-		$libp2p = await createLibp2p(config)
-		window.libp2p = $libp2p
-
-		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore})
-		window.helia = $helia
-
 		try {
+			console.log('1. Starting libp2p creation...');
+			$libp2p = await createLibp2p(config)
+			console.log('2. libp2p created:', !!$libp2p);
+			window.libp2p = $libp2p
+
+			console.log('3. Starting helia creation...');
+			$helia = await createHelia({ 
+				libp2p: $libp2p, 
+				datastore: datastore, 
+				blockstore: blockstore
+			})
+			console.log('4. Helia created:', !!$helia);
+			window.helia = $helia
+
 			if($libp2p) {
-				console.log('Setting up libp2p event handlers...');
+				console.log('5. libp2p services:', Object.keys($libp2p.services));
+				console.log('6. Setting up libp2p event handlers...');
 				setupLibp2pEventHandlers($libp2p, publishList100Request)
+				console.log('7. Event handlers setup complete');
+			} else {
+				console.error('libp2p not initialized properly');
 			}
-			} catch(ex){ console.log("helia.libp2p.exception", ex) }
+		} catch(ex){ 
+			console.error("Setup exception:", ex);
+			console.error("Stack trace:", ex.stack);
+		}
 
+		updateNodeAddresses();
+
+		addressUpdateInterval = setInterval(() => {
 			updateNodeAddresses();
+		}, 60000);
 
-			addressUpdateInterval = setInterval(() => {
-				updateNodeAddresses();
-			}, 60000);
-
-			if (browser && 'serviceWorker' in navigator) {
-				navigator.serviceWorker.register('/service-worker.js')
-					.then((registration) => {
-						console.log('Service Worker registered with scope:', registration.scope);
-					})
-					.catch((error) => {
-						console.error('Service Worker registration failed:', error);
-					});
-			}
-		})
+		if (browser && 'serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/service-worker.js')
+				.then((registration) => {
+					console.log('Service Worker registered with scope:', registration.scope);
+				})
+				.catch((error) => {
+					console.error('Service Worker registration failed:', error);
+				});
+		}
+	})
 		
 		onDestroy(() => {
 			clearInterval(addressUpdateInterval);
