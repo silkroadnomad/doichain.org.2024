@@ -65,7 +65,7 @@ export async function setupLibp2pEventHandlers(libp2p) {
         //         console.error('Error:', err)
         //     }
         // }
-    }
+    })
 
     // Pubsub logging events
     libp2p.services.pubsub.addEventListener('publish', (evt) => {
