@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "x-ipfs-path",
-          "value": "/ipfs/QmSLgdobdFGqY754B4MhTMzxZuyHt2KkmrKbn8fk47djea"
+          "value": "/ipfs/QmSFWdRDBVcFyH9cgEappUAzUhg6ErYkUcRekrCywpfduA"
         }
       ]
     },
@@ -14,7 +14,7 @@
       "headers": [
         {
           "key": "x-ipfs-path",
-          "value": "/ipfs/QmSLgdobdFGqY754B4MhTMzxZuyHt2KkmrKbn8fk47djea"
+          "value": "/ipfs/QmSFWdRDBVcFyH9cgEappUAzUhg6ErYkUcRekrCywpfduA"
         }
       ]
     }
