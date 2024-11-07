@@ -72,7 +72,8 @@
 			if($libp2p) {
 				console.log('5. libp2p services:', Object.keys($libp2p.services));
 				console.log('6. Setting up libp2p event handlers...');
-				setupLibp2pEventHandlers($libp2p, publishList100Request)
+				setupLibp2pEventHandlers($libp2p)
+				publishList100Request()
 				console.log('7. Event handlers setup complete');
 			} else {
 				console.error('libp2p not initialized properly');
