@@ -81,7 +81,7 @@ export function createLibp2pConfig() {
     delete config.services['delegatedRouting']
 
     const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2']
-    : ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2']
+    : ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2']
 
 
     // Connection gater
