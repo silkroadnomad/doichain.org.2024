@@ -13,12 +13,13 @@ import { autoNAT } from '@libp2p/autonat'
 import { dcutr } from '@libp2p/dcutr'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { dev } from '$app/environment'
+import { devToolsMetrics } from '@libp2p/devtools-metrics'
 
 const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub']
 
 export function createLibp2pConfig() {
     const config = libp2pDefaults()
-
+    config.metrics = devToolsMetrics()
     // Services configuration
     config.services = {
         ...config.services,

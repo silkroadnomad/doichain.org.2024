@@ -56,6 +56,9 @@ importers:
       '@libp2p/dcutr':
         specifier: ^2.0.10
         version: 2.0.10
+      '@libp2p/devtools-metrics':
+        specifier: ^1.1.8
+        version: 1.1.8
       '@libp2p/identify':
         specifier: ^3.0.10
         version: 3.0.10
@@ -110,6 +113,9 @@ importers:
       '@multiformats/multiaddr':
         specifier: ^12.3.1
         version: 12.3.1
+      '@orbitdb/core':
+        specifier: ^2.4.3
+        version: 2.4.3
       '@peerpiper/qrcode-scanner-svelte':
         specifier: ^1.0.7
         version: 1.0.7
@@ -161,6 +167,9 @@ importers:
       ipns:
         specifier: ^10.0.0
         version: 10.0.0
+      level:
+        specifier: ^8.0.1
+        version: 8.0.1
       libp2p:
         specifier: ^2.2.1
         version: 2.2.1
@@ -203,6 +212,9 @@ importers:
       winston:
         specifier: ^3.16.0
         version: 3.16.0
+      winston-browser:
+        specifier: ^1.0.0
+        version: 1.0.0
       winston-console-format:
         specifier: ^1.0.8
         version: 1.0.8
@@ -1479,6 +1491,9 @@ packages:
   '@libp2p/dcutr@2.0.10':
     resolution: {integrity: sha512-q8xVutr9x7NValkLZav7oGolvrzeHhV01rJuyyIu8aOK3Buq1VZynSRjHS41k+hK6eaQyBYL4cJHV9rXp7tgKQ==}
 
+  '@libp2p/devtools-metrics@1.1.8':
+    resolution: {integrity: sha512-e8zs2SaC9n6JxXJ8EJ5uqm039wwQRdC1sviPpsIu7NGiDCdWkEYNE/tXD8QbiFoKtDOq53SF0ifIweHW/d8cuA==}
+
   '@libp2p/identify@3.0.10':
     resolution: {integrity: sha512-IeFUojzx90j0M7/WjxLHnoaPKG5AksRQrIzLkpJtMeBL+TA9rMLW1n2HM8SD3EGsHV1vDTlkx0e0PHbFVtTnnA==}
 
@@ -1580,6 +1595,9 @@ packages:
   '@libp2p/record@4.0.4':
     resolution: {integrity: sha512-wEEeHXGNIcc8HtGbgGMuSHbboUWMxKG7OxALFwkE+KACgfRJZTESOp6XIdZnyC0r9lfEFsjF01pFKBTzoBmWEQ==}
 
+  '@libp2p/simple-metrics@1.2.6':
+    resolution: {integrity: sha512-BCyL9DGRqP7FV+KlA2NfTFnz7DeZh8DV84g/d7EsdzLdDycXgHL0aZ5zS51eQ+B6ad1nrP1OESRdgC4a/pmYpg==}
+
   '@libp2p/tcp@10.0.11':
     resolution: {integrity: sha512-E4xy6G6o7XuS/rQGrlkWeIFoGoFd8BLBzuQaSXGfSkimFe9ym7vczNtSzS+MPSyCzFdl4RZrhG7odbBPt7hTnw==}
 
@@ -1663,6 +1681,10 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@orbitdb/core@2.4.3':
+    resolution: {integrity: sha512-pRHDJlODTy35nySEAPhTjzZIKQ7eedwCIoplmEXs1rW3KYqMHNQaNxrIc1uBMw9cRsPTeIGwxTUkvXfhhaf35Q==}
+    engines: {node: '>=20.0.0'}
 
   '@peculiar/asn1-cms@2.3.13':
     resolution: {integrity: sha512-joqu8A7KR2G85oLPq+vB+NFr2ro7Ls4ol13Zcse/giPSzUNN0n2k3v8kMpf6QdGUhI13e5SzQYN8AKP8sJ8v4w==}
@@ -2314,6 +2336,9 @@ packages:
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
+
+  bintrees@1.0.2:
+    resolution: {integrity: sha512-VOMgTMwjAaUG580SXn3LacVgjurrbMme7ZZNYGSSV7mmtY6QQRh0Eg3pwIcntQ77DErK1L0NxkbetjcoXzVwKw==}
 
   bip174@2.1.1:
     resolution: {integrity: sha512-mdFV5+/v0XyNYXjBS6CQPLo9ekCx4gtKZFnJm5PMto7Fs9hTTDpkkzOB7/FtluRI6JbUUAu+snTYfJRgHLZbZQ==}
@@ -3654,6 +3679,9 @@ packages:
     resolution: {integrity: sha512-XCWifEcNFFjjBHtor4Sfaj8rcpt+FkY0L6WdhD578SCDhV4VUm7fCkF3dv5a+fTcfQqvN9BsxBTvWbYO6iCjTg==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
+  it-rpc@1.0.2:
+    resolution: {integrity: sha512-W5wxcMeq67QICl7VlUAG4QYWVHworz4WQQLVAXh2OaG5Itzbwu+cEyKzQcfSohC00dyfnD1dM+yHwJvVR5TTsw==}
+
   it-sort@3.0.6:
     resolution: {integrity: sha512-aNrlZAXB8vWBd42tCpaXGL6CJVJNDW3OLczmdt6g0k/s9Z6evkTdgU2LjwW5SNNeX41sF+C8MjV+OcVf93PsPw==}
 
@@ -3892,6 +3920,10 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
+
+  lru@3.1.0:
+    resolution: {integrity: sha512-5OUtoiVIGU4VXBOshidmtOsvBIvcQR6FD/RzWSvaeHyxCGB+PCUCu+52lqMfdc0h/2CLvHhZS4TwUmMQrrMbBQ==}
+    engines: {node: '>= 0.4.0'}
 
   magic-string@0.30.12:
     resolution: {integrity: sha512-Ea8I3sQMVXr8JhN4z+H/d8zwo+tYDgHE9+5G4Wnrwhs0gaK9fXTKx0Tw5Xwsd/bCPTTZNRAdpyzvoeORe9LYpw==}
@@ -4791,6 +4823,9 @@ packages:
   retimeable-signal@0.0.0:
     resolution: {integrity: sha512-jxnBbSwD7khkZIf0cnD6j3BVawwhrbcT4y1WWWZq14l5Ds+z+csataLeBSRtKVqn5tjuT4WPCbMDJLKI2C/WUA==}
 
+  retimer@3.0.0:
+    resolution: {integrity: sha512-WKE0j11Pa0ZJI5YIk0nflGI7SQsfl2ljihVy7ogh7DeQSeYAUi0ubZ/yEueGtDfUPk6GH5LRw1hBdLq4IwUBWA==}
+
   retry@0.13.1:
     resolution: {integrity: sha512-XQBQ3I8W1Cge0Seh+6gjj03LbmRFWuoszgK9ooCpwYIrhhoO80pfq4cUkU5DkknwfOfFteRwlZ56PYOGYyFWdg==}
     engines: {node: '>= 4'}
@@ -5157,6 +5192,9 @@ packages:
     resolution: {integrity: sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ==}
     engines: {node: '>=6'}
 
+  tdigest@0.1.2:
+    resolution: {integrity: sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==}
+
   temp@0.8.4:
     resolution: {integrity: sha512-s0ZZzd0BzYv5tLSptZooSjK8oj6C+c19p7Vqta9+6NPOf7r+fxq0cJe6/oN4LTC79sy5NY8ucOJNgwsKCSbfqg==}
     engines: {node: '>=6.0.0'}
@@ -5194,6 +5232,9 @@ packages:
   time-span@5.1.0:
     resolution: {integrity: sha512-75voc/9G4rDIJleOo4jPvN4/YC4GRZrY8yy1uU4lwrB3XEQbWve8zXoO5No4eFrGcTAMYyoY67p8jRQdtA1HbA==}
     engines: {node: '>=12'}
+
+  timeout-abort-controller@3.0.0:
+    resolution: {integrity: sha512-O3e+2B8BKrQxU2YRyEjC/2yFdb33slI22WRdUaDx6rvysfi9anloNZyR2q0l6LnePo5qH7gSM7uZtvvwZbc2yA==}
 
   timers-browserify@1.4.2:
     resolution: {integrity: sha512-PIxwAupJZiYU4JmVZYwXp9FKsHMXb5h0ZEFyuXTAn8WLHOlcij+FEcbrvDsom1o5dr1YggEtFbECvGCW2sT53Q==}
@@ -5514,6 +5555,9 @@ packages:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
     hasBin: true
+
+  winston-browser@1.0.0:
+    resolution: {integrity: sha512-xIGC6fltKSgLd5FK98i0u98G88oF5H/P90K1zkxYSnXNry29vWR6kn5Mhpd9HvmKVpWPJsPwsKokx5umb63foQ==}
 
   winston-console-format@1.0.8:
     resolution: {integrity: sha512-dq7t/E0D0QRi4XIOwu6HM1+5e//WPqylH88GVjKEhQVrzGFg34MCz+G7pMJcXFBen9C0kBsu5GYgbYsE2LDwKw==}
@@ -7169,6 +7213,21 @@ snapshots:
       protons-runtime: 5.5.0
       uint8arraylist: 2.4.8
 
+  '@libp2p/devtools-metrics@1.1.8':
+    dependencies:
+      '@libp2p/interface': 2.2.0
+      '@libp2p/interface-internal': 2.0.10
+      '@libp2p/logger': 5.1.3
+      '@libp2p/peer-id': 5.0.7
+      '@libp2p/simple-metrics': 1.2.6
+      '@multiformats/multiaddr': 12.3.1
+      cborg: 4.2.6
+      it-pipe: 3.0.1
+      it-pushable: 3.2.3
+      it-rpc: 1.0.2
+      multiformats: 13.3.1
+      progress-events: 1.0.1
+
   '@libp2p/identify@3.0.10':
     dependencies:
       '@libp2p/crypto': 5.0.6
@@ -7479,6 +7538,14 @@ snapshots:
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
 
+  '@libp2p/simple-metrics@1.2.6':
+    dependencies:
+      '@libp2p/interface': 2.2.0
+      '@libp2p/logger': 5.1.3
+      it-foreach: 2.1.1
+      it-stream-types: 2.0.2
+      tdigest: 0.1.2
+
   '@libp2p/tcp@10.0.11':
     dependencies:
       '@libp2p/interface': 2.2.0
@@ -7753,6 +7820,18 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
+
+  '@orbitdb/core@2.4.3':
+    dependencies:
+      '@ipld/dag-cbor': 9.2.2
+      '@libp2p/crypto': 5.0.6
+      it-pipe: 3.0.1
+      level: 8.0.1
+      lru: 3.1.0
+      multiformats: 12.1.3
+      p-queue: 8.0.1
+      timeout-abort-controller: 3.0.0
+      uint8arrays: 5.1.0
 
   '@peculiar/asn1-cms@2.3.13':
     dependencies:
@@ -8636,6 +8715,8 @@ snapshots:
   bignumber.js@9.1.2: {}
 
   binary-extensions@2.3.0: {}
+
+  bintrees@1.0.2: {}
 
   bip174@2.1.1: {}
 
@@ -10249,6 +10330,19 @@ snapshots:
       it-stream-types: 2.0.2
       uint8arraylist: 2.4.8
 
+  it-rpc@1.0.2:
+    dependencies:
+      any-signal: 4.1.1
+      cborg: 4.2.6
+      it-length-prefixed: 9.1.0
+      it-pushable: 3.2.3
+      it-stream-types: 2.0.2
+      nanoid: 5.0.8
+      p-defer: 4.0.1
+      protons-runtime: 5.5.0
+      uint8arraylist: 2.4.8
+      uint8arrays: 5.1.0
+
   it-sort@3.0.6:
     dependencies:
       it-all: 3.0.6
@@ -10545,6 +10639,10 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
+
+  lru@3.1.0:
+    dependencies:
+      inherits: 2.0.4
 
   magic-string@0.30.12:
     dependencies:
@@ -11582,6 +11680,8 @@ snapshots:
 
   retimeable-signal@0.0.0: {}
 
+  retimer@3.0.0: {}
+
   retry@0.13.1: {}
 
   reusify@1.0.4: {}
@@ -12026,6 +12126,10 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
 
+  tdigest@0.1.2:
+    dependencies:
+      bintrees: 1.0.2
+
   temp@0.8.4:
     dependencies:
       rimraf: 2.6.3
@@ -12063,6 +12167,10 @@ snapshots:
   time-span@5.1.0:
     dependencies:
       convert-hrtime: 5.0.0
+
+  timeout-abort-controller@3.0.0:
+    dependencies:
+      retimer: 3.0.0
 
   timers-browserify@1.4.2:
     dependencies:
@@ -12362,6 +12470,8 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+
+  winston-browser@1.0.0: {}
 
   winston-console-format@1.0.8:
     dependencies:

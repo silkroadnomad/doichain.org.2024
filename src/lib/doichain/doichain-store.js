@@ -1,6 +1,5 @@
 import { writable } from 'svelte/store';
 import { DOICHAIN, DOICHAIN_REGTEST } from '$lib/doichain/doichain.js';
-
 const BITCOIN_MAINNET = {
 	name: 'bitcoin-mainnet',
     messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -32,6 +31,7 @@ export const networks = [
 
 export const libp2p = writable()
 export const helia = writable()
+export const orbitdb = writable()
 export const connectedPeers = writable([]);
 export const nameOps = writable([]);
 export const scanOpen = writable(false)
