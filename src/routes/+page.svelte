@@ -4,6 +4,7 @@
 	import NFTCard from '$lib/components/NFTCard.svelte';
 	import NameDoi from '$lib/components/nameDoi.svelte';
 	import { onMount } from 'svelte';
+	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	let showHeroSection = true;
 	let inputValue = '';
 	let currentNameOp
@@ -77,11 +78,9 @@
 		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
 		if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
 		if (selectedFilter === 'names') {
-			console.log('nameOp.value', nameOp.nameValue);
 			return (!hasNameValue && isNotSpecialPrefix);
 		}
 		if (selectedFilter === 'other') {
-			console.log('nameOp.value', nameOp.nameValue);
 			return hasNameValue && isNotSpecialPrefix;
 		}
 		return true;
@@ -170,6 +169,28 @@
 			currentNameUtxo = null;
 		} 
 	}
+
+	function sendPubSubRequest(filter, pageSize = 100, from = 0, dateString = "LAST") {
+        const messageObject = {
+            type: "LIST",
+            dateString: dateString,
+            pageSize: pageSize,
+            from: from,
+            filter: filter
+        };
+        
+        const message = JSON.stringify(messageObject);
+        console.log('sending pubsub request', message);
+        
+        // Assuming you have a pubsub mechanism to send the message
+        $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
+    }
+
+    // Update the filter button click handler
+    function handleFilterClick(filterId) {
+        selectedFilter = filterId;
+        sendPubSubRequest(selectedFilter, 100, 0, "LAST"); // Default dateString is "LAST"
+    }
 </script>
 
 <svelte:head>
@@ -313,7 +334,7 @@
 						{selectedFilter === filter.id 
 							? 'bg-white text-gray-800' 
 							: 'bg-gray-700 text-white hover:bg-gray-600'}"
-					on:click={() => selectedFilter = filter.id}
+					on:click={() => handleFilterClick(filter.id)}
 				>
 					{filter.label}
 				</button>

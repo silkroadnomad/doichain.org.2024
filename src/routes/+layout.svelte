@@ -27,8 +27,17 @@
 	function publishList100Request() {
 		if (attemptCount < maxAttempts) {
 			try {
-				$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode('LIST_LAST_100'));
-				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`);
+				const messageObject = {
+					type: "LIST",
+					dateString: "LAST",
+					pageSize: 100,
+					from: 0,
+					filter: "" // Add any specific filter if needed
+				};
+
+				const message = JSON.stringify(messageObject);
+				$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
+				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`, message);
 				attemptCount++;
 				
 				// Schedule next attempt after 5 seconds if no response
@@ -36,7 +45,7 @@
 					publishList100Request();
 				}, 5000);
 			} catch (error) {
-				console.error("Error publishing LIST_LAST100 message:", error);
+				console.error("Error publishing LIST_LAST_100 message:", error);
 			}
 		} else {
 			console.log("Max attempts reached, stopping LIST_LAST_100 requests.");
