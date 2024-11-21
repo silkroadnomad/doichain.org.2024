@@ -86,23 +86,37 @@
 		return true;
 	});
 
+	let isLoading = false;
+	let lastRequestTime = 0;
+	const DEBOUNCE_DELAY = 1000; // 1 second delay between requests
+
 	onMount(async () => {
 		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
 		const handleScroll = () => {
-			if (nameOpsSection) {
+			if (nameOpsSection && !isLoading) {
 				const rect = nameOpsSection.getBoundingClientRect();
 				const viewportHeight = window.innerHeight;
 				const visibleHeight = Math.min(viewportHeight, Math.max(0, viewportHeight - Math.max(0, rect.top) - Math.max(0, viewportHeight - rect.bottom)));
 				gradientProgress = visibleHeight / rect.height;
 				parallaxOffset = (rect.top - viewportHeight) * 0.5;
 
-				// Check if we're near the bottom of the section
-				const buffer = 100; // pixels from bottom to trigger load
+				// Check if we're near the bottom and enough time has passed
+				const buffer = 100;
 				const bottomOfSection = rect.bottom;
 				const bottomOfViewport = window.innerHeight;
+				const currentTime = Date.now();
 				
-				if (bottomOfSection - bottomOfViewport - buffer <= 0) {
+				if (bottomOfSection - bottomOfViewport - buffer <= 0 && 
+					currentTime - lastRequestTime >= DEBOUNCE_DELAY) {
+					isLoading = true;
+					lastRequestTime = currentTime;
+					
 					handleFilterClick(selectedFilter);
+					
+					// Reset loading state after a delay
+					setTimeout(() => {
+						isLoading = false;
+					}, DEBOUNCE_DELAY);
 				}
 			}
 		};
