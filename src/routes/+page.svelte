@@ -51,7 +51,7 @@
 
 	const filters = [
 		{ id: 'all', label: 'All' },
-		{ id: 'other', label: 'Non-Fungible-Coins (NFC)' },
+		{ id: 'nfc', label: 'Non-Fungible-Coins (NFC)' },
 		{ id: 'names', label: 'Names' },
 		{ id: 'e', label: 'DOI (e/)' },
 		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
@@ -80,8 +80,8 @@
 		if (selectedFilter === 'names') {
 			return !hasNameValue && isNotSpecialPrefix;
 		}
-		if (selectedFilter === 'other') {
-			return hasNameValue && isNotSpecialPrefix;
+		if (selectedFilter === 'nfc') {
+			return (nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://'));
 		}
 		return true;
 	});
