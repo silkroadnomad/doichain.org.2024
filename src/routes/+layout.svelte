@@ -121,16 +121,23 @@
 
 	<section class="mt-4 px-4">
 		<h2 class="text-xl font-bold mb-2">Node Addresses:</h2>
-		<ul class="list-disc pl-5">
-			{#each nodeAddresses as address}
-				<li class="mb-1">{address}</li>
-			{/each}
-		</ul>
+		<textarea 
+			class="w-full p-2 bg-gray-100 rounded font-mono text-sm resize-none"
+			rows={nodeAddresses.length} 
+			readonly
+			value={nodeAddresses.join('\n')}
+		/>
 	</section>
 </body>
 
 <style>
 	body {
 		font-family: 'Poppins', sans-serif;
+	}
+
+	textarea {
+		min-height: 60px;
+		max-height: 200px;
+		overflow-y: auto;
 	}
 </style>

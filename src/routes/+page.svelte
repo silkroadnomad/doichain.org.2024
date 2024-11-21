@@ -95,6 +95,15 @@
 				const visibleHeight = Math.min(viewportHeight, Math.max(0, viewportHeight - Math.max(0, rect.top) - Math.max(0, viewportHeight - rect.bottom)));
 				gradientProgress = visibleHeight / rect.height;
 				parallaxOffset = (rect.top - viewportHeight) * 0.5;
+
+				// Check if we're near the bottom of the section
+				const buffer = 100; // pixels from bottom to trigger load
+				const bottomOfSection = rect.bottom;
+				const bottomOfViewport = window.innerHeight;
+				
+				if (bottomOfSection - bottomOfViewport - buffer <= 0) {
+					handleFilterClick(selectedFilter);
+				}
 			}
 		};
 
