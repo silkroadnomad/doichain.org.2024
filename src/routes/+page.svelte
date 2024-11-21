@@ -170,7 +170,7 @@
 		} 
 	}
 
-	function sendPubSubRequest(filter, pageSize = 100, from = 0, dateString = "LAST") {
+	function sendPubSubRequest(filter, pageSize = 10, from = 0, dateString = "LAST") {
         const messageObject = {
             type: "LIST",
             dateString: dateString,
@@ -186,11 +186,20 @@
         $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
     }
 
-    // Update the filter button click handler
+    let currentFromMap = {
+        all: 0,
+        other: 0,
+        names: 0,
+        e: 0,
+        pe: 0,
+        bp: 0
+    };
+
     function handleFilterClick(filterId) {
         selectedFilter = filterId;
-		console.log('selectedFilter', selectedFilter);
-        sendPubSubRequest(selectedFilter, 10, 0, "LAST"); // Default dateString is "LAST"
+        const currentFrom = currentFromMap[selectedFilter] || 0;
+        sendPubSubRequest(selectedFilter, 10, currentFrom, "LAST");
+        currentFromMap[selectedFilter] = currentFrom + 5;
     }
 </script>
 

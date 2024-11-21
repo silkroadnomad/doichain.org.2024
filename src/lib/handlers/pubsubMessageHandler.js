@@ -53,16 +53,9 @@ function handleNameOpsMessage(message) {
             console.log("Parsed jsonMessage:", jsonMessage);
 
             const newNameOps = jsonMessage.filter(newOp => {
-                console.log("Inspecting newOp:", newOp);
                 const isDuplicate = currentOps.some(existingOp => {
                     return existingOp.txid === newOp.txid;
                 });
-
-                if (isDuplicate) {
-                    console.log("Duplicate found for txid:", newOp.txid);
-                } else {
-                    console.log("New operation found:", newOp);
-                }
                 return !isDuplicate;
             });
 
