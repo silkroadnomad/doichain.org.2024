@@ -1,40 +1,14 @@
 import { nameOps } from '$lib/doichain/doichain-store.js'
-import { decodeMessage } from 'protons-runtime'
-import { peerCodec } from '$lib/codecs/peer-codec.js'
-import { multiaddr } from '@multiformats/multiaddr'
 
 const CONTENT_TOPIC = '/doichain-nfc/1/message/proto'
 
 export function handlePubsubMessage(event, libp2p) {
-    console.log(`Received pubsub message from ${event.detail.from} on topic ${event.detail.topic}`)
-
+  
     if (event.detail.topic === 'doichain._peer-discovery._p2p._pubsub') {
-        handlePeerDiscoveryMessage(event, libp2p)
+        // handlePeerDiscoveryMessage(event, libp2p)
     } else if (event.detail.topic === CONTENT_TOPIC) {
+          console.log(`Received pubsub message from ${event.detail.from} on topic ${event.detail.topic}`)
         handleContentMessage(event, libp2p)
-    }
-}
-
-function handlePeerDiscoveryMessage(event, libp2p) {
-    try {
-        const peer = decodeMessage(event.detail.data, peerCodec)
-        const publicKeyHex = Buffer.from(peer.publicKey).toString('hex')
-        
-        const formattedAddrs = peer.addrs.map(addr => {
-            try {
-                libp2p.dial(multiaddr(addr))
-                return multiaddr(addr).toString()
-            } catch (err) {
-                return `<invalid multiaddr: ${Buffer.from(addr).toString('hex')}>`
-            }
-        })
-
-        // console.info('  Addresses:')
-        // formattedAddrs.forEach((addr, index) => {
-        //     console.info(`    ${index + 1}. ${addr}`)
-        // })
-    } catch(err) {
-        console.error('Error processing peer discovery message:', err)
     }
 }
 
@@ -72,30 +46,43 @@ function handleList100Request(libp2p) {
 }
 
 function handleNameOpsMessage(message) {
+    console.log('handleNameOpsMessage', message);
     nameOps.update(currentOps => {
         try {
-            const jsonMessage = JSON.parse(message)
+            const jsonMessage = JSON.parse(message);
+            console.log("Parsed jsonMessage:", jsonMessage);
+
             const newNameOps = jsonMessage.filter(newOp => {
-                return !currentOps.some(existingOp => 
-                    existingOp.currentNameUtxo?.txid === newOp.currentNameUtxo?.txid
-                )
-            })
+                console.log("Inspecting newOp:", newOp);
+                const isDuplicate = currentOps.some(existingOp => {
+                    return existingOp.txid === newOp.txid;
+                });
+
+                if (isDuplicate) {
+                    console.log("Duplicate found for txid:", newOp.txid);
+                } else {
+                    console.log("New operation found:", newOp);
+                }
+                return !isDuplicate;
+            });
+
+            console.log("newNameOps.length", newNameOps.length);
 
             if (newNameOps.length > 0) {
                 const updatedOps = [...currentOps, ...newNameOps].sort((a, b) => {
-                    const timeA = a.blocktime || 0
-                    const timeB = b.blocktime || 0
-                    return timeB - timeA
-                })
-                console.log(`Added ${newNameOps.length} new unique nameOps. Total nameOps after update:`, updatedOps.length)
-                return updatedOps
+                    const timeA = a.blocktime || 0;
+                    const timeB = b.blocktime || 0;
+                    return timeB - timeA;
+                });
+                console.log(`Added ${newNameOps.length} new unique nameOps. Total nameOps after update:`, updatedOps.length);
+                return updatedOps;
             }
-            console.log("No new unique nameOps to add.")
-            return currentOps
+            console.log("No new unique nameOps to add.");
+            return currentOps;
         } catch (e) {
-            console.log("message", message)
-            console.error('Failed to parse message:', e)
-            return currentOps
+            console.log("message", message);
+            console.error('Failed to parse message:', e);
+            return currentOps;
         }
-    })
+    });
 } 

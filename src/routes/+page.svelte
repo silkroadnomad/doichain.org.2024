@@ -62,10 +62,10 @@
 	$: if (selectedFilter) {
 		localStorage.setItem('selectedFilter', selectedFilter);
 	}
-
-	$: filteredNameOps = $nameOps.filter(nameOp => {
+	$: console.log('filteredNameOps', filteredNameOps);
+	$: filteredNameOps = $nameOps.filter(nameOp => { //TODO this filter we use on the server 
 		
-		const hasNameValue = nameOp.nameValue && nameOp.nameValue !== '' && nameOp.nameValue !== ' ';
+		const hasNameValue = nameOp.nameValue && nameOp.nameValue !== '' && nameOp.nameValue !== ' ' && nameOp.nameValue !== 'empty';
 		
 		const isNotSpecialPrefix = !nameOp.nameId.startsWith('e/') && 
 				!nameOp.nameId.startsWith('pe/') && 
@@ -78,7 +78,7 @@
 		if (selectedFilter === 'pe') return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
 		if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
 		if (selectedFilter === 'names') {
-			return (!hasNameValue && isNotSpecialPrefix);
+			return !hasNameValue && isNotSpecialPrefix;
 		}
 		if (selectedFilter === 'other') {
 			return hasNameValue && isNotSpecialPrefix;
@@ -189,7 +189,8 @@
     // Update the filter button click handler
     function handleFilterClick(filterId) {
         selectedFilter = filterId;
-        sendPubSubRequest(selectedFilter, 100, 0, "LAST"); // Default dateString is "LAST"
+		console.log('selectedFilter', selectedFilter);
+        sendPubSubRequest(selectedFilter, 10, 0, "LAST"); // Default dateString is "LAST"
     }
 </script>
 
@@ -276,13 +277,13 @@
 <section 
 	bind:this={nameOpsSection}
 	class="relative overflow-hidden py-20"
-	style="min-height: 100vh; background: linear-gradient(135deg, #E0F7FA, #B3E5FC, #0288D1);"
+	style="min-height: 100vh; {gradientStyle}"
 >
 	<div class="absolute inset-0 flex items-center justify-center" style="transform: translateY({parallaxOffset}px);">
 		<h2 class="text-6xl font-bold text-white opacity-10">NameOps</h2>
 	</div>
 	<div class="relative z-10 max-w-6xl mx-auto px-4">
-		<h2 class="poppins-heading text-4xl font-bold mb-2 text-center text-white">Recent {$nameOps.length} NameOps</h2>
+		<h2 class="poppins-heading text-4xl font-bold mb-2 text-center text-white">Recent {filteredNameOps.length} {selectedFilter} NameOps</h2>
 		
 		<div class="flex justify-center flex-wrap gap-2 mb-6 relative">
 			<span 

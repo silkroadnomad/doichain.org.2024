@@ -25,12 +25,13 @@
 	const maxAttempts = 5;
 
 	function publishList100Request() {
-		if (attemptCount < maxAttempts) {
+		// Check if we should continue publishing requests
+		if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
 			try {
 				const messageObject = {
 					type: "LIST",
 					dateString: "LAST",
-					pageSize: 100,
+					pageSize: 10,
 					from: 0,
 					filter: "" // Add any specific filter if needed
 				};
@@ -40,7 +41,7 @@
 				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`, message);
 				attemptCount++;
 				
-				// Schedule next attempt after 5 seconds if no response
+				// Schedule next attempt after 5 seconds
 				setTimeout(() => {
 					publishList100Request();
 				}, 5000);
@@ -48,7 +49,7 @@
 				console.error("Error publishing LIST_LAST_100 message:", error);
 			}
 		} else {
-			console.log("Max attempts reached, stopping LIST_LAST_100 requests.");
+			console.log("Stopping LIST_LAST_100 requests: either max attempts reached or nameOps received.", nameOps.length);
 		}
 	}
 
