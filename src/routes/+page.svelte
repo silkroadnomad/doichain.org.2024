@@ -386,8 +386,8 @@
       font-family: 'Poppins', sans-serif;
     }
 
-    /* Reset all possible transform behaviors */
-    :global(*) {
+    /* Replace the global styles with more specific ones */
+    :global(.nft-card) {
         -webkit-transform: none !important;
         transform: none !important;
         -webkit-transform-style: unset !important;
@@ -399,13 +399,11 @@
         transition: none !important;
     }
 
-    /* Specifically target the NFT containers and images */
-    :global(.overflow-hidden),
-    :global(.overflow-hidden img) {
+    :global(.nft-card .overflow-hidden),
+    :global(.nft-card .overflow-hidden img) {
         -webkit-transform: translateZ(0) !important;
         transform: translateZ(0) !important;
         -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
-        pointer-events: none !important;  /* This might help prevent hover effects */
     }
 </style>
 

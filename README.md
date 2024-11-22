@@ -1,6 +1,7 @@
 # Doichain.org
 
 # Todo
+
 - [ ] PWA needs screenshots form-factor wide (see Opera error), not wide and a quadratic symbol
 - [ ] every browser should also index the blockchain for name_ops (like the relay does) and answer for requests
 - [ ] question is: how much should every browser cache
