@@ -62,7 +62,6 @@
 	$: if (selectedFilter) {
 		localStorage.setItem('selectedFilter', selectedFilter);
 	}
-	$: console.log('filteredNameOps', filteredNameOps);
 	$: filteredNameOps = $nameOps.filter(nameOp => { //TODO this filter we use on the server 
 		
 		const hasNameValue = nameOp.nameValue && nameOp.nameValue !== '' && nameOp.nameValue !== ' ' && nameOp.nameValue !== 'empty';
@@ -385,6 +384,28 @@
 <style>
     .poppins-heading {
       font-family: 'Poppins', sans-serif;
+    }
+
+    /* Reset all possible transform behaviors */
+    :global(*) {
+        -webkit-transform: none !important;
+        transform: none !important;
+        -webkit-transform-style: unset !important;
+        transform-style: unset !important;
+        -webkit-backface-visibility: unset !important;
+        backface-visibility: unset !important;
+        -webkit-perspective: none !important;
+        perspective: none !important;
+        transition: none !important;
+    }
+
+    /* Specifically target the NFT containers and images */
+    :global(.overflow-hidden),
+    :global(.overflow-hidden img) {
+        -webkit-transform: translateZ(0) !important;
+        transform: translateZ(0) !important;
+        -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
+        pointer-events: none !important;  /* This might help prevent hover effects */
     }
 </style>
 
