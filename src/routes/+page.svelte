@@ -266,6 +266,7 @@
 		<h2 class="text-6xl font-bold text-white opacity-10">NameOps</h2>
 	</div>
 	<div class="relative z-10 max-w-6xl mx-auto px-4">
+
 		<!-- Filter tags -->
 		<div class="flex justify-center flex-wrap gap-2 mb-8">
 			{#each filters as filter}

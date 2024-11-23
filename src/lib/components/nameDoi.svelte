@@ -251,6 +251,9 @@
     }
     scanData = ''; // Reset after use
   }
+
+  // Add state for active tab
+  let activeTab = 'nfc'; // or 'keyValue'
 </script>
 {#if scanOpen}
   <ScanModal 
@@ -274,76 +277,120 @@
         <p class="mt-4">&nbsp;</p>
         <div class="border-b border-gray-200">
           <nav class="-mb-px flex">
-            <a class="border-b-2 border-blue-500 py-2 px-4 text-sm font-medium text-blue-600" href="#">NFC (non-fungible-coin)</a>
-            <a class="border-b-2 border-transparent py-2 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" href="#">Key-Value Transaction</a>
+            <a 
+              class="border-b-2 py-2 px-4 text-sm font-medium {activeTab === 'nfc' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" 
+              href="#"
+              on:click|preventDefault={() => activeTab = 'nfc'}
+            >
+              NFC (non-fungible-coin)
+            </a>
+            <a 
+              class="border-b-2 py-2 px-4 text-sm font-medium {activeTab === 'keyValue' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" 
+              href="#"
+              on:click|preventDefault={() => activeTab = 'keyValue'}
+            >
+              Key-Value Transaction
+            </a>
           </nav>
         </div>
         <div class="py-4">
-          <div class="grid grid-cols-[auto,1fr] gap-4 items-start">
-            <div class="font-semibold text-left">NFC-Name:</div>
-            <div><input type="text" bind:value={nftName} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
-            
-            <div class="font-semibold text-left">Description:</div>
-            <div><input type="text" bind:value={nftDescription} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
-            
-            <div class="font-semibold text-left self-start">Image:</div>
-            <div class="w-64 h-64 text-left overflow-hidden">
-              <img
-                src={previewImgSrc || "https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80"}
-                alt="Image preview"
-                class="w-full h-full object-cover"
-              />
+          {#if activeTab === 'nfc'}
+            <div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
+              <div class="font-semibold text-left">NFC-Name:</div>
+              <div><input type="text" bind:value={nftName} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
+              
+              <div class="font-semibold text-left">Description:</div>
+              <div><input type="text" bind:value={nftDescription} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></div>
             </div>
-          </div>
-          {#if files.accepted.length===0}
-            <Dropzone multiple={false} on:drop={handleFilesSelect} />
-          {:else}
-            {#if files.accepted.length > 0}
-              <div class="grid grid-cols-[auto,1fr] gap-4 overflow-x-auto whitespace-nowrap max-w-full">
-                <div class="font-semibold text-left pr-4 min-w-[60px]">name:</div>
-                <div class="text-left">
-                  <div class="truncate">{files.accepted[0].name}</div>
-                </div>
-                <div class="font-semibold text-left pr-4 min-w-[60px]">type:</div>
-                <div class="text-left">
-                  <div class="truncate">{files.accepted[0].type}</div>
-                </div>
-                <div class="font-semibold text-left pr-4 min-w-[60px]">size:</div>
-                <div class="text-left">
-                  <div class="truncate">{files.accepted[0].size}</div>
-                </div>
-                <div class="font-semibold text-left pr-4 pt-2 min-w-[60px]">cid:</div>
-                <div class="text-left pt-2">
-                  <div class="truncate">{imageCID}</div>
-                </div>
-                <div class="font-semibold text-left pr-4 pt-2 min-w-[60px]">status:</div>
-                <div class="text-left pt-2 flex items-center">
-                  {#if cidStatus !== 'idle'}
-                    <div class={`w-4 h-4 rounded-full mr-2 ${cidStatus === 'adding' ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></div>
-                    <span>{cidStatus === 'adding' ? 'Adding to pinning service' : 'Added to pinning service'}</span>
+
+            <div class="mb-8">
+              <div class="font-semibold text-left mb-2">Image:</div>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div class="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300">
+                  {#if previewImgSrc}
+                    <img
+                      src={previewImgSrc}
+                      alt="Image preview"
+                      class="w-full h-full object-cover"
+                    />
+                    <button 
+                      on:click={() => { files.accepted = []; previewImgSrc = null; }}
+                      class="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 focus:outline-none"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   {:else}
-                    <span>Waiting for CID</span>
+                    <Dropzone 
+                      multiple={false} 
+                      on:drop={handleFilesSelect}
+                      class="w-full h-full flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-gray-50"
+                    >
+                      <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <p class="text-sm text-gray-600">Drop your image here or click to upload</p>
+                      <p class="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 10MB</p>
+                    </Dropzone>
                   {/if}
                 </div>
+
+                {#if files.accepted.length > 0}
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-4">File Details</h4>
+                    <div class="space-y-3">
+                      <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-500 w-20">Name:</span>
+                        <span class="text-sm text-gray-900 truncate">{files.accepted[0].name}</span>
+                      </div>
+                      <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-500 w-20">Type:</span>
+                        <span class="text-sm text-gray-900">{files.accepted[0].type}</span>
+                      </div>
+                      <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-500 w-20">Size:</span>
+                        <span class="text-sm text-gray-900">{(files.accepted[0].size / 1024).toFixed(2)} KB</span>
+                      </div>
+                      <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-500 w-20">CID:</span>
+                        <span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span>
+                      </div>
+                      <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-500 w-20">Status:</span>
+                        <div class="flex items-center">
+                          {#if cidStatus !== 'idle'}
+                            <div class="flex items-center gap-2">
+                              <div class={`w-2 h-2 rounded-full ${cidStatus === 'adding' ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></div>
+                              <span class="text-sm text-gray-900">
+                                {cidStatus === 'adding' ? 'Processing...' : 'Added to IPFS'}
+                              </span>
+                            </div>
+                          {/if}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
               </div>
-            {/if}
+            </div>
+          {:else}
+            <div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
+              <div class="font-semibold text-left">Key:</div>
+              <div>
+                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+              
+              <div class="font-semibold text-left">Value:</div>
+              <div>
+                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+            </div>
           {/if}
         </div>
-        <p class="mt-4 pt-2">&nbsp;</p>
-        <div class="grid grid-cols-[auto,1fr] gap-4 items-start">
-          <div class="font-semibold text-left">NameId:</div>
-          <div>
-            <input type="text" bind:value={nameId} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          </div>
-          
-          <div class="font-semibold text-left">NameValue:</div>
-          <div>
-            <input type="text" bind:value={nameValue} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          </div>
-        </div>
-        <p class="mt-4">&nbsp;</p>
+
         <div class="grid grid-cols-2 gap-4">
-          <div>&nbsp;</div>
+          <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
           <div><button on:click={() => activeTimeLine++} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Next</button></div>
         </div>
       {/if}
