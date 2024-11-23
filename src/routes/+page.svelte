@@ -13,13 +13,15 @@
 	$: updatedCurrentNameOp = currentNameOp;
 	$: updatedCurrentNameUtxo = currentNameUtxo;
 	
-	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to see observe!";
+	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
+	let isNameAvailable = false;
 
 	function handleInput(event) {
 		inputValue = event.detail;
 		if (inputValue.length > 0) {
 			showHeroSection = false;
+			checkNameAvailability(inputValue);
 		}
 	}
 
@@ -174,6 +176,25 @@
         sendPubSubRequest(selectedFilter, 10, currentFrom, "LAST");
         currentFromMap[selectedFilter] = currentFrom + 5;
     }
+
+    async function checkNameAvailability(name) {
+        try {
+            const nameExists = $nameOps.some(nameOp => 
+                nameOp.nameId.toLowerCase() === name.toLowerCase()
+            );
+            
+            isNameAvailable = !nameExists;
+            
+            customErrorMessage = customErrorMessage.replace('---name---', name);
+            customSuccessMessage = customSuccessMessage.replace('---name---', name);
+            
+            return isNameAvailable;
+        } catch (error) {
+            console.error('Error checking name availability:', error);
+            customErrorMessage = "Error checking name availability. Please try again.";
+            return false;
+        }
+    }
 </script>
 
 <svelte:head>
@@ -236,6 +257,7 @@
 			on:input={handleInput}
 			bind:customErrorMessage
 			bind:customSuccessMessage
+			{isNameAvailable}
 			/>
 	</div>
 </section>
