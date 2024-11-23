@@ -131,15 +131,24 @@
 		</div>
 	</footer>
 
-	<section class="mt-4 px-4">
-		<h2 class="text-xl font-bold mb-2">Node Addresses:</h2>
-		<textarea 
-			class="w-full p-2 bg-gray-100 rounded font-mono text-sm resize-none"
-			rows={nodeAddresses.length} 
-			readonly
-			value={nodeAddresses.join('\n')}
-		/>
-	</section>
+	<div class="fixed inset-0 pointer-events-none">
+		{#each nodeAddresses as address, i}
+		om
+			<div 
+				class="constellation-node"
+				style="
+					--x: {Math.random() * 100}%;
+					--y: {Math.random() * 100}%;
+					--speed: {3 + Math.random() * 2}s;
+				"
+			>
+				<div class="h-2 w-2 bg-blue-400 rounded-full" />
+				<div class="tooltip">
+					<code class="text-xs">{address}</code>
+				</div>
+			</div>
+		{/each}
+	</div>
 </body>
 
 <style lang="postcss">
@@ -176,5 +185,26 @@
 
 	:global(.interactive-stats) {
 		@apply flex flex-wrap gap-1.5;
+	}
+
+	.constellation-node {
+		@apply absolute;
+		left: var(--x);
+		top: var(--y);
+		animation: pulse var(--speed) ease-in-out infinite;
+	}
+
+	.tooltip {
+		@apply hidden absolute -top-8 bg-black text-white p-2 rounded;
+	}
+
+	.constellation-node:hover .tooltip {
+		@apply block;
+	}
+
+	@keyframes pulse {
+		0% { transform: scale(1); opacity: 0.5; }
+		50% { transform: scale(1.2); opacity: 1; }
+		100% { transform: scale(1); opacity: 0.5; }
 	}
 </style>
