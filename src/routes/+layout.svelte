@@ -1,7 +1,6 @@
 <script>
-	import { helia, libp2p, electrumClient, orbitdb, nameOps } from '$lib/doichain/doichain-store.js';
+	import { helia, libp2p, nameOps } from '$lib/doichain/doichain-store.js';
 	import "../app.css";
-	import Navigation from './navigation.svelte';
 	import { onMount, onDestroy } from "svelte";
 	import { browser } from '$app/environment';
 	import { createLibp2p } from 'libp2p'
@@ -10,8 +9,8 @@
 	import { LevelDatastore } from "datastore-level";
 	import { createLibp2pConfig } from '$lib/config/libp2p-config'
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js'
-
-	//const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub','_peer-discovery._p2p._pubsub']
+	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
+	
 	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub']
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 
@@ -118,6 +117,8 @@
 	<!-- <div class="fixed bottom-0 left-0 right-0 z-50">
 		<Navigation />
 	</div> -->
+	<LibP2PTransportTags />
+				
 
 	<section class="mt-4 px-4">
 		<h2 class="text-xl font-bold mb-2">Node Addresses:</h2>

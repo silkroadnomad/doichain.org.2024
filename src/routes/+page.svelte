@@ -1,9 +1,10 @@
 <script>
-	import { helia, libp2p, connectedPeers, nameOps} from '$lib/doichain/doichain-store.js'
+	import { libp2p, nameOps} from '$lib/doichain/doichain-store.js'
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
 	import NameDoi from '$lib/components/nameDoi.svelte';
 	import { onMount } from 'svelte';
+
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	let showHeroSection = true;
 	let inputValue = '';
@@ -58,7 +59,6 @@
 		{ id: 'bp', label: 'BlockPro (/bp)' },
 	];
 
-
 	$: if (selectedFilter) {
 		localStorage.setItem('selectedFilter', selectedFilter);
 	}
@@ -89,7 +89,7 @@
 	let lastRequestTime = 0;
 	const DEBOUNCE_DELAY = 1000; // 1 second delay between requests
 
-	onMount(async () => {
+	onMount( async () => {
 		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
 		const handleScroll = () => {
 			if (nameOpsSection && !isLoading) {
@@ -133,55 +133,6 @@
 		);
 	`;
 
-	$: peerCounts = {
-		webrtc: 0,
-		webtransport: 0,
-		wss: 0,
-		ws: 0
-	};
-
-	$: peerAddresses = {
-        webrtc: [],
-        webtransport: [],
-        wss: [],
-        ws: []
-    };
-
-	$: {
-		if (Array.isArray($connectedPeers)) {
-			peerCounts = { webrtc: 0, webtransport: 0, wss: 0, ws: 0 };
-            peerAddresses = { webrtc: [], webtransport: [], wss: [], ws: [] };
-
-            $connectedPeers.forEach(peer => {
-                if (peer && peer.remoteAddr) {
-                    const addr = peer.remoteAddr.toString().toLowerCase();
-                    if (addr.includes('/webrtc/')) {
-                        peerCounts.webrtc++;
-                        peerAddresses.webrtc.push(peer.remoteAddr.toString());
-                    } else if (addr.includes('/webtransport/')) {
-                        peerCounts.webtransport++;
-                        peerAddresses.webtransport.push(peer.remoteAddr.toString());
-                    } else if (addr.includes('/wss/')) {
-                        peerCounts.wss++;
-                        peerAddresses.wss.push(peer.remoteAddr.toString());
-                    } else if (addr.includes('/ws/')) {
-                        peerCounts.ws++;
-                        peerAddresses.ws.push(peer.remoteAddr.toString());
-                    }
-                }
-            });
-		}
-	}
-
-	let hoveredType = null;
-
-	function showAddresses(type) {
-		hoveredType = type;
-	}
-
-	function hideAddresses() {
-		hoveredType = null;
-	}
 	let overWriteValue;
 	$:{
 		if(overWriteValue){ 
@@ -239,6 +190,7 @@
 	<meta name="twitter:description" content={description} />
 	<meta name="twitter:image" content={image} />
 </svelte:head>
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -314,50 +266,6 @@
 		<h2 class="text-6xl font-bold text-white opacity-10">NameOps</h2>
 	</div>
 	<div class="relative z-10 max-w-6xl mx-auto px-4">
-		<h2 class="poppins-heading text-4xl font-bold mb-2 text-center text-white">Recent {filteredNameOps.length} {selectedFilter} NameOps</h2>
-		
-		<div class="flex justify-center flex-wrap gap-2 mb-6 relative">
-			<span 
-				class="px-2 py-1 bg-blue-400 text-white hover:bg-blue-500 text-xs font-semibold rounded-full cursor-pointer"
-				on:mouseenter={() => showAddresses('webrtc')}
-				on:mouseleave={hideAddresses}
-			>
-				WebRTC: {peerCounts.webrtc}
-			</span>
-			<span 
-				class="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full cursor-pointer"
-				on:mouseenter={() => showAddresses('webtransport')}
-				on:mouseleave={hideAddresses}
-			>
-				WebTransport: {peerCounts.webtransport}
-			</span>
-			<span 
-				class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded-full cursor-pointer"
-				on:mouseenter={() => showAddresses('wss')}
-				on:mouseleave={hideAddresses}
-			>
-				WSS: {peerCounts.wss}
-			</span>
-			<span 
-				class="px-2 py-1 bg-yellow-500 text-white text-xs font-semibold rounded-full cursor-pointer"
-				on:mouseenter={() => showAddresses('ws')}
-				on:mouseleave={hideAddresses}
-			>
-				WS: {peerCounts.ws}
-			</span>
-
-			{#if hoveredType}
-				<div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-4 bg-white rounded-lg shadow-lg z-50 w-full max-w-3xl">
-					<h3 class="text-lg font-semibold mb-2 text-gray-800">{hoveredType.toUpperCase()} Peer Addresses</h3>
-					<ul class="text-sm space-y-2 max-h-60 overflow-y-auto">
-						{#each peerAddresses[hoveredType] as address}
-							<li class="p-2 bg-gray-100 rounded break-all">{address}</li>
-						{/each}
-					</ul>
-				</div>
-			{/if}
-		</div>
-		
 		<!-- Filter tags -->
 		<div class="flex justify-center flex-wrap gap-2 mb-8">
 			{#each filters as filter}
@@ -406,4 +314,15 @@
         -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
     }
 </style>
+
+<div class="fixed top-4 right-4 transform rotate-3 bg-white/90 backdrop-blur-sm shadow-xl rounded-lg px-4 py-2 z-50">
+    <div class="text-sm">
+        <span class="text-gray-600">Collection:</span>
+        <span class="font-bold text-gray-900 ml-1">{selectedFilter}</span>
+    </div>
+    <div class="text-2xl font-bold text-gray-900">
+        {filteredNameOps.length}
+        <span class="text-sm text-gray-600">items</span>
+    </div>
+</div>
 
