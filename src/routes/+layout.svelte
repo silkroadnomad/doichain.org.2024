@@ -80,7 +80,7 @@
 
 		addressUpdateInterval = setInterval(() => {
 			updateNodeAddresses();
-		}, 60000);
+		}, 20000);
 
 			if (browser && 'serviceWorker' in navigator) {
 				navigator.serviceWorker.register('/service-worker.js')
@@ -133,7 +133,6 @@
 
 	<div class="fixed inset-0 pointer-events-none">
 		{#each nodeAddresses as address, i}
-		om
 			<div 
 				class="constellation-node"
 				style="
@@ -188,18 +187,21 @@
 	}
 
 	.constellation-node {
-		@apply absolute;
+		@apply absolute pointer-events-auto cursor-pointer;
 		left: var(--x);
 		top: var(--y);
 		animation: pulse var(--speed) ease-in-out infinite;
 	}
 
 	.tooltip {
-		@apply hidden absolute -top-8 bg-black text-white p-2 rounded;
+		@apply invisible absolute -top-8 bg-black text-white p-2 rounded whitespace-nowrap;
+		transform: translateX(-50%);
+		left: 50%;
+		z-index: 50;
 	}
 
 	.constellation-node:hover .tooltip {
-		@apply block;
+		@apply visible;
 	}
 
 	@keyframes pulse {
