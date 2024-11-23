@@ -99,26 +99,37 @@
 		
 	</script>
 
-<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen">
-	<section class="flex items-center justify-center mt-8">
-		<div class="text-center max-w-4xl mx-auto px-4">
-			<div class="flex justify-center mb-12">
-				<div class="bg-gray-900 rounded-full p-4">
-					<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
+<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen pb-[footer-height]">
+	<div class="flex-grow">
+		<section class="flex items-center justify-center mt-8">
+			<div class="text-center max-w-4xl mx-auto px-4">
+				<div class="flex justify-center mb-12">
+					<div class="bg-gray-900 rounded-full p-4">
+						<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<main class="mb-16">
+			<slot />
+		</main>
+	</div>
+
+	<footer class="fixed bottom-2 left-0 right-0 z-50">
+		<div class="container mx-auto px-4 py-2">
+			<div class="network-stats-grid">
+				<div class="stat-card group">
+					<div class="flex items-center gap-2 mb-1">
+						<LibP2PTransportTags 
+							class="interactive-stats"
+							variant="stats"
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
-	</section>
-
-	<main class="flex-grow mb-16">
-		<slot />
-	</main>
-
-	<!-- <div class="fixed bottom-0 left-0 right-0 z-50">
-		<Navigation />
-	</div> -->
-	<LibP2PTransportTags />
-				
+	</footer>
 
 	<section class="mt-4 px-4">
 		<h2 class="text-xl font-bold mb-2">Node Addresses:</h2>
@@ -131,7 +142,7 @@
 	</section>
 </body>
 
-<style>
+<style lang="postcss">
 	body {
 		font-family: 'Poppins', sans-serif;
 	}
@@ -140,5 +151,30 @@
 		min-height: 60px;
 		max-height: 200px;
 		overflow-y: auto;
+	}
+
+	:global(body) {
+		padding-bottom: calc(var(--footer-height, 32px) + 1rem);
+	}
+
+	footer {
+		@apply mx-2;
+		height: var(--footer-height, 32px);
+		transition: transform 0.3s ease;
+	}
+
+	:global(.interactive-stats .transport-tag) {
+		@apply px-1.5 py-0.5 rounded-full text-xs transition-all duration-200;
+		@apply bg-gray-200 text-gray-600;
+		@apply cursor-pointer;
+	}
+
+	:global(.interactive-stats .transport-tag:hover) {
+		@apply bg-blue-500 text-white;
+		transform: scale(1.1);
+	}
+
+	:global(.interactive-stats) {
+		@apply flex flex-wrap gap-1.5;
 	}
 </style>

@@ -85,7 +85,7 @@
     </span>
 
     {#if hoveredType}
-        <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 p-4 bg-white rounded-lg shadow-lg z-50 w-full max-w-3xl">
+        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-4 bg-white rounded-lg shadow-lg z-50 w-full max-w-3xl">
             <h3 class="text-lg font-semibold mb-2 text-gray-800">{hoveredType.toUpperCase()} Peer Addresses</h3>
             <ul class="text-sm space-y-2 max-h-60 overflow-y-auto">
                 {#each peerAddresses[hoveredType] as address}
