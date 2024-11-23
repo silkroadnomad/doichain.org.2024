@@ -177,30 +177,30 @@
         </div>
 
         {#if showTransactionDetails}
-            <div class="p-6 bg-gray-100 transaction-details">
+            <div class="p-4 bg-gray-100 transaction-details text-xs sm:text-sm">
                 <SimpleGrid cols={2}>
-                    <div class="font-semibold">wallet address:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(
+                    <div class="font-semibold text-xs sm:text-sm">wallet address:</div>
+                    <div class="clickable text-xs sm:text-sm" on:click={() => copyToClipboard(
                         currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A'
                     )}>
                         { currentNameOp?.address ? currentNameOp.address : currentNameOp?.currentNameUtxo?.scriptPubKey?.addresses[0] || 'N/A' }
                     </div>
-                    <div class="font-semibold">txid:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.txid || 'N/A', 'Transaction ID')}>
+                    <div class="font-semibold text-xs sm:text-sm">txid:</div>
+                    <div class="clickable text-xs sm:text-sm" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.txid || 'N/A', 'Transaction ID')}>
                         {currentNameOp.currentNameUtxo?.txid || 'N/A'}
                     </div>
-                    <div class="font-semibold">time:</div>
-                    <div>{currentNameOp.currentNameUtxo?.formattedBlocktime || 'N/A'}</div>
-                    <div class="font-semibold">name:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(currentNameOp.name || 'N/A', 'Name')}>
+                    <div class="font-semibold text-xs sm:text-sm">time:</div>
+                    <div class="clickable text-xs sm:text-sm">{currentNameOp.currentNameUtxo?.formattedBlocktime || 'N/A'}</div>
+                    <div class="font-semibold text-xs sm:text-sm">name:</div>
+                    <div class="clickable text-xs sm:text-sm" on:click={() => copyToClipboard(currentNameOp.name || 'N/A', 'Name')}>
                         {currentNameOp.name || 'N/A'}
                     </div>
-                    <div class="font-semibold">value:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(currentNameOp.value || 'N/A', 'Value')}>
+                    <div class="font-semibold text-xs sm:text-sm">value:</div>
+                    <div class="clickable text-xs sm:text-sm" on:click={() => copyToClipboard(currentNameOp.value || 'N/A', 'Value')}>
                         {currentNameOp.value || 'N/A'}
                     </div>
-                    <div class="font-semibold">DOI amount:</div>
-                    <div class="clickable" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.value || 'N/A', 'DOI amount')}>
+                    <div class="font-semibold text-xs sm:text-sm">DOI amount:</div>
+                    <div class="clickable text-xs sm:text-sm" on:click={() => copyToClipboard(currentNameOp.currentNameUtxo?.value || 'N/A', 'DOI amount')}>
                         {currentNameOp.currentNameUtxo?.value || 'N/A'}
                     </div>
                 </SimpleGrid>
@@ -236,7 +236,8 @@
   }
 
   .transaction-details {
-    font-size: 0.875rem;
+    font-size: 0.25rem;
+    line-height: 1.2;
     color: #333;
     background-color: #f8f9fa;
     border-top: 1px solid #e9ecef;
@@ -271,5 +272,22 @@
 
   .nft-card {
     transform: scale(1) !important;
+  }
+
+  .transaction-details .clickable {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px; /* Adjust based on your needs */
+  }
+  
+  .transaction-details .clickable:hover {
+    white-space: normal;
+    word-break: break-all;
+    position: relative;
+    z-index: 1;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 2px 4px;
   }
 </style>
