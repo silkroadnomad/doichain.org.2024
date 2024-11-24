@@ -9,6 +9,12 @@
   import { unixfs } from '@helia/unixfs'
   import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
   import ScanModal from "$lib/doichain/ScanModal.svelte";
+  import { goto } from '$app/navigation';  // If you want to use router navigation
+  
+  // Add event dispatcher
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
+
   const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || "/doichain-nfc/1/message/proto"
 
   let scanOpen = false;
@@ -254,6 +260,18 @@
 
   // Add state for active tab
   let activeTab = 'nfc'; // or 'keyValue'
+
+  function handleFinish() {
+    // Dispatch event to parent component
+    dispatch('finish');
+    
+    // Reset local states
+    activeTimeLine = 0;
+    files.accepted = [];
+    previewImgSrc = null;
+    selectedUtxos = [];
+    // ... reset other relevant states ...
+  }
 </script>
 {#if scanOpen}
   <ScanModal 
@@ -599,18 +617,18 @@
             <div class="mt-4 text-right">
               <p class="flex justify-end">
                 <span class="font-semibold mr-2">Transaction Fee:</span>
-                <span>{sb.toBitcoin(transactionFee).toFixed(8)} BTC</span>
+                <span>{sb.toBitcoin(transactionFee).toFixed(8)} DOI</span>
               </p>
               <p class="flex justify-end">
                 <span class="font-semibold mr-2">Total Amount:</span>
-                <span>{sb.toBitcoin(totalAmount).toFixed(8)} BTC</span>
+                <span>{sb.toBitcoin(totalAmount).toFixed(8)} DOI</span>
               </p>
             </div>
           {/if}
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
-          <div><button on:click={() => activeTimeLine++} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Forward</button></div>
+          <div><button on:click={handleFinish} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Finish</button></div>
         </div>
       {/if}
     </div>

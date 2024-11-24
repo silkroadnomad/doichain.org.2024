@@ -271,7 +271,16 @@
 		{:else}
 			{#if !currentNameOp && inputValue}
 				<div class="text-center w-full max-w-2xl mt-2 mx-auto px-4">
-					<NameDoi nftName={inputValue} />
+					<NameDoi 
+						nftName={inputValue} 
+						on:finish={() => {
+							// Reset parent component states
+							inputValue = '';
+							showHeroSection = true;
+							currentNameOp = null;
+							currentNameUtxo = null;
+						}}
+					/>
 				</div>
 			{/if}
 		{/if}
