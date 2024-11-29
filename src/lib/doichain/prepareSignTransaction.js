@@ -1,6 +1,7 @@
 import { Psbt } from "bitcoinjs-lib";
 import { getNameOPStackScript } from "./getNameOPStackScript.js";
 import { VERSION } from "./doichain.js";
+import * as sb from 'satoshi-bitcoin';
 
 /**
  * Creates and signs a Partially Signed Bitcoin Transaction (PSBT) for registering a Doichain name.
@@ -30,24 +31,24 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
     let changeAmount;
 
     _utxoAddresses.forEach(utxo => {
-        const isSegWit = utxo?.fullTx.scriptPubKey?.type === "witness_v0_keyhash" || utxo?.fullTx.scriptPubKey.hex?.startsWith('0014') || utxo?.fullTx.scriptPubKey.hex?.startsWith('0020');
+        const isSegWit = utxo?.scriptPubKey.type === "witness_v0_keyhash" || utxo?.fullTx.scriptPubKey.hex?.startsWith('0014') || utxo?.fullTx.scriptPubKey.hex?.startsWith('0020');
         if (isSegWit) {
             psbt.addInput({
-                hash: utxo.tx_hash,
-                index: utxo.tx_pos,
+                hash: utxo.hash,
+                index: utxo.n,
                 witnessUtxo: {
-                    script: Buffer.from(utxo?.fullTx.scriptPubKey.hex, 'hex'),
-                    value: utxo.value,
-                }
+                    script: Buffer.from(utxo?.scriptPubKey.hex, 'hex'),
+                    value: sb.toSatoshi(utxo.value)
+,              }
             });
         } else {
             psbt.addInput({
-                hash: utxo.tx_hash,
-                index: utxo.tx_pos,
-                nonWitnessUtxo: Buffer.from(utxo?.fullTx.hex, 'hex')
+                hash: utxo.hash,
+                index: utxo.n,
+                nonWitnessUtxo: Buffer.from(utxo?.hex, 'hex')
             });
         }
-        totalInputAmount += utxo.value;
+        totalInputAmount += sb.toSatoshi(utxo.value);
     });
 
     if(_name) {
@@ -74,7 +75,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
     }
 
     psbt.addOutput({
-        address: _changeAddress || doichainAddress,
+        address: _changeAddress,
         value: changeAmount,
     });
 

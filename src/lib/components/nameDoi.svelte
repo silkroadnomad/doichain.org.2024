@@ -1,16 +1,15 @@
 <script>
   import { onDestroy, onMount } from 'svelte';
   import Dropzone from "svelte-file-dropzone";
-  import { helia, libp2p, electrumClient} from '$lib/doichain/doichain-store.js'
+  import { helia, libp2p, network, electrumClient} from '$lib/doichain/doichain-store.js'
   import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js'
-  import { getUTXOSFromAddress } from '$lib/doichain/nfc/nameDoi.js'
   import { renderBCUR } from '../doichain/renderQR.js'
   import { DOICHAIN } from "$lib/doichain/doichain.js";
   import { unixfs } from '@helia/unixfs'
   import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
   import ScanModal from "$lib/doichain/ScanModal.svelte";
-  import { goto } from '$app/navigation';  // If you want to use router navigation
-  
+  import { getAddressTxs } from '$lib/doichain/getAddressTxs.js'
+
   // Add event dispatcher
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
@@ -18,10 +17,10 @@
   const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || "/doichain-nfc/1/message/proto"
 
   let scanOpen = false;
-  let scanTarget = ''; // will be 'wallet', 'recipient', or 'change'
-  let scanData = ''; // new variable to bind to
+  let scanTarget = ''; 
+  let scanData = ''; 
 
-  export let walletAddress = ''
+  export let walletAddress = localStorage.getItem('walletAddress') || '';
   $:recipientsAddress = walletAddress
   $:changeAddress = walletAddress
   let changeAmount
@@ -42,7 +41,21 @@
   let storageFee = 1000000;
 
   onMount(async ()=>{
-    utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
+    const { transactions, nextUnusedAddress } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+    
+    utxos = transactions.filter(tx => 
+        tx.type === 'output' && tx.utxo === true
+    ).map(tx => ({
+        tx_hash: tx.txid,
+        tx_pos: tx.n,
+        value: tx.value,
+        height: tx.height
+    }));
+    
+    if (nextUnusedAddress) {
+      console.log("Next unused address:", nextUnusedAddress);
+      walletAddress = nextUnusedAddress;
+    }
   })
 
   let files = {
@@ -153,8 +166,9 @@
   let activeTimeLine = 0
   let selectedUtxos = [];
   $: selectedUtxosCount = selectedUtxos.length;
+
   function toggleUtxoSelection(utxo) {
-    const index = selectedUtxos.findIndex(u => u.tx_hash === utxo.tx_hash && u.tx_pos === utxo.tx_pos);
+    const index = selectedUtxos.findIndex(u => u.hash === utxo.hash && u.n === utxo.n);
     if (index !== -1) {
       selectedUtxos = selectedUtxos.filter((_, i) => i !== index);
     } else {
@@ -163,7 +177,7 @@
   }
 
   function isUtxoSelected(utxo) {
-    return selectedUtxos.some(u => u.tx_hash === utxo.tx_hash && u.tx_pos === utxo.tx_pos);
+    return selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n);
   }
 
   $: {
@@ -431,7 +445,16 @@
               bind:value={walletAddress} 
               on:keydown={ async (event) => {
                 if (event.key === 'Enter') {
-                  utxos = await getUTXOSFromAddress($electrumClient,walletAddress)
+                  localStorage.setItem('walletAddress', walletAddress);
+                  const { transactions } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+                  utxos = transactions.filter( tx => 
+                      tx.type === 'output' && tx.utxo === true
+                  ).map(tx => ({
+                      tx_hash: tx.txid,
+                      tx_pos: tx.n,
+                      value: tx.value,
+                      height: tx.height
+                  }));
                 }
               }} 
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -451,7 +474,18 @@
             <button 
               on:click={async () => {
                 console.log("Fetching UTXOs for address:", walletAddress);
-                utxos = await getUTXOSFromAddress($electrumClient, walletAddress);
+                const { transactions, nextUnusedAddress } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+                // walletAddress = nextUnusedAddress;
+                console.log("walletAddress:", walletAddress);
+                recipientsAddress = nextUnusedAddress;
+                changeAddress = nextUnusedAddress;
+                console.log("next unused address:", nextUnusedAddress);
+                console.log("recipient address:", recipientsAddress);
+                utxos = transactions.filter(tx => {
+                  console.log(tx);
+                 return tx.type === 'output' && tx.utxo === true
+                }           
+                );
                 console.log("Received UTXOs:", utxos);
               }} 
               class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
@@ -463,12 +497,12 @@
         <p class="mt-4">&nbsp;</p>
         <div class="grid grid-cols-2 gap-4">
           {#each utxos as utxo}
-            {#if !utxo.fullTx?.scriptPubKey.nameOp }
+            {#if !utxo.nameId && utxo.value > 0}
               <div class="grid grid-cols-2 gap-4">
                 <div>wallet address:</div>
-                <div>{utxo.fullTx?.address?utxo.fullTx?.address:utxo.fullTx?.scriptPubKey.addresses[0]}</div>
-                <div>wallet amount:</div>
-                <div>{sb.toBitcoin(utxo.value)} DOI</div>
+                <div>{utxo.address?utxo.address:utxo.scriptPubKey.addresses[0]}</div>
+                <div>amount:</div>
+                <div>{utxo?.value || 0} DOI</div>
                 <div><b>Activate this UTXO:</b></div>
                 <div>
                   {#key selectedUtxosCount}

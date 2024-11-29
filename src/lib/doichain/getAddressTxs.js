@@ -1,117 +1,409 @@
-import { address, crypto } from 'bitcoinjs-lib';
+import * as bitcoin from 'bitcoinjs-lib';
+const { payments, crypto } = bitcoin;
+import bs58 from 'bs58';
 import moment from 'moment';
-import Buffer from 'vite-plugin-node-polyfills/shims/buffer/index.js';
+import * as ecc from 'tiny-secp256k1';
+import BIP32Factory from 'bip32';
+const bip32 = BIP32Factory(ecc);
 
-export const getAddressTxs = async (_doiAddress, _historyStore, _electrumClient, _network) => {
-    console.log("now getting transactions of ", _doiAddress)
+/**
+ * @module getAddressTxs
+ * @description Handles transaction retrieval and processing for both single Bitcoin addresses
+ * and extended public keys (xpub/zpub). Supports legacy and SegWit addresses.
+ */
 
-    let script = address.toOutputScript(_doiAddress, _network);
-    let hash = crypto.sha256(script);
-    let reversedHash = Buffer.from(hash.reverse()).toString("hex");
-
-    let _history;
-    let ourTxs = []
-    let electrumUTXOs = []
-    if (navigator.onLine) {
-        try {
-            electrumUTXOs = await _electrumClient.request('blockchain.scripthash.listunspent', [reversedHash]);
-            console.log("electrumUTXOs", electrumUTXOs)
-            _historyStore = await _electrumClient.request('blockchain.scripthash.get_history', [reversedHash]);
-        } catch (error) {
-            console.error("Error fetching online, trying cache...", error);
-        }
-    } else {
-        _historyStore = _history ? _history.data : null;
+/**
+ * Retrieves and processes transactions for a given Bitcoin address or extended public key
+ * @async
+ * @param {string} xpubOrDoiAddress - Bitcoin address or extended public key (xpub/zpub)
+ * @param {Array} _historyStore - Transaction history store
+ * @param {Object} _electrumClient - Electrum client instance
+ * @param {Object} _network - Bitcoin network configuration
+ * @returns {Promise<Array>} Sorted array of processed transactions
+ */
+export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumClient, _network) => {
+    console.log("\n🔍 Processing address/xpub:", xpubOrDoiAddress);
+    
+    const isAddress = isValidBitcoinAddress(xpubOrDoiAddress, _network);
+    let electrumUTXOs = [];
+    let ourTxs = [];
+    let derivedAddresses = [];
+    let nextUnusedAddress = xpubOrDoiAddress; // in case its not an xpub/zpub
+    // Single address mode
+    if (isAddress) {
+        console.log("📍 Single address mode");
+        derivedAddresses.push(xpubOrDoiAddress);
+        const { utxos, history } = await fetchAddressData(xpubOrDoiAddress, _electrumClient, _network);
+        electrumUTXOs = utxos;
+        _historyStore = history;
+        console.log(`✨ Found ${history.length} transactions`);
+    } 
+    // Extended key mode
+    else {
+        console.log("🔑 Extended key mode");
+        const result = await scanExtendedKey(xpubOrDoiAddress, _electrumClient, _network);
+        derivedAddresses = result.addresses;
+        electrumUTXOs = result.utxos;
+        _historyStore = result.history;
+        nextUnusedAddress = result.nextUnusedAddress;
+        console.log(`✨ Found ${_historyStore.length} transactions across ${derivedAddresses.length} addresses`);
     }
 
-    for (const tx of _historyStore) {
+    // Process transactions
+    console.log("\n⚙️  Processing transactions...");
+    ourTxs = await processTransactions(_historyStore, derivedAddresses, electrumUTXOs, _electrumClient);
+    console.log(`✅ Processed ${ourTxs.length} relevant transactions`);
+    
+    return {
+        transactions: ourTxs.sort((a, b) => b.blocktime - a.blocktime),
+        nextUnusedAddress
+    };
+}
 
-        let decryptedTx  = await _electrumClient.request('blockchain.transaction.get', [tx.tx_hash, 1])
-        decryptedTx.formattedBlocktime = decryptedTx.blocktime ? moment.unix(decryptedTx.blocktime).format('YYYY-MM-DD HH:mm:ss') : 'mempool'
-        decryptedTx.value = 0;
-        let inputTotal = 0;
-        let outputTotal = 0;
+export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
+    try {
+        console.log(`\n Deriving address:`);
+        console.log(`├── Input Key: ${xpubOrZpub.slice(0, 20)}...`);
+        console.log(`├── Path: ${derivationPath}`);
+        console.log(`└── Type: ${type}`);
 
+        const decodedData = bs58.decode(xpubOrZpub);
+        const data = Buffer.from(decodedData);
+        
+        if (data.length !== 82) {
+            throw new Error('Invalid extended public key length', data.length);
+        }
 
-        // for (const [index, vin] of decryptedTx.vin.entries()) {
-        //     if (!vin.coinbase) {
-        //         const prevTx = await _electrumClient.request('blockchain.transaction.get', [vin.txid, 1], true); // true for verbose to get detailed transaction
-        //         const spentOutput = prevTx.vout[vin.vout]; // vin.vout is the index of the output in prevTx that vin is spending
-        //         if (spentOutput.scriptPubKey.addresses === undefined //could be undefined for some reason? coinbase?
-        //           || spentOutput.scriptPubKey.addresses.includes(_doiAddress)) {
-        //             const _tx = JSON.parse(JSON.stringify(decryptedTx));
-        //             _tx.id = decryptedTx.txid + '_in_' + index
-        //             _tx.value = -spentOutput.value; // Negative because it's spent
-        //             _tx.address = spentOutput.scriptPubKey?.addresses //?spentOutput.scriptPubKey?.addresses[0]:_doiAddress //if coinbase tx no addresses in scriptpbukey
-        //             _tx.fee = decryptedTx.fee
-        //             ourTxs.push(_tx);
-        //         }
-        //         inputTotal += spentOutput.value; // Sum up all input values
-        //     }
-        // }
+        const versionBytes = data.subarray(0, 4);
+        const versionHex = versionBytes.toString('hex');
+        console.log(`├── Version bytes: ${versionHex}`);
 
-        for (const [index, vout] of decryptedTx.vout.entries()) {
-            const _tx = JSON.parse(JSON.stringify(decryptedTx));
-            _tx.id = decryptedTx.txid + '_out_' + index;
+        let xpub = xpubOrZpub;
+        
+        // Handle ZPUB conversion to XPUB if needed
+        if (versionHex === '04b24746') { // ZPUB (Doichain/Bitcoin mainnet)
+            console.log(`├── Converting ZPUB to XPUB`);
+            // Convert ZPUB to XPUB by changing version bytes
+            const xpubVersionBytes = Buffer.from([0x04, 0x88, 0xb2, 0x1e]); // mainnet xpub
+            const xpubBuffer = Buffer.concat([
+                xpubVersionBytes,
+                data.subarray(4)
+            ]);
+            xpub = bs58.encode(xpubBuffer);
+        }
 
-            const asm = vout.scriptPubKey.asm
-            const asmParts = asm.split(" ")
-            // console.log("asmParts",asmParts)
-            if ((asmParts[0] !== 'OP_10' && asmParts[0] !== 'OP_NAME_DOI') &&
-              (asmParts[0] !== 'OP_2' && asmParts[0] !== 'OP_NAME_FIRSTUPDATE') &&
-              (asmParts[0] !== 'OP_3' && asmParts[0] !== 'OP_NAME_UPDATE'))
-            {
-                _tx.address = vout.scriptPubKey?.addresses ? vout.scriptPubKey?.addresses[0] : _doiAddress
-            } else {
-                // const chunks = vout.scriptPubKey.asm.split(" ")
-
-                _tx.nameId = vout.scriptPubKey.nameOp.name
-                _tx.nameValue = vout.scriptPubKey.nameOp.value
-                _tx.address = vout.scriptPubKey?.addresses[0]
-
-                // namesCount.set(_namesCount += 1)
-                console.log('name_op nameId', _tx.nameId)
-                console.log('name_op nameValue', _tx.nameValue)
-                console.log('name_op address', _tx.address)
-            }
-
-            _tx.fee = decryptedTx.fee
-            _tx.value = vout.value
-            _tx.n = vout.n
-            outputTotal += vout.value; // Sum up all output values
-
-            //compare all electrumUTXOYs has one of our utxos and mark it as utxo
-            if (_tx.address === _doiAddress) {
-                const isUTXO = electrumUTXOs.some(utxo => utxo.tx_hash === _tx.txid && utxo.tx_pos === _tx.n);
-                if (isUTXO) {
-                    _tx.utxo = true;
+        let node;
+        if (versionHex === '04b24746') { // ZPUB case
+            console.log(`├── Using native segwit network configuration`);
+            // Use appropriate network configuration for native segwit
+            const segwitNetwork = {
+                ...network,
+                bip32: {
+                    public: 0x04b24746,  // ZPUB version bytes
+                    private: 0x04b2430c  // ZPRV version bytes
                 }
-                ourTxs.push(_tx);
+            };
+            node = bip32.fromBase58(xpubOrZpub, segwitNetwork);
+        } else {
+            // Regular XPUB case
+            console.log(`├── Using regular network configuration`);
+            node = bip32.fromBase58(xpub, network);
+        }
+        
+        // Parse the derivation path
+        const pathSegments = derivationPath
+            .replace('m/', '')
+            .split('/')
+            .filter(segment => segment !== '');
+
+        // Derive each segment individually
+        let child = node;
+        for (const segment of pathSegments) {
+            const index = parseInt(segment.replace("'", ""), 10);
+            if (isNaN(index)) {
+                throw new Error(`Invalid path segment: ${segment}`);
+            }
+            child = child.derive(index);
+        }
+
+        // Generate address based on type
+        if (type === 'p2wpkh' || type === 'segwit') {
+            const address = payments.p2wpkh({ 
+                pubkey: child.publicKey, 
+                network 
+            }).address;
+            console.log(`└── ✅ Generated segwit: ${address}`);
+            return address;
+        } else { // legacy p2pkh
+            const address = payments.p2pkh({ 
+                pubkey: child.publicKey, 
+                network 
+            }).address;
+            console.log(`└── ✅ Generated legacy: ${address}`);
+            return address;
+        }
+    } catch (error) {
+        console.error(`└── ❌ Error in deriveAddress:`, error);
+        throw error;
+    }
+}
+/**
+ * Validates a Bitcoin address
+ * @param {string} addressStr - Bitcoin address
+ * @param {Object} network - Bitcoin network configuration
+ * @returns {boolean} True if the address is valid, false otherwise
+ */
+function isValidBitcoinAddress(addressStr, network) {
+    try {
+        bitcoin.address.toOutputScript(addressStr, network);
+        return true;
+    } catch (e) {
+        return false;
+    }
+  }
+
+/**
+ * Fetches UTXOs and transaction history for a single address
+ * @async
+ * @param {string} addr - Bitcoin address
+ * @param {Object} client - Electrum client instance
+ * @param {Object} network - Bitcoin network configuration
+ * @returns {Promise<Object>} Object containing UTXOs and transaction history
+ */
+async function fetchAddressData(addr, client, network) {
+    console.log(`\n🔍 Fetching data for address: ${addr}`);
+    const script = bitcoin.address.toOutputScript(addr, network);
+    const hash = crypto.sha256(script);
+    const reversedHash = Buffer.from(hash.reverse()).toString("hex");
+
+    try {
+        const utxos = await client.request('blockchain.scripthash.listunspent', [reversedHash]);
+        const history = await client.request('blockchain.scripthash.get_history', [reversedHash]);
+        console.log(`├── 💰 UTXOs: ${utxos.length}`);
+        console.log(`└── 📜 History: ${history.length} transactions`);
+        return { utxos, history };
+    } catch (error) {
+        console.error("❌ Error fetching address data:", error);
+        return { utxos: [], history: [] };
+    }
+}
+
+/**
+ * Processes a batch of transactions, handling both inputs and outputs
+ * @async
+ * @param {Array} history - Array of transaction history items
+ * @param {Array} derivedAddresses - Array of derived addresses to check against
+ * @param {Array} utxos - Array of unspent transaction outputs
+ * @param {Object} client - Electrum client instance
+ * @returns {Promise<Array>} Array of processed transactions
+ */
+async function processTransactions(history, derivedAddresses, utxos, client) {
+    const transactions = [];
+    console.log(`\n📦 Processing ${history.length} transactions`);
+
+    for (const tx of history) {
+        console.log(`\n🔄 Transaction: ${tx.tx_hash.slice(0, 8)}...`);
+        const decryptedTx = await client.request('blockchain.transaction.get', [tx.tx_hash, 1]);
+        decryptedTx.formattedBlocktime = decryptedTx.blocktime ? 
+            moment.unix(decryptedTx.blocktime).format('YYYY-MM-DD HH:mm:ss') : '⏳ mempool';
+
+        // Process inputs
+        console.log(`├── 📥 Processing ${decryptedTx.vin.length} inputs`);
+        for (const [index, vin] of decryptedTx.vin.entries()) {
+            if (!vin.coinbase) {
+                const inputTx = await processInput(vin, client, derivedAddresses, decryptedTx, index);
+                if (inputTx) {
+                    console.log(`│   └── 💸 Found relevant input: ${inputTx.value} BTC`);
+                    transactions.push(inputTx);
+                }
             }
         }
 
-        const fee = inputTotal - outputTotal; // Calculate the fee
-        ourTxs.forEach(__tx => {
-            if (__tx.txid.startsWith(decryptedTx.txid)) {
-                __tx.fee = fee;
+        // Process outputs
+        console.log(`└── 📤 Processing ${decryptedTx.vout.length} outputs`);
+        for (const [index, vout] of decryptedTx.vout.entries()) {
+            const outputTx = await processOutput(vout, derivedAddresses, decryptedTx, index, utxos);
+            if (outputTx) {
+                console.log(`    └── ${outputTx.utxo ? '🟢' : '⭕'} Found relevant output: ${outputTx.value} BTC`);
+                transactions.push(outputTx);
             }
-        });
-
-        // Group txs by txid and accumulate values for txs with the same txid
-        const groupedTxs = ourTxs.reduce((acc, tx) => {
-            // Use txid as the key for grouping
-            const key = tx.txid;
-            if (!acc[key]) {
-                // If this txid hasn't been seen before, add it directly
-                acc[key] = { ...tx };
-            } else {
-                // If this txid has been seen, accumulate the value
-                acc[key].value += tx.value;
-            }
-            return acc;
-        }, {});
-
-        ourTxs = ourTxs.sort((a, b) => b.blocktime - a.blocktime);
+        }
     }
-    return ourTxs
+
+    return transactions;
+}
+
+/**
+ * Processes a transaction input
+ * @async
+ * @param {Object} vin - Transaction input data
+ * @param {Object} client - Electrum client instance
+ * @param {Array} derivedAddresses - Array of derived addresses to check against
+ * @param {Object} decryptedTx - Decrypted transaction data
+ * @param {number} index - Input index
+ * @returns {Promise<Object|null>} Processed transaction input or null if not relevant
+ */
+async function processInput(vin, client, derivedAddresses, decryptedTx, index) {
+    const prevTx = await client.request('blockchain.transaction.get', [vin.txid, 1]);
+    const spentOutput = prevTx.vout[vin.vout];
+    const inputAddress = spentOutput.scriptPubKey?.addresses?.[0];
+
+    if (derivedAddresses.includes(inputAddress)) {
+        return {
+            ...decryptedTx,
+            id: `${decryptedTx.txid}_in_${index}`,
+            value: -spentOutput.value,
+            address: inputAddress,
+            type: 'input'
+        };
+    }
+    return null;
+}
+
+/**
+ * Processes a transaction output
+ * @param {Object} vout - Transaction output data
+ * @param {Array} derivedAddresses - Array of derived addresses to check against
+ * @param {Object} decryptedTx - Decrypted transaction data
+ * @param {number} index - Output index
+ * @param {Array} utxos - Array of unspent transaction outputs
+ * @returns {Object|null} Processed transaction output or null if not relevant
+ */
+function processOutput(vout, derivedAddresses, decryptedTx, index, utxos) {
+    const outputAddress = vout.scriptPubKey?.addresses?.[0];
+    
+    if (derivedAddresses.includes(outputAddress)) {
+        const tx = {
+            ...decryptedTx,
+            id: `${decryptedTx.txid}_out_${index}`,
+            value: vout.value,
+            address: outputAddress,
+            type: 'output',
+            n: vout.n,
+            scriptPubKey: vout.scriptPubKey
+        };
+
+        // Check UTXO status
+        tx.utxo = utxos.some(utxo => 
+            utxo.tx_hash === tx.txid && utxo.tx_pos === tx.n
+        );
+
+        // Process name operations
+        processNameOp(tx, vout.scriptPubKey);
+
+        return tx;
+    }
+    return null;
+}
+
+/**
+ * Processes Doichain name operations in transaction outputs
+ * @param {Object} tx - Transaction object to be modified
+ * @param {Object} scriptPubKey - Script public key data
+ */
+function processNameOp(tx, scriptPubKey) {
+    const asmParts = scriptPubKey.asm.split(" ");
+    if (['OP_10', 'OP_NAME_DOI', 'OP_2', 'OP_NAME_FIRSTUPDATE', 'OP_3', 'OP_NAME_UPDATE']
+        .includes(asmParts[0])) {
+        tx.nameId = scriptPubKey.nameOp.name;
+        tx.nameValue = scriptPubKey.nameOp.value;
+    }
+}
+
+/**
+ * Scans an extended public key for transactions across multiple derivation paths
+ * @async
+ * @param {string} xpub - Extended public key
+ * @param {Object} client - Electrum client instance
+ * @param {Object} network - Bitcoin network configuration
+ * @returns {Promise<Object>} Object containing addresses, UTXOs, and transaction history
+ */
+async function scanExtendedKey(xpub, client, network) {
+    const derivationPaths = {
+        'electrum-legacy': 'm',
+        'electrum-segwit': "m/0'"
+    };
+
+    let addresses = [];
+    let allUtxos = [];
+    let allHistory = [];
+    let nextUnusedAddress = null;
+    
+    for (const [standard, basePath] of Object.entries(derivationPaths)) {
+        const { 
+            addresses: newAddresses, 
+            utxos: newUtxos, 
+            history: newHistory,
+            nextUnusedAddress: newNextUnusedAddress
+        } = await scanDerivationPath(xpub, basePath, standard, client, network);
+        
+        addresses = [...addresses, ...newAddresses];
+        allUtxos = [...allUtxos, ...newUtxos];
+        allHistory = [...allHistory, ...newHistory];
+        nextUnusedAddress = newNextUnusedAddress;
+    }
+
+    return {
+        addresses,
+        utxos: allUtxos,
+        history: allHistory,
+        nextUnusedAddress
+    };
+}
+
+
+/**
+ * Scans an extended public key for transactions across multiple derivation paths
+ * @async
+ * @param {string} xpub - Extended public key
+ * @param {string} basePath - Base path for derivation
+ * @param {string} standard - Standard for derivation
+ * @param {Object} client - Electrum client instance
+ * @param {Object} network - Bitcoin network configuration
+ * @returns {Promise<Object>} Object containing addresses, UTXOs, and transaction history
+ */
+async function scanDerivationPath(xpub, basePath, standard, client, network) {
+    const addresses = [];
+    const utxos = [];
+    const history = [];
+    const gapLimit = 20; // Define a gap limit for address derivation
+    const batchSize = 10; // Define the batch size for requests
+    let nextUnusedAddress = null;
+    let index = 0;
+    let transactionsFound = true;
+
+    while (transactionsFound || index < gapLimit) {
+        transactionsFound = false;
+
+        for (let i = 0; i < batchSize && (transactionsFound || index < gapLimit); i++, index++) {
+            const derivationPath = `${basePath}/${index}`;
+            const address = deriveAddress(xpub, derivationPath, network, standard === 'electrum-segwit' ? 'p2wpkh' : 'p2pkh');
+            addresses.push(address);
+
+            const script = bitcoin.address.toOutputScript(address, network);
+            const hash = crypto.sha256(script);
+            const reversedHash = Buffer.from(hash.reverse()).toString("hex");
+
+            try {
+                const addressUtxos = await client.request('blockchain.scripthash.listunspent', [reversedHash]);
+                const addressHistory = await client.request('blockchain.scripthash.get_history', [reversedHash]);
+
+                if (addressHistory.length > 0) {
+                    transactionsFound = true;
+                }
+
+                utxos.push(...addressUtxos);
+                history.push(...addressHistory);
+
+                // Check for the first unused address
+                if (!nextUnusedAddress && addressUtxos.length === 0 && addressHistory.length === 0) {
+                    nextUnusedAddress = address;
+                }
+            } catch (error) {
+                console.error(`Error fetching data for address ${address}:`, error);
+            }
+        }
+    }
+
+    return { addresses, utxos, history, nextUnusedAddress };
 }
