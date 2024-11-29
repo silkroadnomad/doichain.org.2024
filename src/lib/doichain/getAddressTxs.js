@@ -115,24 +115,9 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
             console.log(`├── Using regular network configuration`);
             node = bip32.fromBase58(xpub, network);
         }
-        
-        // Parse the derivation path
-        const pathSegments = derivationPath
-            .replace('m/', '')
-            .split('/')
-            .filter(segment => segment !== '');
+        // Derive the child node using the derivation path
+        const child = node.derivePath(derivationPath);
 
-        // Derive each segment individually
-        let child = node;
-        for (const segment of pathSegments) {
-            const index = parseInt(segment.replace("'", ""), 10);
-            if (isNaN(index)) {
-                throw new Error(`Invalid path segment: ${segment}`);
-            }
-            child = child.derive(index);
-        }
-
-        // Generate address based on type
         if (type === 'p2wpkh' || type === 'segwit') {
             const address = payments.p2wpkh({ 
                 pubkey: child.publicKey, 
@@ -402,7 +387,6 @@ async function scanExtendedKey(xpub, client, network) {
         utxos: allUtxos,
         history: allHistory,
         pathTypeWithMostTransactions,
-        nextUnusedAddressesMap,
         nextUnusedAddress,
         nextUnusedChangeAddress
     };

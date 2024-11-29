@@ -17,6 +17,18 @@
           "value": "/ipfs/QmdkqifPXpyfBE3RPxJiKCokKRuGkmcxS9cGMprED3vUQm"
         }
       ]
+    },
+    {
+      "key": "Cache-Control",
+      "value": "no-cache, no-store, must-revalidate"
+    },
+    {
+      "key": "Pragma",
+      "value": "no-cache"
+    },
+    {
+      "key": "Expires",
+      "value": "0"
     }
   ]
 }
