@@ -19,7 +19,7 @@ import * as sb from 'satoshi-bitcoin';
  * 
  * @throws {Error} Implicitly throws an error if any of the required parameters are missing or invalid.
  */
-export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _network, _storageFee, _recipientAddress, _changeAddress, doichainAddress) {
+export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _network, _storageFee, _recipientAddress, _changeAddress) {
     if(!_name || _utxoAddresses.length === 0 || !_recipientAddress || !_changeAddress) {
         return { error: "Missing required parameters" };
     }

@@ -28,8 +28,10 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
     let electrumUTXOs = [];
     let ourTxs = [];
     let derivedAddresses = [];
-    let nextUnusedAddress = xpubOrDoiAddress; // in case its not an xpub/zpub
-    // Single address mode
+    let nextUnusedAddressesMap = {}; // in case its not an xpub/zpub
+    let nextUnusedAddress = null;
+    let nextUnusedChangeAddress = null;
+    
     if (isAddress) {
         console.log("📍 Single address mode");
         derivedAddresses.push(xpubOrDoiAddress);
@@ -38,14 +40,16 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
         _historyStore = history;
         console.log(`✨ Found ${history.length} transactions`);
     } 
-    // Extended key mode
     else {
         console.log("🔑 Extended key mode");
         const result = await scanExtendedKey(xpubOrDoiAddress, _electrumClient, _network);
         derivedAddresses = result.addresses;
         electrumUTXOs = result.utxos;
         _historyStore = result.history;
-        nextUnusedAddress = result.nextUnusedAddress;
+        nextUnusedAddressesMap = result.nextUnusedAddressesMap;
+        nextUnusedAddress = result.nextUnusedAddress
+        nextUnusedChangeAddress = result.nextUnusedChangeAddress
+
         console.log(`✨ Found ${_historyStore.length} transactions across ${derivedAddresses.length} addresses`);
     }
 
@@ -56,7 +60,9 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
     
     return {
         transactions: ourTxs.sort((a, b) => b.blocktime - a.blocktime),
-        nextUnusedAddress
+        nextUnusedAddressesMap,
+        nextUnusedAddress,
+        nextUnusedChangeAddress
     };
 }
 
@@ -312,6 +318,7 @@ function processNameOp(tx, scriptPubKey) {
 
 /**
  * Scans an extended public key for transactions across multiple derivation paths
+ * 
  * @async
  * @param {string} xpub - Extended public key
  * @param {Object} client - Electrum client instance
@@ -319,6 +326,7 @@ function processNameOp(tx, scriptPubKey) {
  * @returns {Promise<Object>} Object containing addresses, UTXOs, and transaction history
  */
 async function scanExtendedKey(xpub, client, network) {
+    
     const derivationPaths = {
         'electrum-legacy': 'm',
         'electrum-segwit': "m/0'"
@@ -327,27 +335,76 @@ async function scanExtendedKey(xpub, client, network) {
     let addresses = [];
     let allUtxos = [];
     let allHistory = [];
-    let nextUnusedAddress = null;
-    
+    const nextUnusedAddressesMap = new Map();
+    const transactionCounts = new Map();
+
     for (const [standard, basePath] of Object.entries(derivationPaths)) {
-        const { 
-            addresses: newAddresses, 
-            utxos: newUtxos, 
-            history: newHistory,
-            nextUnusedAddress: newNextUnusedAddress
-        } = await scanDerivationPath(xpub, basePath, standard, client, network);
-        
-        addresses = [...addresses, ...newAddresses];
-        allUtxos = [...allUtxos, ...newUtxos];
-        allHistory = [...allHistory, ...newHistory];
-        nextUnusedAddress = newNextUnusedAddress;
+        const pathTypes = {
+            'electrum-segwit': ["m/0'/0", "m/0'/1"],
+            'electrum-legacy': ['m/0', 'm/1'],
+            'bip84': ["m/84'/0'/0'", "m/84'/0'/1'"],
+            'bip49': ["m/49'/0'/0'", "m/49'/0'/1'"]
+        }[standard] || ['m/0', 'm/1']; // Default to legacy if unknown
+
+        for (const [index, pathType] of pathTypes.entries()) {
+            const isChangeAddress = index === 1; // Assuming the second element is always a change address
+            const result = await scanDerivationPath(xpub, pathType, standard, client, network, isChangeAddress);
+            addresses = addresses ? [...addresses, result.address] : result.address;
+            allUtxos = [...allUtxos, ...result.utxos];
+            allHistory = [...allHistory, ...result.history];
+
+            // Initialize or update the map for each pathType
+            if (!nextUnusedAddressesMap.has(pathType)) {
+                nextUnusedAddressesMap.set(pathType, {
+                    nextUnusedAddress: null,
+                    nextUnusedChangeAddress: null
+                });
+            }
+
+            const pathTypeData = nextUnusedAddressesMap.get(pathType);
+
+            // Determine next unused address or change address for each pathType
+            if (result.utxos.length === 0 && result.history.length === 0) {
+                if (!isChangeAddress && !pathTypeData.nextUnusedAddress) {
+                    pathTypeData.nextUnusedAddress = result.address;
+                } else if (isChangeAddress && !pathTypeData.nextUnusedChangeAddress) {
+                    pathTypeData.nextUnusedChangeAddress = result.address;
+                }
+            }
+
+            // Update the map with the new data
+            nextUnusedAddressesMap.set(pathType, pathTypeData);
+
+            // Track transaction count for each pathType
+            const transactionCount = result.history.length;
+            transactionCounts.set(pathType, (transactionCounts.get(pathType) || 0) + transactionCount);
+        }
     }
 
+    // Determine the pathType with the most transactions
+    let maxTransactions = 0;
+    let pathTypeWithMostTransactions = null;
+    for (const [pathType, count] of transactionCounts.entries()) {
+        if (count > maxTransactions) {
+            maxTransactions = count;
+            pathTypeWithMostTransactions = pathType;
+        }
+    }
+
+    // Retrieve next unused addresses for the pathType with the most transactions
+    const mostTransactionsData = nextUnusedAddressesMap.get(pathTypeWithMostTransactions);
+    const nextUnusedAddress = mostTransactionsData ? mostTransactionsData.nextUnusedAddress : null;
+    const nextUnusedChangeAddress = mostTransactionsData ? mostTransactionsData.nextUnusedChangeAddress : null;
+
+    // Return the results
     return {
         addresses,
         utxos: allUtxos,
         history: allHistory,
-        nextUnusedAddress
+        pathTypeWithMostTransactions,
+        nextUnusedAddressesMap,
+        nextUnusedAddress,
+        nextUnusedChangeAddress
     };
 }
 
@@ -362,13 +419,13 @@ async function scanExtendedKey(xpub, client, network) {
  * @param {Object} network - Bitcoin network configuration
  * @returns {Promise<Object>} Object containing addresses, UTXOs, and transaction history
  */
-async function scanDerivationPath(xpub, basePath, standard, client, network) {
-    const addresses = [];
+async function scanDerivationPath(xpub, basePath, standard, client, network, isChangeAddress) {
+    let address;
     const utxos = [];
     const history = [];
     const gapLimit = 20; // Define a gap limit for address derivation
     const batchSize = 10; // Define the batch size for requests
-    let nextUnusedAddress = null;
+    let unusedAddress = false;
     let index = 0;
     let transactionsFound = true;
 
@@ -377,9 +434,8 @@ async function scanDerivationPath(xpub, basePath, standard, client, network) {
 
         for (let i = 0; i < batchSize && (transactionsFound || index < gapLimit); i++, index++) {
             const derivationPath = `${basePath}/${index}`;
-            const address = deriveAddress(xpub, derivationPath, network, standard === 'electrum-segwit' ? 'p2wpkh' : 'p2pkh');
-            addresses.push(address);
-
+            address = deriveAddress(xpub, derivationPath, network, standard === 'electrum-segwit' ? 'p2wpkh' : 'p2pkh');
+            
             const script = bitcoin.address.toOutputScript(address, network);
             const hash = crypto.sha256(script);
             const reversedHash = Buffer.from(hash.reverse()).toString("hex");
@@ -396,8 +452,8 @@ async function scanDerivationPath(xpub, basePath, standard, client, network) {
                 history.push(...addressHistory);
 
                 // Check for the first unused address
-                if (!nextUnusedAddress && addressUtxos.length === 0 && addressHistory.length === 0) {
-                    nextUnusedAddress = address;
+                if (addressUtxos.length === 0 && addressHistory.length === 0) {
+                        unusedAddress = true;
                 }
             } catch (error) {
                 console.error(`Error fetching data for address ${address}:`, error);
@@ -405,5 +461,5 @@ async function scanDerivationPath(xpub, basePath, standard, client, network) {
         }
     }
 
-    return { addresses, utxos, history, nextUnusedAddress };
+    return { address, utxos, history, unusedAddress };
 }

@@ -21,8 +21,8 @@
   let scanData = ''; 
 
   export let walletAddress = localStorage.getItem('walletAddress') || '';
-  $:recipientsAddress = walletAddress
-  $:changeAddress = walletAddress
+  let recipientsAddress = walletAddress
+  let changeAddress = walletAddress
   let changeAmount
   export let nameId
   export let nameValue
@@ -190,8 +190,7 @@
         DOICHAIN,
         storageFee,
         recipientsAddress,
-        changeAddress,
-        walletAddress);
+        changeAddress);
 
       if (result.error) {
         console.log("error",result.error)
@@ -446,7 +445,12 @@
               on:keydown={ async (event) => {
                 if (event.key === 'Enter') {
                   localStorage.setItem('walletAddress', walletAddress);
-                  const { transactions } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+                  const { transactions, nextUnusedAddressesMap, nextUnusedAddress, nextUnusedChangeAddress } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+                  console.log("nextUnusedAddressesMap:", nextUnusedAddressesMap);
+                  console.log("nextUnusedAddress:", nextUnusedAddress);
+                  console.log("nextUnusedChangeAddress:", nextUnusedChangeAddress);
+                  recipientsAddress = nextUnusedAddress;
+                  changeAddress = nextUnusedChangeAddress;  
                   utxos = transactions.filter( tx => 
                       tx.type === 'output' && tx.utxo === true
                   ).map(tx => ({
@@ -474,15 +478,16 @@
             <button 
               on:click={async () => {
                 console.log("Fetching UTXOs for address:", walletAddress);
-                const { transactions, nextUnusedAddress } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
-                // walletAddress = nextUnusedAddress;
-                console.log("walletAddress:", walletAddress);
+                const { transactions, nextUnusedAddress, nextUnusedChangeAddress, nextUnusedAddressesMap } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+                localStorage.setItem('walletAddress', walletAddress);
+                console.log("nextUnusedAddressesMap:", nextUnusedAddressesMap);
+                console.log("nextUnusedAddress:", nextUnusedAddress);
+                console.log("nextUnusedChangeAddress:", nextUnusedChangeAddress);
                 recipientsAddress = nextUnusedAddress;
-                changeAddress = nextUnusedAddress;
-                console.log("next unused address:", nextUnusedAddress);
-                console.log("recipient address:", recipientsAddress);
+                changeAddress = nextUnusedChangeAddress;
+                console.log("recipientsAddress:", recipientsAddress);
+                console.log("changeAddress:", changeAddress);
                 utxos = transactions.filter(tx => {
-                  console.log(tx);
                  return tx.type === 'output' && tx.utxo === true
                 }           
                 );
@@ -500,37 +505,39 @@
             {#if !utxo.nameId && utxo.value > 0}
               <div class="grid grid-cols-2 gap-4">
                 <div>wallet address:</div>
-                <div>{utxo.address?utxo.address:utxo.scriptPubKey.addresses[0]}</div>
+                <div>{utxo.address ? utxo.address : utxo.scriptPubKey.addresses[0]}</div>
                 <div>amount:</div>
                 <div>{utxo?.value || 0} DOI</div>
                 <div><b>Activate this UTXO:</b></div>
-                <div>
-                  {#key selectedUtxosCount}
-                    <div>
-                      <button
-                        on:click={() => toggleUtxoSelection(utxo)}
-                        type="button" 
-                        class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
-                        role="switch" 
-                        aria-checked={isUtxoSelected(utxo)}
-                      >
-                        <span
-                          aria-hidden="true"
-                          class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
-                          class:bg-indigo-600={isUtxoSelected(utxo)}
-                          class:bg-gray-200={!isUtxoSelected(utxo)}
-                        ></span>
-                        <span
-                          aria-hidden="true"
-                          class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
-                          class:translate-x-5={isUtxoSelected(utxo)}
-                          class:translate-x-0={!isUtxoSelected(utxo)}
-                        ></span>
-                      </button>
+                <div class="utxo-item">
+                  <button
+                    on:click={() => toggleUtxoSelection(utxo)}
+                    type="button" 
+                    class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
+                    role="switch" 
+                    aria-checked={isUtxoSelected(utxo)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
+                      class:bg-indigo-600={isUtxoSelected(utxo)}
+                      class:bg-gray-200={!isUtxoSelected(utxo)}
+                    ></span>
+                    <span
+                      aria-hidden="true"
+                      class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
+                      class:translate-x-5={isUtxoSelected(utxo)}
+                      class:translate-x-0={!isUtxoSelected(utxo)}
+                    ></span>
+                  </button>
+                  {#if utxo.nameOps}
+                    <div class="tooltip">
+                      NameOps: {utxo.nameOps}
                     </div>
-                  {/key}
+                  {/if}
                 </div>
               </div>
+              <div class="w-full h-px bg-gray-200 my-2"></div>
             {/if}
           {/each}
         </div>
@@ -694,5 +701,23 @@
     }
     .animate-pulse {
       animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .utxo-item {
+      margin-bottom: 10px; /* Add space between items */
+    }
+    .tooltip {
+      position: absolute;
+      background-color: #333;
+      color: #fff;
+      padding: 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .utxo-item:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
     }
 </style>
