@@ -52,20 +52,20 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
         publishList100Request()
     })
 
-    // Pubsub logging events
-    libp2p.services.pubsub.addEventListener('publish', (evt) => {
-        if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
-//            console.log('Publishing peer discovery message on topic:', evt.detail.topic)
-        }
-    })
+//     // Pubsub logging events
+//     libp2p.services.pubsub.addEventListener('publish', (evt) => {
+//         if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
+// //            console.log('Publishing peer discovery message on topic:', evt.detail.topic)
+//         }
+//     })
 
-    libp2p.services.pubsub.addEventListener('message', (evt) => {
-        if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
-   //         console.log('Received peer discovery message on topic:', evt.detail.topic)
-        }
-    })
+//     libp2p.services.pubsub.addEventListener('message', (evt) => {
+//         if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
+//    //         console.log('Received peer discovery message on topic:', evt.detail.topic)
+//         }
+//     })
 
-    libp2p.addEventListener('peer:discovery', (evt) => {
-       // console.log('Discovered new peer:', evt.detail.id.toString())
-    })
+//     libp2p.addEventListener('peer:discovery', (evt) => {
+//        // console.log('Discovered new peer:', evt.detail.id.toString())
+//     })
 } 
