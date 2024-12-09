@@ -44,5 +44,6 @@ export const electrumServerBanner = writable('disconnected');
 export const electrumBlockchainBlockHeadersSubscribe = writable()
 export const electrumBlockchainRelayfee = writable();
 export const electrumBlockchainBlockHeaders = writable();
+export const logs = writable([]);
 
 

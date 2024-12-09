@@ -46,11 +46,10 @@ function handleList100Request(libp2p) {
 }
 
 function handleNameOpsMessage(message) {
-    console.log('handleNameOpsMessage', message);
+    // console.log('handleNameOpsMessage', message);
     nameOps.update(currentOps => {
         try {
             const jsonMessage = JSON.parse(message);
-            console.log("Parsed jsonMessage:", jsonMessage);
 
             const newNameOps = jsonMessage.filter(newOp => {
                 const isDuplicate = currentOps.some(existingOp => {

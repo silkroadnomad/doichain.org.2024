@@ -11,9 +11,7 @@
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js'
 	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
 	
-	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub']
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
-
 	const config = createLibp2pConfig();
 
 	let blockstore = new LevelBlockstore("./helia-blocks");
@@ -74,7 +72,7 @@
 			if($libp2p) {
 				setupLibp2pEventHandlers($libp2p, publishList100Request)
 			}
-			} catch(ex){ console.log("helia.libp2p.exception", ex) }
+		} catch(ex){ console.log("helia.libp2p.exception", ex) }
 
 		updateNodeAddresses();
 

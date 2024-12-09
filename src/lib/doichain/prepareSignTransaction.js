@@ -31,7 +31,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
     let changeAmount;
 
     _utxoAddresses.forEach(utxo => {
-        const isSegWit = utxo?.scriptPubKey.type === "witness_v0_keyhash" || utxo?.fullTx.scriptPubKey.hex?.startsWith('0014') || utxo?.fullTx.scriptPubKey.hex?.startsWith('0020');
+        const isSegWit = utxo?.scriptPubKey?.type === "witness_v0_keyhash"
         if (isSegWit) {
             psbt.addInput({
                 hash: utxo.hash,
@@ -69,7 +69,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
     let totalAmount = totalOutputAmount + transactionFee;
     if(changeAmount < 0) {
         return {
-            error: `Funds on ${doichainAddress} are insufficient for this Doichain name`,
+            error: `Funds on ${_utxoAddresses} are insufficient for this Doichain name`,
             isUTXOAddressValid: false
         };
     }

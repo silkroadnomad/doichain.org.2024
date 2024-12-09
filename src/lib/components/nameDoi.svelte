@@ -6,9 +6,9 @@
   import { renderBCUR } from '../doichain/renderQR.js'
   import { DOICHAIN } from "$lib/doichain/doichain.js";
   import { unixfs } from '@helia/unixfs'
-  import * as sb from 'satoshi-bitcoin';  // Import the satoshi-bitcoin library
   import ScanModal from "$lib/doichain/ScanModal.svelte";
   import { getAddressTxs } from '$lib/doichain/getAddressTxs.js'
+  import TransactionDetails from './TransactionDetails.svelte';
 
   // Add event dispatcher
   import { createEventDispatcher } from 'svelte';
@@ -39,24 +39,6 @@
   let totalAmount;
   let errorMessage;
   let storageFee = 1000000;
-
-  onMount(async ()=>{
-    const { transactions, nextUnusedAddress } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
-    
-    utxos = transactions.filter(tx => 
-        tx.type === 'output' && tx.utxo === true
-    ).map(tx => ({
-        tx_hash: tx.txid,
-        tx_pos: tx.n,
-        value: tx.value,
-        height: tx.height
-    }));
-    
-    if (nextUnusedAddress) {
-      console.log("Next unused address:", nextUnusedAddress);
-      walletAddress = nextUnusedAddress;
-    }
-  })
 
   let files = {
     accepted: [],
@@ -285,6 +267,26 @@
     selectedUtxos = [];
     // ... reset other relevant states ...
   }
+
+  // Calculate the sum of selected UTXOs in satoshis
+  $: selectedUtxosSum = selectedUtxos.reduce((sum, utxo) => sum + (utxo.value * 100000000), 0);
+
+  let utxosFetched = true; // State to track if UTXOs have been fetched
+
+  async function fetchUtxos() {
+    utxosFetched = false;
+    console.log("Fetching UTXOs for address:", walletAddress);
+    localStorage.setItem('walletAddress', walletAddress);
+    const result = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+    console.log("utxos:", result);
+    console.log("nextUnusedAddress:", result.nextUnusedAddress);
+    console.log("nextUnusedChangeAddress:", result.nextUnusedChangeAddress);
+    recipientsAddress = result.nextUnusedAddress;
+    changeAddress = result.nextUnusedChangeAddress;
+    utxos = result.transactions.filter(tx => tx.type === 'output' && tx.utxo === true);
+    console.log("Received UTXOs:", utxos);
+     utxosFetched = true; // Set to true if UTXOs are fetched
+  }
 </script>
 {#if scanOpen}
   <ScanModal 
@@ -475,28 +477,18 @@
             </button>
           </div>
           <div>
-            <button 
-              on:click={async () => {
-                console.log("Fetching UTXOs for address:", walletAddress);
-                const { transactions, nextUnusedAddress, nextUnusedChangeAddress, nextUnusedAddressesMap } = await getAddressTxs(walletAddress, [], $electrumClient, $network);
-                localStorage.setItem('walletAddress', walletAddress);
-                console.log("nextUnusedAddressesMap:", nextUnusedAddressesMap);
-                console.log("nextUnusedAddress:", nextUnusedAddress);
-                console.log("nextUnusedChangeAddress:", nextUnusedChangeAddress);
-                recipientsAddress = nextUnusedAddress;
-                changeAddress = nextUnusedChangeAddress;
-                console.log("recipientsAddress:", recipientsAddress);
-                console.log("changeAddress:", changeAddress);
-                utxos = transactions.filter(tx => {
-                 return tx.type === 'output' && tx.utxo === true
-                }           
-                );
-                console.log("Received UTXOs:", utxos);
-              }} 
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            >
-              Show Coins
-            </button>
+            {#if !utxosFetched}
+              <svg class="h-8 w-8 text-blue-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            {:else}
+              <button 
+                on:click={fetchUtxos} 
+                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              >
+                Show Coins
+              </button>
+            {/if}
           </div>
         </div>
         <p class="mt-4">&nbsp;</p>
@@ -515,19 +507,19 @@
                     type="button" 
                     class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" 
                     role="switch" 
-                    aria-checked={isUtxoSelected(utxo)}
+                    aria-checked={selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n) ? true : false}
                   >
                     <span
                       aria-hidden="true"
-                      class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full bg-gray-200 transition-colors duration-200 ease-in-out"
-                      class:bg-indigo-600={isUtxoSelected(utxo)}
-                      class:bg-gray-200={!isUtxoSelected(utxo)}
+                      class="pointer-events-none absolute mx-auto h-4 w-9 rounded-full transition-colors duration-200 ease-in-out"
+                      class:bg-indigo-600={selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n)}
+                      class:bg-gray-200={!selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n)}
                     ></span>
                     <span
                       aria-hidden="true"
-                      class="pointer-events-none absolute left-0 inline-block h-5 w-5 translate-x-0 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
-                      class:translate-x-5={isUtxoSelected(utxo)}
-                      class:translate-x-0={!isUtxoSelected(utxo)}
+                      class="pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out"
+                      class:translate-x-5={selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n)}
+                      class:translate-x-0={!selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n)}
                     ></span>
                   </button>
                   {#if utxo.nameOps}
@@ -540,6 +532,7 @@
               <div class="w-full h-px bg-gray-200 my-2"></div>
             {/if}
           {/each}
+          <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
@@ -611,6 +604,7 @@
               </div>
             </div>
             <div>&nbsp;</div>
+            <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
@@ -654,18 +648,7 @@
             </pre>
           {/if}
           
-          {#if transactionFee !== undefined && totalAmount !== undefined}
-            <div class="mt-4 text-right">
-              <p class="flex justify-end">
-                <span class="font-semibold mr-2">Transaction Fee:</span>
-                <span>{sb.toBitcoin(transactionFee).toFixed(8)} DOI</span>
-              </p>
-              <p class="flex justify-end">
-                <span class="font-semibold mr-2">Total Amount:</span>
-                <span>{sb.toBitcoin(totalAmount).toFixed(8)} DOI</span>
-              </p>
-            </div>
-          {/if}
+          <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
