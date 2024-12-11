@@ -1,7 +1,7 @@
 <script>
   import { onDestroy, onMount } from 'svelte';
   import Dropzone from "svelte-file-dropzone";
-  import { helia, libp2p, network, electrumClient} from '$lib/doichain/doichain-store.js'
+  import { helia, libp2p, network, electrumClient, cidMessages,requestedCids } from '$lib/doichain/doichain-store.js'
   import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js'
   import { renderBCUR } from '../doichain/renderQR.js'
   import { DOICHAIN } from "$lib/doichain/doichain.js";
@@ -100,6 +100,7 @@
     nameValue=`ipfs://${metadataCID.toString()}`
     console.log('Added metadata file to IPFS:', metadataCID.toString())
     await publishCID(metadataCID.toString());
+    requestedCids.update(cids => [...cids, metadataCID.toString()]);
   }
 
   async function previewFile() {
@@ -125,6 +126,7 @@
             imageCID = cid.toString()
             console.log('Added file to IPFS:', imageCID)
             await publishCID(imageCID.toString());
+            requestedCids.update(cids => [...cids, imageCID.toString()]); //store the requested cids so we not collect other stuff
             writeMetadata()
           })}else{
             console.log("not ArrayBuffer")
@@ -164,35 +166,53 @@
 
   $: {
     if(selectedUtxosCount > 0 && nameId && nameValue) {
-      console.log("prepare signing transaction",selectedUtxos)
-      const result = prepareSignTransaction(
-        selectedUtxos,
-        nameId,
-        nameValue,
-        DOICHAIN,
-        storageFee,
-        recipientsAddress,
-        changeAddress);
-
-      if (result.error) {
-        console.log("error",result.error)
-        utxoErrorMessage = result.error;
-        qrCodeData = undefined;
-      } else {
-        psbtBaseText = result.psbtBase64;
-        transactionFee = result.transactionFee;
-        changeAmount = result.changeAmount;
-        totalAmount = result.totalAmount;
-        console.log("result",result)
-        console.log("psbtBaseText",psbtBaseText)
-        renderBCUR(psbtBaseText).then(_qr => {
-          qrCodeData = _qr;
-          displayQrCodes();
-        }).catch(error => {
-          console.error('Error generating QR code:', error);
-          qrCodeData = undefined;
+        console.log("prepare signing transaction", selectedUtxos)
+        
+        const matchingCidMessage = $cidMessages.find(msg => {
+            return (imageCID && msg.cids?.includes(imageCID)) || 
+                   (metadataCID && msg.cids?.includes(metadataCID.toString()));
         });
-      }
+
+        // Get pinning details only if we found a matching message
+        const pinningDetails = matchingCidMessage ? {
+            address: matchingCidMessage.fee.address,
+            amount: matchingCidMessage.fee.amount
+        } : null;
+
+        if (!pinningDetails) {
+            console.warn("No matching CID message found for current transaction");
+        }
+
+        const result = prepareSignTransaction(
+            selectedUtxos,
+            nameId,
+            nameValue,
+            DOICHAIN,
+            storageFee,
+            recipientsAddress,
+            changeAddress,
+            pinningDetails
+        );
+
+        if (result.error) {
+            console.log("error",result.error)
+            utxoErrorMessage = result.error;
+            qrCodeData = undefined;
+        } else {
+            psbtBaseText = result.psbtBase64;
+            transactionFee = result.transactionFee;
+            changeAmount = result.changeAmount;
+            totalAmount = result.totalAmount;
+            console.log("result",result)
+            console.log("psbtBaseText",psbtBaseText)
+            renderBCUR(psbtBaseText).then(_qr => {
+                qrCodeData = _qr;
+                displayQrCodes();
+            }).catch(error => {
+                console.error('Error generating QR code:', error);
+                qrCodeData = undefined;
+            });
+        }
     }
   }
 
@@ -389,6 +409,36 @@
                         <span class="text-sm font-medium text-gray-500 w-20">CID:</span>
                         <span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span>
                       </div>
+                      
+                      {#if $cidMessages.length > 0 && $cidMessages[0].status === 'ADDING-CID'}
+                        {@const latestMessage = $cidMessages[0]}
+                        <div class="pt-2 border-t border-gray-200">
+                          <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
+                          <div class="space-y-2">
+                            <div class="flex items-center">
+                              <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
+                              <span class="text-sm text-gray-900">{latestMessage.sizes.metadata}</span>
+                            </div>
+                            <div class="flex items-center">
+                              <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
+                              <span class="text-sm text-gray-900">{latestMessage.sizes.image}</span>
+                            </div>
+                            <div class="flex items-center">
+                              <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
+                              <span class="text-sm text-gray-900">{latestMessage.sizes.total}</span>
+                            </div>
+                            <div class="flex items-center">
+                              <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
+                              <span class="text-sm text-gray-900">{(latestMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
+                            </div>
+                            <div class="flex items-center">
+                              <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
+                              <span class="text-sm text-gray-900">{latestMessage.fee.durationMonths} months</span>
+                            </div>
+                          </div>
+                        </div>
+                      {/if}
+
                       <div class="flex items-center">
                         <span class="text-sm font-medium text-gray-500 w-20">Status:</span>
                         <div class="flex items-center">
@@ -532,7 +582,16 @@
               <div class="w-full h-px bg-gray-200 my-2"></div>
             {/if}
           {/each}
-          <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} />
+          <TransactionDetails 
+            {transactionFee} 
+            {totalAmount} 
+            {selectedUtxosSum} 
+            {changeAmount}
+            pinningFee={$cidMessages.find(msg => 
+                (imageCID && msg.cids?.includes(imageCID)) || 
+                (metadataCID && msg.cids?.includes(metadataCID.toString()))
+            )?.fee?.amount || 0}
+          />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>

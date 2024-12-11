@@ -13,13 +13,13 @@ import * as sb from 'satoshi-bitcoin';
  * @param {number} _storageFee - The fee for storing the name on the Doichain network.
  * @param {string} _recipientAddress - The address that will own the registered name.
  * @param {string} _changeAddress - The address to send any remaining funds after the transaction.
- * @param {string} doichainAddress - The Doichain address used for error messages.
+ * @param {Object} _pinningDetails - Optional object containing pinning fee details { address, amount }
  * 
  * @returns {Object} An object containing the PSBT base64 string and transaction details.
  * 
  * @throws {Error} Implicitly throws an error if any of the required parameters are missing or invalid.
  */
-export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _network, _storageFee, _recipientAddress, _changeAddress) {
+export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _network, _storageFee, _recipientAddress, _changeAddress, _pinningDetails = null) {
     if(!_name || _utxoAddresses.length === 0 || !_recipientAddress || !_changeAddress) {
         return { error: "Missing required parameters" };
     }
@@ -63,8 +63,17 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
         }catch( ex ) { console.error(ex) }
     }
 
+    if (_pinningDetails && _pinningDetails.address && _pinningDetails.amount) {
+        psbt.addOutput({
+            address: _pinningDetails.address,
+            value: _pinningDetails.amount
+        });
+        totalOutputAmount = totalOutputAmount + _pinningDetails.amount;
+    }
+
     const feeRate = 34 * 500; // TODO: get feeRate from an API
-    transactionFee = (_utxoAddresses.length + 1) * 180 + 3 * feeRate;
+    const outputCount = _pinningDetails ? 2 : 1;
+    transactionFee = (_utxoAddresses.length + outputCount) * 180 + 3 * feeRate;
     changeAmount = totalInputAmount - totalOutputAmount - transactionFee;
     let totalAmount = totalOutputAmount + transactionFee;
     if(changeAmount < 0) {
@@ -87,6 +96,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
         totalOutputAmount,
         transactionFee,
         changeAmount,
-        totalAmount
+        totalAmount,
+        pinningFee: _pinningDetails?.amount || 0
     };
 }

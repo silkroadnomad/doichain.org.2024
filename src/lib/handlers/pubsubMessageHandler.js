@@ -1,7 +1,10 @@
-import { nameOps } from '$lib/doichain/doichain-store.js'
+import { nameOps, cidMessages, requestedCids } from '$lib/doichain/doichain-store.js'
 
 const CONTENT_TOPIC = '/doichain-nfc/1/message/proto'
-
+let _requestedCids = []
+requestedCids.subscribe((_) => {
+_requestedCids = _
+}); 
 export function handlePubsubMessage(event, libp2p) {
   
     if (event.detail.topic === 'doichain._peer-discovery._p2p._pubsub') {
@@ -15,20 +18,46 @@ export function handlePubsubMessage(event, libp2p) {
 function handleContentMessage(event, libp2p) {
     const message = new TextDecoder().decode(event.detail.data)
     
-    if(message.startsWith('ADDING-CID') || message.startsWith('ADDED-CID') || 
-       message.startsWith('PINNING-CID') || message.startsWith('PINNED-CID')) {
-        console.log("ignoring cid messages for now", message)
-    } 
-    else if (message === 'LIST_LAST_100') {
-        handleList100Request(libp2p)
-    }
-    else if (message.startsWith('LIST_DATE:') || 
-             message.startsWith('LIST_ALL') || 
-             message.endsWith(':NONE')) {
-        console.log("ignoring other list messages for now", message)
-    }
-    else {
-        handleNameOpsMessage(message)
+    try {
+        const jsonData = JSON.parse(message)
+        if(jsonData.status === 'ADDING-CID') { 
+            console.log("Received CID message:", jsonData)
+            
+
+            cidMessages.update(messages => {
+                // const hasRequestedCid = jsonData.cids?.some(cid => 
+                //     _requestedCids.includes(cid.toString())
+                // );
+                // console.log(_requestedCids)
+                // console.log("hasRequestedCid", hasRequestedCid)
+                // // if (!hasRequestedCid) {
+                //     console.log("Ignoring CID message for unrequested CIDs");
+                //     return messages;
+                // }
+
+                // Add new message with timestamp
+                // const newMessage = {
+                //     ...jsonData,
+                //     receivedAt: Date.now()
+                // }
+                // Keep most recent messages first
+                //return messages
+                return [jsonData,...messages]
+            })
+        }
+    } catch (e) {
+        // If it's not JSON, handle other message types
+        if (message === 'LIST_LAST_100') {
+            handleList100Request(libp2p)
+        }
+        else if (message.startsWith('LIST_DATE:') || 
+                 message.startsWith('LIST_ALL') || 
+                 message.endsWith(':NONE')) {
+            console.log("ignoring other list messages for now", message)
+        }
+        else {
+            handleNameOpsMessage(message)
+        }
     }
 }
 

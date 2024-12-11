@@ -3,6 +3,7 @@
     export let totalAmount;
     export let selectedUtxosSum;
     export let changeAmount;
+    export let pinningFee = 0;
     import * as sb from 'satoshi-bitcoin';
   </script>
   
@@ -13,8 +14,15 @@
         <span class="flex-1 text-right">{sb.toBitcoin(Math.round(selectedUtxosSum)).toFixed(8)}</span>
         <span class="ml-1">DOI</span>
       </p>
+      {#if pinningFee > 0}
+        <p class="flex justify-end">
+          <span class="font-semibold mr-2">Pinning Fee:</span>
+          <span class="flex-1 text-right">{sb.toBitcoin(Math.round(pinningFee)).toFixed(8)}</span>
+          <span class="ml-1">DOI</span>
+        </p>
+      {/if}
       <p class="flex justify-end">
-        <span class="font-semibold mr-2">Fee:</span>
+        <span class="font-semibold mr-2">Name Regstration Fee:</span>
         <span class="flex-1 text-right">{sb.toBitcoin(Math.round(transactionFee)).toFixed(8)}</span>
         <span class="ml-1">DOI</span>
       </p>
