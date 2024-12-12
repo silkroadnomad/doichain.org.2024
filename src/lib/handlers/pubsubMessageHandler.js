@@ -33,7 +33,7 @@ function handleContentMessage(event, libp2p) {
                     event.detail.from.toString() !== '12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2') { //local dev
                 console.log("Ignoring CID message from unauthorized peer:", event.detail.from); 
                 return;
-            }
+            }   
             
             cidMessages.update(messages => {
                 console.log("_requestedCids", _requestedCids)
@@ -59,7 +59,7 @@ function handleContentMessage(event, libp2p) {
             console.log("ignoring other list messages for now", message)
         }
         else {
-            console.error("Error parsing message:", e);
+            // console.error("Error parsing message:", e);
         }
     }
 }
