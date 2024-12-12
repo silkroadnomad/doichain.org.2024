@@ -1,26 +1,34 @@
 # Doichain.org
 
 Key Features:
-Name Registration and Availability Check:
-Users can input a name to check its availability on the Doichain network.
-If the name is available, users can register it, and if it's already taken, they receive a notification.
-Non-Fungible Coin (NFC) Management:
-The app allows users to mint and manage NFCs, which are similar to NFTs but on the Doichain network.
-Users can upload images and metadata to IPFS (InterPlanetary File System) and associate them with NFCs.
-Advanced PSBT Transaction Management:
-Users can prepare and sign Partially Signed Bitcoin Transactions (PSBT) using UTXOs from their wallet.
-Features an animated BC-QR code display that cycles through QR code frames for PSBT data.
-These QR codes can be scanned by DoiWallet, which specifically understands and can process NameOp transactions.
-The animated QR approach allows transmission of larger PSBT data that wouldn't fit in a single QR code.
+
+1. Name Registration and Availability Check:
+ - Users can input a name to check its availability on the Doichain network.
+ - If the name is available, users can register it, and if it's already taken, they receive a notification.
+
+2. Non-Fungible Coin (NFC) Management:
+ - The app allows users to mint and manage NFCs, which are similar to NFTs but on the Doichain network.
+ - Users can upload images and metadata to IPFS (InterPlanetary File System) and associate them with NFCs.
+
+3. Advanced PSBT Transaction Management:
+ - Users can prepare and sign Partially Signed Bitcoin Transactions (PSBT) using UTXOs from their wallet.
+ - Features an animated BC-QR code display that cycles through QR code frames for PSBT data.
+   These QR codes can be scanned by DoiWallet, which specifically understands and can process NameOp transactions.
+   
+  The animated QR approach allows transmission of larger PSBT data that wouldn't fit in a single QR code.
+
 4. Filtering and Displaying Name Operations:
-Users can filter and view different types of name operations (e.g., NFCs, names, DOI, etc.) using a set of predefined filters.
-The app displays these operations in a card-like format, similar to NFTs.
-Integration with Libp2p and Helia:
-The app uses libp2p for peer-to-peer communication and Helia for IPFS integration, allowing decentralized data storage and retrieval.
-Responsive UI with Svelte:
-The application is built using Svelte, providing a responsive and interactive user interface.
-It includes animations and transitions for a smooth user experience.
-The animated BC-QR code feature is particularly important as it enables secure and efficient transfer of PSBT data to the DoiWallet, making it possible to handle complex NameOp transactions in a user-friendly way.
+ - Users can filter and view different types of name operations (e.g., NFCs, names, DOI, etc.) using a set of predefined filters.
+ -  The app displays these operations in a card-like format, similar to NFTs.
+
+5. Integration with Libp2p and Helia:
+  - The app uses libp2p for peer-to-peer communication and Helia for IPFS integration, allowing decentralized data storage and retrieval.
+
+6. Responsive UI with Svelte:
+  - The application is built using Svelte, providing a responsive and interactive user interface.
+  - It includes animations and transitions for a smooth user experience.
+
+7. The animated BC-QR code feature is particularly important as it enables secure and efficient transfer of PSBT data to the DoiWallet, making it possible to handle complex NameOp transactions in a user-friendly way.
 
 # Todo
 
