@@ -244,23 +244,27 @@
   onDestroy(() => {
     if (animationTimeout) clearTimeout(animationTimeout);
   });
-
-  let cidStatus = 'idle'; // Can be 'idle', 'adding', or 'added'
-
-  onMount(() => {
-    if ($libp2p) {
-      $libp2p.services.pubsub.addEventListener('message', (event) => {
-        if (event.detail.topic === CONTENT_TOPIC) {
-          const message = new TextDecoder().decode(event.detail.data);
-          if (message.startsWith('ADDING-CID')) {
-            cidStatus = 'adding';
-          } else if (message.startsWith('ADDED-CID')) {
-            cidStatus = 'added';
-          }
-        }
-      });
-    }
-  });
+  let cidStatus = 'idle'
+  $: {
+    console.log("Checking CID status:");
+    console.log("- Requested CIDs:", $requestedCids);
+    console.log("- CID Messages:", $cidMessages);
+    
+    cidStatus = $requestedCids.length > 0 
+        ? $cidMessages.some(msg => {
+            const isAdded = $requestedCids.includes(msg.cid) && msg.status === 'ADDED-CID';
+            console.log(`- Checking message:`, msg);
+            console.log(`  - CID in requested list: ${$requestedCids.includes(msg.cid)}`);
+            console.log(`  - Status is ADDED-CID: ${msg.status === 'ADDED-CID'}`);
+            console.log(`  - Final result: ${isAdded}`);
+            return isAdded;
+        })
+        ? 'added'
+        : 'adding'
+        : 'idle';
+    
+    console.log("Final cidStatus:", cidStatus);
+}
 
   $: if (scanData) {
     if (scanTarget === 'wallet') {
@@ -409,34 +413,38 @@
                         <span class="text-sm font-medium text-gray-500 w-20">CID:</span>
                         <span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span>
                       </div>
-                      
-                      {#if $cidMessages.length > 0 && $cidMessages[0].status === 'ADDING-CID'}
-                        {@const latestMessage = $cidMessages[0]}
-                        <div class="pt-2 border-t border-gray-200">
-                          <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
-                          <div class="space-y-2">
-                            <div class="flex items-center">
-                              <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
-                              <span class="text-sm text-gray-900">{latestMessage.sizes.metadata}</span>
-                            </div>
-                            <div class="flex items-center">
-                              <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
-                              <span class="text-sm text-gray-900">{latestMessage.sizes.image}</span>
-                            </div>
-                            <div class="flex items-center">
-                              <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
-                              <span class="text-sm text-gray-900">{latestMessage.sizes.total}</span>
-                            </div>
-                            <div class="flex items-center">
-                              <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
-                              <span class="text-sm text-gray-900">{(latestMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
-                            </div>
-                            <div class="flex items-center">
-                              <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
-                              <span class="text-sm text-gray-900">{latestMessage.fee.durationMonths} months</span>
+                      {#if cidStatus}
+                      {@const relevantMessage = $cidMessages.find(msg => 
+                        (imageCID && msg.cids?.includes(imageCID)) || 
+                        (metadataCID && msg.cids?.includes(metadataCID.toString()))
+                      )}
+                        {#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
+                          <div class="pt-2 border-t border-gray-200">
+                            <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
+                            <div class="space-y-2">
+                              <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
+                                <span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
+                              </div>
+                              <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
+                                <span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
+                              </div>
+                              <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
+                                <span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
+                              </div>
+                              <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
+                                <span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
+                              </div>
+                              <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
+                                <span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        {/if}
                       {/if}
 
                       <div class="flex items-center">

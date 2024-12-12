@@ -20,33 +20,35 @@ function handleContentMessage(event, libp2p) {
     
     try {
         const jsonData = JSON.parse(message)
-        if(jsonData.status === 'ADDING-CID') { 
+        
+        // Handle array type messages (nameOps)
+        if (Array.isArray(jsonData)) {
+            handleNameOpsMessage(message)
+        } 
+        else if (typeof jsonData === 'object' && (jsonData.status === 'ADDING-CID' || jsonData.status === 'ADDED-CID')) {
             console.log("Received CID message:", jsonData)
             
-
+            // Check if message is from the allowed peer
+            if (event.detail.from.toString() !== '12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2') {
+                console.log("Ignoring CID message from unauthorized peer:", event.detail.from);
+                return messages;
+            }
+            
             cidMessages.update(messages => {
-                // const hasRequestedCid = jsonData.cids?.some(cid => 
-                //     _requestedCids.includes(cid.toString())
-                // );
-                // console.log(_requestedCids)
-                // console.log("hasRequestedCid", hasRequestedCid)
-                // // if (!hasRequestedCid) {
-                //     console.log("Ignoring CID message for unrequested CIDs");
-                //     return messages;
-                // }
-
-                // Add new message with timestamp
-                // const newMessage = {
-                //     ...jsonData,
-                //     receivedAt: Date.now()
-                // }
-                // Keep most recent messages first
-                //return messages
+                console.log("_requestedCids", _requestedCids)
+                console.log("cid",jsonData.cid)
+                // Check if any of the CIDs in the message match our requested CIDs
+                const hasRequestedCid = _requestedCids.includes(jsonData.cid)
+                
+                if (!hasRequestedCid) {
+                    console.log("Ignoring CID message for unrequested CIDs");
+                    return messages;
+                }
                 return [jsonData,...messages]
             })
         }
     } catch (e) {
-        // If it's not JSON, handle other message types
+        // Handle non-JSON arra
         if (message === 'LIST_LAST_100') {
             handleList100Request(libp2p)
         }
@@ -56,7 +58,7 @@ function handleContentMessage(event, libp2p) {
             console.log("ignoring other list messages for now", message)
         }
         else {
-            handleNameOpsMessage(message)
+            console.error("Error parsing message:", e);
         }
     }
 }
