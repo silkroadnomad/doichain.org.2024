@@ -29,7 +29,7 @@ function handleContentMessage(event, libp2p) {
             console.log("Received CID message:", jsonData)
             
             // Check if message is from the allowed peer
-            if (event.detail.from.toString() !== '12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2') {
+            if (event.detail.from.string !== '12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2') {
                 console.log("Ignoring CID message from unauthorized peer:", event.detail.from);
                 return;
             }
