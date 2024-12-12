@@ -152,13 +152,6 @@
 	body {
 		font-family: 'Poppins', sans-serif;
 	}
-
-	textarea {
-		min-height: 60px;
-		max-height: 200px;
-		overflow-y: auto;
-	}
-
 	:global(body) {
 		padding-bottom: calc(var(--footer-height, 32px) + 1rem);
 	}

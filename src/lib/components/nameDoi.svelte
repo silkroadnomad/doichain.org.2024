@@ -267,12 +267,15 @@
 }
 
   $: if (scanData) {
+    // Remove 'doichain:' prefix if present
+    const cleanedData = scanData.replace(/^doichain:/i, '');
+    
     if (scanTarget === 'wallet') {
-      walletAddress = scanData;
+        walletAddress = cleanedData;
     } else if (scanTarget === 'recipient') {
-      recipientsAddress = scanData;
+        recipientsAddress = cleanedData;
     } else if (scanTarget === 'change') {
-      changeAddress = scanData;
+        changeAddress = cleanedData;
     }
     scanData = ''; // Reset after use
   }
