@@ -125,8 +125,8 @@
           }).then(async (cid) => {
             imageCID = cid.toString()
             console.log('Added file to IPFS:', imageCID)
-            await publishCID(imageCID.toString());
-            requestedCids.update(cids => [...cids, imageCID.toString()]); //store the requested cids so we not collect other stuff
+            await publishCID(imageCID);
+            requestedCids.update(cids => [...cids, imageCID]); //store the requested cids so we not collect other stuff
             writeMetadata()
           })}else{
             console.log("not ArrayBuffer")
@@ -160,15 +160,12 @@
     }
   }
 
-  function isUtxoSelected(utxo) {
-    return selectedUtxos.some(u => u.hash === utxo.hash && u.n === utxo.n);
-  }
-
   $: {
     if(selectedUtxosCount > 0 && nameId && nameValue) {
         console.log("prepare signing transaction", selectedUtxos)
         
         const matchingCidMessage = $cidMessages.find(msg => {
+          console.log(`matchingCidMessage for ${imageCID} or ${metadataCID} to prepare transaction`,msg)
             return (imageCID && msg.cids?.includes(imageCID)) || 
                    (metadataCID && msg.cids?.includes(metadataCID.toString()));
         });
@@ -416,38 +413,41 @@
                         <span class="text-sm font-medium text-gray-500 w-20">CID:</span>
                         <span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span>
                       </div>
-                      {#if cidStatus}
-                      {@const relevantMessage = $cidMessages.find(msg => 
-                        (imageCID && msg.cids?.includes(imageCID)) || 
-                        (metadataCID && msg.cids?.includes(metadataCID.toString()))
-                      )}
-                        {#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
-                          <div class="pt-2 border-t border-gray-200">
-                            <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
-                            <div class="space-y-2">
-                              <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
-                                <span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
-                              </div>
-                              <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
-                                <span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
-                              </div>
-                              <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
-                                <span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
-                              </div>
-                              <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
-                                <span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
-                              </div>
-                              <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
-                                <span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+
+                      {#if $cidMessages.length > 0}
+                        {@const relevantMessage = $cidMessages.find(msg => {
+                          console.log(`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,msg)
+                          console.log(`imageCID: ${imageCID}`, msg.cid === imageCID)
+                          console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID.toString())
+                          return (msg.status === 'ADDING-CID' && (imageCID && msg.cid === imageCID || metadataCID && msg.cid === metadataCID.toString()))
+                        })}
+                          {#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
+                            <div class="pt-2 border-t border-gray-200">
+                              <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
+                              <div class="space-y-2">
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
+                                  <span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        {/if}
+                          {/if}
                       {/if}
 
                       <div class="flex items-center">
