@@ -20,8 +20,21 @@ import * as sb from 'satoshi-bitcoin';
  * @throws {Error} Implicitly throws an error if any of the required parameters are missing or invalid.
  */
 export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _network, _storageFee, _recipientAddress, _changeAddress, _pinningDetails = null) {
-    if(!_name || _utxoAddresses.length === 0 || !_recipientAddress || !_changeAddress) {
-        return { error: "Missing required parameters" };
+
+    const missingParams = [];
+    if (!_name) missingParams.push('name');
+    if (_utxoAddresses.length === 0) missingParams.push('UTXOs');
+    if (!_recipientAddress) {
+        _recipientAddress = _utxoAddresses[0].address;
+    }
+    if (!_changeAddress) {
+        _changeAddress = _utxoAddresses[0].address;
+    }
+    if (missingParams.length > 0) {
+        return { 
+            error: `Missing required parameters: ${missingParams.join(', ')}`,
+            missingParams 
+        };
     }
 
     const psbt = new Psbt({ network: _network });
@@ -65,7 +78,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
 
     if (_pinningDetails && _pinningDetails.address && _pinningDetails.amount) {
         psbt.addOutput({
-            address: _pinningDetails.address,
+            address: _pinningDetails.paymentAddress,
             value: _pinningDetails.amount
         });
         totalOutputAmount = totalOutputAmount + _pinningDetails.amount;

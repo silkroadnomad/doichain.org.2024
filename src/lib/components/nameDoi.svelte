@@ -39,7 +39,18 @@
   let totalAmount;
   let errorMessage;
   let storageFee = 1000000;
+  let pinningFee = 0;
+  let relevantMessage;
+  
+  $: relevantMessage = $cidMessages.find(msg => {
+                          console.log(`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,msg)
+                          console.log(`imageCID: ${imageCID}`, msg.cid === imageCID)
+                          console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID.toString())
+                          return (msg.status === 'ADDING-CID' && (imageCID && msg.cid === imageCID || metadataCID && msg.cid === metadataCID.toString()))
+                        })
+  $:pinningFee = relevantMessage?.fee?.amount || 0
 
+  let nameRegistrationFee = storageFee;
   let files = {
     accepted: [],
     rejected: []
@@ -165,17 +176,15 @@
         console.log("prepare signing transaction", selectedUtxos)
         
         const matchingCidMessage = $cidMessages.find(msg => {
-          console.log(`matchingCidMessage for ${imageCID} or ${metadataCID} to prepare transaction`,msg)
-            return (imageCID && msg.cids?.includes(imageCID)) || 
-                   (metadataCID && msg.cids?.includes(metadataCID.toString()));
+            return (msg.status === 'ADDING-CID' && imageCID && msg.cid === imageCID) || 
+                   (msg.status === 'ADDING-CID' && metadataCID && msg.cid === metadataCID.toString());
         });
-
-        // Get pinning details only if we found a matching message
+        console.log("matchingCidMessage",matchingCidMessage)
         const pinningDetails = matchingCidMessage ? {
-            address: matchingCidMessage.fee.address,
+            paymentAddress: matchingCidMessage.fee.paymentAddress,
             amount: matchingCidMessage.fee.amount
         } : null;
-
+        console.log("pinningDetails",pinningDetails)
         if (!pinningDetails) {
             console.warn("No matching CID message found for current transaction");
         }
@@ -415,12 +424,6 @@
                       </div>
 
                       {#if $cidMessages.length > 0}
-                        {@const relevantMessage = $cidMessages.find(msg => {
-                          console.log(`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,msg)
-                          console.log(`imageCID: ${imageCID}`, msg.cid === imageCID)
-                          console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID.toString())
-                          return (msg.status === 'ADDING-CID' && (imageCID && msg.cid === imageCID || metadataCID && msg.cid === metadataCID.toString()))
-                        })}
                           {#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
                             <div class="pt-2 border-t border-gray-200">
                               <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
@@ -481,6 +484,7 @@
               </div>
             </div>
           {/if}
+          <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} {pinningFee} {nameRegistrationFee} />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -546,8 +550,7 @@
               <button 
                 on:click={fetchUtxos} 
                 class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              >
-                Show Coins
+              > Show Coins
               </button>
             {/if}
           </div>
@@ -597,11 +600,9 @@
             {transactionFee} 
             {totalAmount} 
             {selectedUtxosSum} 
+            {nameRegistrationFee}
             {changeAmount}
-            pinningFee={$cidMessages.find(msg => 
-                (imageCID && msg.cids?.includes(imageCID)) || 
-                (metadataCID && msg.cids?.includes(metadataCID.toString()))
-            )?.fee?.amount || 0}
+            {pinningFee}
           />
         </div>
         <div class="grid grid-cols-2 gap-4">
@@ -674,7 +675,8 @@
               </div>
             </div>
             <div>&nbsp;</div>
-            <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} />
+            <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} {pinningFee} {nameRegistrationFee} />
+
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
@@ -718,7 +720,7 @@
             </pre>
           {/if}
           
-          <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} />
+          <TransactionDetails {transactionFee} {totalAmount} {selectedUtxosSum} {changeAmount} {nameRegistrationFee} />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div><button on:click={() => activeTimeLine--} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Back</button></div>
