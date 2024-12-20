@@ -20,6 +20,8 @@
 	let processedErrorMessage = '';
 	let processedSuccessMessage = '';
 	let doichainAddress = localStorage.getItem('doichainAddress') || '';
+	let isValidating = false;
+	let debounceTimeout;
 
 	$: ({ isConnected, serverName } = getConnectionStatus($connectedServer));
 	$: {
@@ -84,12 +86,33 @@
 		}
 	}
 
-	$: name ? checkName($electrumClient, doichainAddress, name, nameCheckCallback) : null;
+	function debounceValidation(value) {
+		isValidating = true;
+		clearTimeout(debounceTimeout);
+		debounceTimeout = setTimeout(() => {
+			if (value) {
+				checkName($electrumClient, doichainAddress, value, nameCheckCallback);
+			}
+			isValidating = false;
+		}, 300);
+	}
 
 	function handleInput(event) {
-		if (event.keyCode === 13) {
+		if (event.type === 'input') {
+			debounceValidation(event.target.value);
+		} else if (event.type === 'keydown' && event.keyCode === 13) {
+			clearTimeout(debounceTimeout);
 			dispatch('input', name);
 		}
+	}
+
+	$: if (name) {
+		debounceValidation(name);
+	} else {
+		isNameValid = true;
+		nameErrorMessage = '';
+		processedErrorMessage = '';
+		processedSuccessMessage = '';
 	}
 </script>
 
@@ -115,20 +138,31 @@
 			<input
 				bind:value={name}
 				autofocus
+				on:input={handleInput}
 				on:keydown={handleInput}
 				type="search"
 				name="name"
 				id="name"
 				class="block w-full pl-10 pr-10 py-2 text-sm
-               border-blue-500 focus:border-blue-700
-               text-gray-900 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300"
+               border-{isNameValid ? 'blue' : 'yellow'}-500
+               focus:border-{isNameValid ? 'blue' : 'yellow'}-700
+               text-gray-900 bg-white rounded-md
+               focus:outline-none focus:ring-2
+               focus:ring-{isNameValid ? 'blue' : 'yellow'}-500
+               border border-gray-300
+               {isValidating ? 'opacity-75' : ''}"
 				placeholder="Find name..."
 				autocomplete="off"
 				aria-invalid={!isNameValid}
 				aria-describedby="name-error"
 			/>
 			<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-				{#if !isNameValid}
+				{#if isValidating}
+					<svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+					</svg>
+				{:else if !isNameValid}
 					<svg
 						class="h-5 w-5 text-yellow-500"
 						viewBox="0 0 20 20"
@@ -150,7 +184,7 @@
 					>
 						<path
 							fill-rule="evenodd"
-							d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"
+							d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
 							clip-rule="evenodd"
 						/>
 					</svg>
