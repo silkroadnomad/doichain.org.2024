@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static'
+import adapter from '@sveltejs/adapter-static';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -9,8 +9,8 @@ const config = {
 			fallback: 'offline.html',
 			precompress: true,
 			strict: false
-		}),
-	},
+		})
+	}
 };
 
 export default config;

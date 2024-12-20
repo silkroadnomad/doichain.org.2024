@@ -1,4 +1,4 @@
-import { unixfs } from '@helia/unixfs'
+import { unixfs } from '@helia/unixfs';
 
 /**
  * getMetadataFromIPFS
@@ -8,10 +8,10 @@ import { unixfs } from '@helia/unixfs'
  * @returns {Promise<any>}
  */
 export async function getMetadataFromIPFS(helia, tokenURI) {
-	const fs = unixfs(helia)
-	const decoder = new TextDecoder()
-	let text = ''
-	let cid
+	const fs = unixfs(helia);
+	const decoder = new TextDecoder();
+	let text = '';
+	let cid;
 	// console.log("loading...",tokenURI)
 	if (tokenURI.startsWith('ipfs://') || tokenURI.startsWith('ipns://')) {
 		cid = tokenURI.split('//')[1];
@@ -19,7 +19,7 @@ export async function getMetadataFromIPFS(helia, tokenURI) {
 	for await (const chunk of fs.cat(cid)) {
 		text += decoder.decode(chunk, {
 			stream: true
-		})
+		});
 	}
 	// console.log("loaded",text)
 	return JSON.parse(text);

@@ -1,46 +1,46 @@
 {
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "x-ipfs-path",
-          "value": "/ipfs/QmNu9KfuvPLmJVkHVwbjj5EcZkCU8LVMZ75UXrPUyU6Ntx"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        },
-        {
-          "key": "Expires",
-          "value": "0"
-        }
-      ]
-    },
-    {
-      "source": "/",
-      "headers": [
-        {
-          "key": "x-ipfs-path",
-          "value": "/ipfs/QmNu9KfuvPLmJVkHVwbjj5EcZkCU8LVMZ75UXrPUyU6Ntx"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        },
-        {
-          "key": "Expires",
-          "value": "0"
-        }
-      ]
-    }
-  ]
+	"headers": [
+		{
+			"source": "/(.*)",
+			"headers": [
+				{
+					"key": "x-ipfs-path",
+					"value": "/ipfs/QmNu9KfuvPLmJVkHVwbjj5EcZkCU8LVMZ75UXrPUyU6Ntx"
+				},
+				{
+					"key": "Cache-Control",
+					"value": "no-cache, no-store, must-revalidate"
+				},
+				{
+					"key": "Pragma",
+					"value": "no-cache"
+				},
+				{
+					"key": "Expires",
+					"value": "0"
+				}
+			]
+		},
+		{
+			"source": "/",
+			"headers": [
+				{
+					"key": "x-ipfs-path",
+					"value": "/ipfs/QmNu9KfuvPLmJVkHVwbjj5EcZkCU8LVMZ75UXrPUyU6Ntx"
+				},
+				{
+					"key": "Cache-Control",
+					"value": "no-cache, no-store, must-revalidate"
+				},
+				{
+					"key": "Pragma",
+					"value": "no-cache"
+				},
+				{
+					"key": "Expires",
+					"value": "0"
+				}
+			]
+		}
+	]
 }
