@@ -1,21 +1,21 @@
 <script>
 	import { helia, libp2p, nameOps } from '$lib/doichain/doichain-store.js';
-	import '../app.css';
-	import { onMount, onDestroy } from 'svelte';
+	import "../app.css";
+	import { onMount, onDestroy } from "svelte";
 	import { browser } from '$app/environment';
-	import { createLibp2p } from 'libp2p';
-	import { createHelia, libp2pDefaults } from 'helia';
-	import { LevelBlockstore } from 'blockstore-level';
-	import { LevelDatastore } from 'datastore-level';
-	import { createLibp2pConfig } from '$lib/config/libp2p-config';
-	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
+	import { createLibp2p } from 'libp2p'
+	import { createHelia, libp2pDefaults } from 'helia'
+	import { LevelBlockstore } from "blockstore-level"
+	import { LevelDatastore } from "datastore-level";
+	import { createLibp2pConfig } from '$lib/config/libp2p-config'
+	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js'
 	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
-
+	
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	const config = createLibp2pConfig();
 
-	let blockstore = new LevelBlockstore('./helia-blocks');
-	let datastore = new LevelDatastore('./helia-data');
+	let blockstore = new LevelBlockstore("./helia-blocks");
+	let datastore = new LevelDatastore("./helia-data");
 	let addressUpdateInterval;
 
 	let attemptCount = 0;
@@ -26,37 +26,34 @@
 		if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
 			try {
 				const messageObject = {
-					type: 'LIST',
-					dateString: 'LAST',
+					type: "LIST",
+					dateString: "LAST",
 					pageSize: 10,
 					from: 0,
-					filter: '' // Add any specific filter if needed
+					filter: "" // Add any specific filter if needed
 				};
 
 				const message = JSON.stringify(messageObject);
 				$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
 				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`, message);
 				attemptCount++;
-
+				
 				// Schedule next attempt after 5 seconds
 				setTimeout(() => {
 					publishList100Request();
 				}, 5000);
 			} catch (error) {
-				console.error('Error publishing LIST_LAST_100 message:', error);
+				console.error("Error publishing LIST_LAST_100 message:", error);
 			}
 		} else {
-			console.log(
-				'Stopping LIST_LAST_100 requests: either max attempts reached or nameOps received.',
-				nameOps.length
-			);
+			console.log("Stopping LIST_LAST_100 requests: either max attempts reached or nameOps received.", nameOps.length);
 		}
 	}
 
 	let nodeAddresses = [];
 
 	function updateNodeAddresses() {
-		const newAddresses = $libp2p.getMultiaddrs().map((ma) => ma.toString());
+		const newAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
 		nodeAddresses = [...new Set(newAddresses)];
 		console.log('Updated node addresses:', nodeAddresses);
 	}
@@ -65,19 +62,17 @@
 		$libp2p = await createLibp2p(config);
 		window.libp2p = $libp2p;
 
-		nodeAddresses = $libp2p.getMultiaddrs().map((ma) => ma.toString());
+		nodeAddresses = $libp2p.getMultiaddrs().map(ma => ma.toString());
 		console.log('Our node addresses:', nodeAddresses);
 
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore });
 		window.helia = $helia;
 
 		try {
-			if ($libp2p) {
-				setupLibp2pEventHandlers($libp2p, publishList100Request);
+			if($libp2p) {
+				setupLibp2pEventHandlers($libp2p, publishList100Request)
 			}
-		} catch (ex) {
-			console.log('helia.libp2p.exception', ex);
-		}
+		} catch(ex){ console.log("helia.libp2p.exception", ex) }
 
 		updateNodeAddresses();
 
@@ -85,22 +80,22 @@
 			updateNodeAddresses();
 		}, 20000);
 
-		if (browser && 'serviceWorker' in navigator) {
-			navigator.serviceWorker
-				.register('/service-worker.js')
-				.then((registration) => {
-					console.log('Service Worker registered with scope:', registration.scope);
-				})
-				.catch((error) => {
-					console.error('Service Worker registration failed:', error);
-				});
-		}
-	});
-
-	onDestroy(() => {
-		clearInterval(addressUpdateInterval);
-	});
-</script>
+			if (browser && 'serviceWorker' in navigator) {
+				navigator.serviceWorker.register('/service-worker.js')
+					.then((registration) => {
+						console.log('Service Worker registered with scope:', registration.scope);
+					})
+					.catch((error) => {
+						console.error('Service Worker registration failed:', error);
+					});
+			}
+		})
+		
+		onDestroy(() => {
+			clearInterval(addressUpdateInterval);
+		});
+		
+	</script>
 
 <body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen pb-[footer-height]">
 	<div class="flex-grow">
@@ -108,7 +103,7 @@
 			<div class="text-center max-w-4xl mx-auto px-4">
 				<div class="flex justify-center mb-12">
 					<div class="bg-gray-900 rounded-full p-4">
-						<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16" />
+						<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
 					</div>
 				</div>
 			</div>
@@ -124,7 +119,10 @@
 			<div class="network-stats-grid">
 				<div class="stat-card group">
 					<div class="flex items-center gap-2 mb-1">
-						<LibP2PTransportTags class="interactive-stats" variant="stats" />
+						<LibP2PTransportTags 
+							class="interactive-stats"
+							variant="stats"
+						/>
 					</div>
 				</div>
 			</div>
@@ -133,7 +131,7 @@
 
 	<div class="fixed inset-0 pointer-events-none">
 		{#each nodeAddresses as address, i}
-			<div
+			<div 
 				class="constellation-node"
 				style="
 					--x: {Math.random() * 100}%;
@@ -198,17 +196,8 @@
 	}
 
 	@keyframes pulse {
-		0% {
-			transform: scale(1);
-			opacity: 0.5;
-		}
-		50% {
-			transform: scale(1.2);
-			opacity: 1;
-		}
-		100% {
-			transform: scale(1);
-			opacity: 0.5;
-		}
+		0% { transform: scale(1); opacity: 0.5; }
+		50% { transform: scale(1.2); opacity: 1; }
+		100% { transform: scale(1); opacity: 0.5; }
 	}
 </style>
