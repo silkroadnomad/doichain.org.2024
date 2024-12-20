@@ -1,10 +1,10 @@
 <script>
-	import NameInput from '$lib/components/nameInput.svelte';
-	let title = `Doichain.org names on chain`;
-	let description = 'A name registration service for Doichain';
-	const url = 'ipns://name-on-chain.com';
-	let image = '/nasa-Q1p7bh3SHj8-unsplash.jpg';
-	const favicon = './favicon.ico';
+	import NameInput from '$lib/components/nameInput.svelte'
+	let title = `Doichain.org names on chain`
+	let description = "A name registration service for Doichain";
+	const url = "ipns://name-on-chain.com"
+	let image = "/nasa-Q1p7bh3SHj8-unsplash.jpg"
+	const favicon = "./favicon.ico"
 </script>
 
 <svelte:head>
@@ -15,37 +15,28 @@
 	<meta property="og:description" content={description} />
 	<meta property="og:image" content={image} />
 	<meta property="og:url" content={url} />
-	<meta name="description" content={description} />
+	<meta name="description" content={description}/>
 	<meta name="twitter:card" content={description} />
 	<meta name="twitter:title" content={title} />
 	<meta name="twitter:description" content={description} />
 	<meta name="twitter:image" content={image} />
 </svelte:head>
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Doichain - Simplified Name-Value Storage</title>
-	<!--	<script src="https://cdn.tailwindcss.com"></script>-->
-	<link
-		rel="icon"
-		href="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png"
-		sizes="32x32"
-	/>
-	<link
-		rel="icon"
-		href="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png"
-		sizes="192x192"
-	/>
-	<link
-		rel="apple-touch-icon"
-		href="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png"
-	/>
-	<meta
-		name="msapplication-TileImage"
-		content="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png"
-	/>
-	<link
-		href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap"
-		rel="stylesheet"
-	/>
+<!--	<script src="https://cdn.tailwindcss.com"></script>-->
+	<link rel="icon" href="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png" sizes="32x32">
+	<link rel="icon" href="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png" sizes="192x192">
+	<link rel="apple-touch-icon" href="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png">
+	<meta name="msapplication-TileImage" content="https://www.doichain.org/wp-content/uploads/2024/05/bildmarke.png">
+	<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 </head>
+
+
+
+
+
+
+
+
