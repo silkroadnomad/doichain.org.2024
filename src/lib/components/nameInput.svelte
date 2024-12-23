@@ -23,21 +23,23 @@
 	let isValidating = false;
 	let debounceTimeout;
 
-	$: ({ isConnected, serverName } = getConnectionStatus($connectedServer));
+	$: ({ isConnected } = getConnectionStatus($connectedServer));
 	$: {
-		if (customErrorMessage) {
-			processedErrorMessage = customErrorMessage.replace('---name---', name);
-			processedErrorMessage = processedErrorMessage.replace('---address---', doichainAddress);
-		} else {
-			processedErrorMessage = '';
+		// Update error message whenever name or customErrorMessage changes
+		let tempErrorMsg = customErrorMessage || '';
+		if (tempErrorMsg) {
+			tempErrorMsg = tempErrorMsg.replace('---name---', name);
+			tempErrorMsg = tempErrorMsg.replace('---address---', doichainAddress);
 		}
+		processedErrorMessage = tempErrorMsg;
 	}
 	$: {
-		if (customSuccessMessage) {
-			processedSuccessMessage = customSuccessMessage.replace('---name---', name);
-		} else {
-			processedSuccessMessage = '';
+		// Update success message whenever name or customSuccessMessage changes
+		let tempSuccessMsg = customSuccessMessage || '';
+		if (tempSuccessMsg) {
+			tempSuccessMsg = tempSuccessMsg.replace('---name---', name);
 		}
+		processedSuccessMessage = tempSuccessMsg;
 	}
 
 	async function nameCheckCallback(result) {
@@ -158,9 +160,19 @@
 			/>
 			<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
 				{#if isValidating}
-					<svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+					<svg
+						class="animate-spin h-5 w-5 text-gray-400"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						></path>
 					</svg>
 				{:else if !isNameValid}
 					<svg
