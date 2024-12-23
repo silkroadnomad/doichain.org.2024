@@ -50,6 +50,13 @@
 		currentNameUtxo = result.currentNameUtxo;
 		nameErrorMessage = result.nameErrorMessage;
 
+		// Set success message if name is valid
+		if (isNameValid && !nameErrorMessage) {
+			customSuccessMessage = `Doichain Name ${name} is available! Hit 'Enter' to register!`;
+		} else {
+			customSuccessMessage = '';
+		}
+
 		// Check if currentNameOp and currentNameUtxo are empty arrays
 		if (
 			Array.isArray(currentNameOp) &&
