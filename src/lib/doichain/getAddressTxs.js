@@ -7,7 +7,26 @@ import BIP32Factory from 'bip32';
 const bip32 = BIP32Factory(ecc);
 import { logs } from '$lib/doichain/doichain-store.js';
 
-const loglevel = 1 
+const loglevel = 0;
+/** @type {Map<string, {confirmed: number, unconfirmed: number}>} */
+let addressBalances = new Map();
+
+/**
+ * @typedef {Object} LogEntry
+ * @property {string} timestamp - ISO timestamp
+ * @property {string} message - Log message
+ * @property {'info'|'error'|'success'} type - Log type
+ */
+
+/** @type {import('svelte/store').Writable<Array<LogEntry>>} */
+const logStore = logs;
+
+/**
+ * @typedef {import('bitcoinjs-lib').Network} Network
+ */
+
+const batchSize = 10; // Define batch size for address scanning
+
 /**
  * @module getAddressTxs
  * @description Handles transaction retrieval and processing for both single Bitcoin addresses
@@ -18,21 +37,75 @@ const loglevel = 1
  * Retrieves and processes transactions for a given Bitcoin address or extended public key
  * @async
  * @param {string} xpubOrDoiAddress - Bitcoin address or extended public key (xpub/zpub)
- * @param {Array} _historyStore - Transaction history store
+ * @param {Array<Object>} _historyStore - Transaction history store
  * @param {Object} _electrumClient - Electrum client instance
- * @param {Object} _network - Bitcoin network configuration
- * @returns {Promise<Array>} Sorted array of processed transactions
+ * @param {Network} _network - Bitcoin network configuration
+ * @returns {Promise<AddressScanResult>} Scan results including transactions and addresses
+ */
+/**
+ * @typedef {Object} Transaction
+ * @property {string} txid - Transaction ID
+ * @property {number} blocktime - Block timestamp
+ * @property {string} id - Unique transaction identifier
+ * @property {number} value - Transaction value
+ * @property {string} address - Associated address
+ * @property {string} type - Transaction type (input/output)
+ * @property {boolean} [utxo] - Whether this is an unspent output
+ * @property {string} [nameId] - Name operation ID
+ * @property {string} [nameValue] - Name operation value
+ */
+
+/**
+ * @typedef {Object} AddressScanResult
+ * @property {Array<Transaction>} transactions - Sorted array of processed transactions
+ * @property {Map<string, string>} nextUnusedAddressesMap - Map of unused addresses
+ * @property {string|null} nextUnusedAddress - Next unused receiving address
+ * @property {string|null} nextUnusedChangeAddress - Next unused change address
+ */
+
+/**
+ * Retrieves and processes transactions for a given Bitcoin address or extended public key
+ * @async
+ * @param {string} xpubOrDoiAddress - Bitcoin address or extended public key (xpub/zpub)
+ * @param {Array<Object>} _historyStore - Transaction history store
+ * @param {Object} _electrumClient - Electrum client instance
+ * @param {Network} _network - Bitcoin network configuration
+ * @returns {Promise<AddressScanResult>} Scan results including transactions and addresses
+ */
+/**
+ * @typedef {Object} ElectrumClient
+ * @property {(method: string, params: any[]) => Promise<any>} request - Method to make Electrum protocol requests
+ */
+
+/** @type {Map<string, number>} */
+const globalRateLimiter = new Map();
+const RATE_LIMIT_MS = 100;
+
+/**
+ * Retrieves and processes transactions for a given Bitcoin address or extended public key
+ * @async
+ * @param {string} xpubOrDoiAddress - Bitcoin address or extended public key (xpub/zpub)
+ * @param {Array<Object>} _historyStore - Transaction history store
+ * @param {ElectrumClient} _electrumClient - Electrum client instance
+ * @param {Network} _network - Bitcoin network configuration
+ * @returns {Promise<AddressScanResult>} Scan results including transactions and addresses
  */
 export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumClient, _network) => {
     try {
         if(loglevel>0)console.log("\n🔍 Processing address/xpub:", xpubOrDoiAddress);
         
         const isAddress = isValidBitcoinAddress(xpubOrDoiAddress, _network);
+        /** @type {Array<Object>} */
         let electrumUTXOs = [];
+        /** @type {Array<Transaction>} */
         let ourTxs = [];
+        /** @type {Array<string>} */
         let derivedAddresses = [];
+        /** @type {Map<string, string>} */
         let nextUnusedAddressesMap = new Map();
+        /** @type {string|null} */
         let nextUnusedAddress = null;
+        /** @type {string|null} */
         let nextUnusedChangeAddress = null;
         
         if (isAddress) {
@@ -51,8 +124,13 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
             electrumUTXOs = result.utxos;
             _historyStore = result.history;
             nextUnusedAddressesMap = result.nextUnusedAddressesMap;
-            nextUnusedAddress = result.nextUnusedAddress
-            nextUnusedChangeAddress = result.nextUnusedChangeAddress
+            nextUnusedAddress = result.nextUnusedAddress;
+            nextUnusedChangeAddress = result.nextUnusedChangeAddress;
+            
+            // Update global address balances
+            for (const [address, balance] of result.balances) {
+                addressBalances.set(address, balance);
+            }
 
             if(loglevel>0) console.log(`✨ Found ${_historyStore.length} transactions across ${derivedAddresses.length} addresses`);
         }
@@ -69,7 +147,17 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
             nextUnusedChangeAddress
         };
     } catch (error) {
-        log(`Fatal error in Txs: ${error.message}`, 'error');
+        console.log(`Fatal error in Txs: ${error.message}`, 'error');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Fatal error in getAddressTxs: ${errorMessage}`);
+        logs.update(currentLogs => {
+            const newLogs = [{
+                timestamp: new Date().toISOString(),
+                message: `Fatal error in getAddressTxs: ${errorMessage}`,
+                type: 'error'
+            }, ...currentLogs];
+            return newLogs.slice(0, 1000);
+        });
         return {
             transactions: [],
             nextUnusedAddressesMap: new Map(),
@@ -81,9 +169,9 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
 
 /**
  * Validates a Bitcoin address
- * @param {string} addressStr - Bitcoin address
- * @param {Object} network - Bitcoin network configuration
- * @returns {boolean} True if the address is valid, false otherwise
+ * @param {string} addressStr - Bitcoin address to validate
+ * @param {Network} network - Bitcoin network configuration
+ * @returns {boolean} True if address is valid
  */
 function isValidBitcoinAddress(addressStr, network) {
     try {
@@ -92,31 +180,101 @@ function isValidBitcoinAddress(addressStr, network) {
     } catch (e) {
         return false;
     }
-  }
+}
+
+/**
+ * @typedef {Object} Balance
+ * @property {number} confirmed - Confirmed balance
+ * @property {number} unconfirmed - Unconfirmed balance
+ */
+
+/**
+ * @typedef {Object} AddressData
+ * @property {Array<Object>} utxos - Unspent transaction outputs
+ * @property {Array<Object>} history - Transaction history
+ * @property {Balance} balance - Address balance information
+ */
+
+/**
+ * @typedef {Object} ExtendedKeyScanResult
+ * @property {Array<string>} addresses - List of derived addresses
+ * @property {Array<Object>} utxos - All UTXOs found
+ * @property {Array<Object>} history - All transaction history
+ * @property {Map<string, string>} nextUnusedAddressesMap - Map of unused addresses
+ * @property {string|null} nextUnusedAddress - Next unused receiving address
+ * @property {string|null} nextUnusedChangeAddress - Next unused change address
+ * @property {Map<string, Balance>} balances - Map of address balances
+ */
 
 /**
  * Fetches UTXOs and transaction history for a single address
  * @async
  * @param {string} addr - Bitcoin address
  * @param {Object} client - Electrum client instance
- * @param {Object} network - Bitcoin network configuration
- * @returns {Promise<Object>} Object containing UTXOs and transaction history
+ * @param {Network} network - Bitcoin network configuration
+ * @param {Map<string, number>} [rateLimiter] - Optional rate limiter map
+ * @param {number} [rateLimit] - Optional rate limit in milliseconds
+ * @returns {Promise<AddressData>} Address data including UTXOs and history
  */
-async function fetchAddressData(addr, client, network) {
+// Type definitions moved to top of file
+
+/**
+ * Fetches data for a Bitcoin address
+ * @param {string} addr - Bitcoin address
+ * @param {Object} client - Electrum client
+ * @param {Network} network - Bitcoin network configuration
+ * @returns {Promise<AddressData>} Address data including UTXOs and history
+ */
+async function fetchAddressData(addr, client, network)  {
     console.log(`\n🔍 Fetching data for address: ${addr}`);
     const script = bitcoin.address.toOutputScript(addr, network);
     const hash = crypto.sha256(script);
     const reversedHash = Buffer.from(hash.reverse()).toString("hex");
 
     try {
-        const utxos = await client.request('blockchain.scripthash.listunspent', [reversedHash]);
-        const history = await client.request('blockchain.scripthash.get_history', [reversedHash]);
+        // Apply rate limiting if configured
+            const now = Date.now();
+            const lastRequest = rateLimiter.get(addr) || 0;
+            const timeToWait = Math.max(0, rateLimit - (now - lastRequest));
+            if (timeToWait > 0) {
+                await new Promise(resolve => setTimeout(resolve, timeToWait));
+            }
+            rateLimiter.set(addr, Date.now());
+
+        const [utxos, history, balance] = await Promise.all([
+            client.request('blockchain.scripthash.listunspent', [reversedHash]),
+            client.request('blockchain.scripthash.get_history', [reversedHash]),
+            client.request('blockchain.scripthash.get_balance', [reversedHash])
+        ]);
+
+        // Update balance tracking
+        addressBalances.set(addr, {
+            confirmed: balance.confirmed,
+            unconfirmed: balance.unconfirmed
+        });
+
         console.log(`├── 💰 UTXOs: ${utxos.length}`);
+        console.log(`├── 💵 Balance: ${balance.confirmed/100000000} BTC (confirmed)`);
         console.log(`└── 📜 History: ${history.length} transactions`);
-        return { utxos, history };
+
+        return { 
+            utxos, 
+            history,
+            balance: {
+                confirmed: balance.confirmed,
+                unconfirmed: balance.unconfirmed
+            }
+        };
     } catch (error) {
         console.error("❌ Error fetching address data:", error);
-        return { utxos: [], history: [] };
+        return { 
+            utxos: [], 
+            history: [],
+            balance: {
+                confirmed: 0,
+                unconfirmed: 0
+            }
+        };
     }
 }
 
@@ -274,50 +432,76 @@ const derivationConfig = {
  * @param {Object} network - Bitcoin network configuration
  * @returns {Promise<Object>} Object containing addresses, UTXOs, and transaction history
  */
-async function scanExtendedKey(xpub, client, network) {
+/**
+ * @typedef {Object} ScanResult
+ * @property {string[]} addresses - List of derived addresses
+ * @property {Object[]} utxos - List of UTXOs found
+ * @property {Object[]} history - Transaction history
+ * @property {string|null} unusedAddress - First unused address found
+ * @property {boolean} transactionsFound - Whether any transactions were found
+ */
+
+// Type definitions moved to top of file
+
+/**
+ * Scans an extended public key for transactions and balances
+ * @param {string} xpub - Extended public key
+ * @param {Object} client - Electrum client
+ * @param {Network} network - Network configuration
+ * @param {Map<string, number>} [rateLimiter] - Optional rate limiter map
+ * @param {number} [rateLimit] - Optional rate limit in milliseconds
+ * @returns {Promise<ExtendedKeyScanResult>} Scan results
+ */
+async function scanExtendedKey(xpub, client, network, rateLimiter, rateLimit) {
+    /** @type {string|null} */
     let nextUnusedAddress = null;
+    /** @type {string|null} */
     let nextUnusedChangeAddress = null;
 
+    /** @type {string[]} */
     let addresses = [];
+    /** @type {Object[]} */
     let allUtxos = [];
+    /** @type {Object[]} */
     let allHistory = [];
+    /** @type {Map<string, number>} */
     const transactionCounts = new Map();
-    let walletStandardWithTransactions = null;
-
-    // First pass: Identify the standard with transactions
+    /** @type {string[]} */
+    let standardsWithTransactions = [];
     for (const [standard, config] of Object.entries(derivationConfig)) {
-        console.log("scanning standard", standard);
-        const { basePath, pathTypes } = config;
+        if(loglevel>=0) console.log("scanning standard", standard);
+        const { pathTypes } = config;
 
         for (const pathType of pathTypes) {
-            console.log("scanning pathType", pathType);
+            if(loglevel>=0) console.log("scanning pathType", pathType);
             const result = await scanDerivationPath(xpub, pathType, standard, client, network, 1);
-            console.log("result", result)
+            if(loglevel>=0) console.log("result", result)
             if (result.transactionsFound) {
-                console.log("found transactions for standard", standard);
-                walletStandardWithTransactions = standard;
+                if(loglevel>=0) console.log("found transactions for standard", standard);
+                standardsWithTransactions.push(standard);
                 break;
             }
         }
-        if (walletStandardWithTransactions) break;
     }
 
-    // Second pass: Deep scan the identified standard
-    if (walletStandardWithTransactions) {
-        console.log("walletStandardWithTransactions", walletStandardWithTransactions)
-        const { pathTypes } = derivationConfig[walletStandardWithTransactions];
+    // Second pass: Deep scan all standards with transactions
+    for (const standard of standardsWithTransactions) {
+        if(loglevel>=0) console.log("deep scanning standard", standard);
+        const { pathTypes } = derivationConfig[standard];
 
         for (const [index, pathType] of pathTypes.entries()) {
-            console.log("deep scanning pathType", pathType);
+            if(loglevel>=0) console.log("deep scanning pathType", pathType);
             const isChangeAddress = index === 1;
-            const result = await scanDerivationPath(xpub, pathType, walletStandardWithTransactions, client, network);
-            console.log("result "+index, result)
+            // Use a larger initial scan window for thorough scanning
+            const result = await scanDerivationPath(xpub, pathType, standard, client, network);
+            if(loglevel>=0) console.log("result "+index, result);
             addresses = [...addresses, ...result.addresses];
             allUtxos = [...allUtxos, ...result.utxos];
             allHistory = [...allHistory, ...result.history];
-            if (!isChangeAddress) {
+            // Only set unused addresses if we haven't found them yet
+            if (!isChangeAddress && !nextUnusedAddress) {
                 nextUnusedAddress = result.unusedAddress;
-            } else {
+            } else if (isChangeAddress && !nextUnusedChangeAddress) {
                 nextUnusedChangeAddress = result.unusedAddress;
             }
 
@@ -331,8 +515,10 @@ async function scanExtendedKey(xpub, client, network) {
         addresses,
         utxos: allUtxos,
         history: allHistory,
+        nextUnusedAddressesMap: new Map(),
         nextUnusedAddress,
-        nextUnusedChangeAddress
+        nextUnusedChangeAddress,
+        balances: addressBalances
     };
 }
 
@@ -347,10 +533,10 @@ async function scanExtendedKey(xpub, client, network) {
  */
 export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
     try {
-        if(loglevel>0) log(`\n Deriving address:`);
-        if(loglevel>0) log(`├── Input Key: ${xpubOrZpub.slice(0, 20)}...`);
-        if(loglevel>0) log(`├── Path: ${derivationPath}`);
-        if(loglevel>0) log(`└── Type: ${type}`);
+        if(loglevel>0) console.log(`\n Deriving address:`);
+        if(loglevel>0) console.log(`├── Input Key: ${xpubOrZpub.slice(0, 20)}...`);
+        if(loglevel>0) console.log(`├── Path: ${derivationPath}`);
+        if(loglevel>0) console.log(`└── Type: ${type}`);
 
         const decodedData = bs58.decode(xpubOrZpub);
         const data = Buffer.from(decodedData);
@@ -361,13 +547,13 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
 
         const versionBytes = data.subarray(0, 4);
         const versionHex = versionBytes.toString('hex');
-        if(loglevel>0) log(`├── Version bytes: ${versionHex}`);
+        if(loglevel>0)  console.log(`├── Version bytes: ${versionHex}`);
 
         let xpub = xpubOrZpub;
         
         // Handle ZPUB conversion to XPUB if needed
         if (versionHex === '04b24746') { // ZPUB (Doichain/Bitcoin mainnet)
-            if(loglevel>0) log(`├── Converting ZPUB to XPUB`);
+            if(loglevel>0) console.log(`├── Converting ZPUB to XPUB`);
             // Convert ZPUB to XPUB by changing version bytes
             const xpubVersionBytes = Buffer.from([0x04, 0x88, 0xb2, 0x1e]); // mainnet xpub
             const xpubBuffer = Buffer.concat([
@@ -379,7 +565,7 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
 
         let node;
         if (versionHex === '04b24746') { // ZPUB case
-            if(loglevel>0) log(`├── Using native segwit network configuration`);
+            if(loglevel>0) console.log(`├── Using native segwit network configuration`);
             // Use appropriate network configuration for native segwit
             const segwitNetwork = {
                 ...network,
@@ -391,8 +577,10 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
             node = bip32.fromBase58(xpubOrZpub, segwitNetwork);
         } else {
             // Regular XPUB case
-            if(loglevel>0) log(`├── Using regular network configuration`);
-            node = bip32.fromBase58(xpub, network);
+            if(loglevel>0) console.log(`├── Using regular network configuration`);
+            /** @type {Network} */
+            const regularNetwork = { ...network };
+            node = bip32.fromBase58(xpub, regularNetwork);
         }
         
         // Parse the derivation path
@@ -417,18 +605,18 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
                 pubkey: child.publicKey, 
                 network 
             }).address;
-            if(loglevel>0) log(`└── ✅ Generated segwit: ${address}`);
+            if(loglevel>0) console.log(`└── ✅ Generated segwit: ${address}`);
             return address;
         } else { // legacy p2pkh
             const address = payments.p2pkh({ 
                 pubkey: child.publicKey, 
                 network 
             }).address;
-            if(loglevel>0) log(`└── ✅ Generated legacy: ${address}`);
+            if(loglevel>0) console.log(`└── ✅ Generated legacy: ${address}`);
             return address;
         }
     } catch (error) {
-        log(`└── ❌ Error in deriveAddress: ${error}`, 'error');
+        console.log(`└── ❌ Error in deriveAddress: ${error}`, 'error');
         throw error;
     }
 }
@@ -442,62 +630,169 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
  * @param {Object} network - Bitcoin network configuration
  * @returns {Promise<Object>} Object containing addresses, UTXOs, and transaction history
  */
-async function scanDerivationPath(xpub, basePath, standard, client, network, limit = 20) {
+/**
+ * Scans a derivation path for addresses and transactions
+ * @param {string} xpub - Extended public key
+ * @param {string} basePath - Base derivation path
+ * @param {string} standard - Wallet standard being used
+ * @param {Object} client - Electrum client
+ * @param {Object} network - Network configuration
+ * @param {number} [limit=50] - Maximum number of addresses to scan
+ * @returns {Promise<ScanResult>} Scan results including addresses and transactions
+ */
+/**
+ * @typedef {Object} DerivationScanResult
+ * @property {Array<string>} addresses - List of derived addresses
+ * @property {Array<Object>} utxos - List of UTXOs found
+ * @property {Array<Object>} history - Transaction history
+ * @property {string|null} unusedAddress - First unused address found
+ * @property {boolean} transactionsFound - Whether any transactions were found
+ */
+/**
+ * Scans a derivation path for addresses and transactions
+ * @async
+ * @param {string} xpub - Extended public key
+ * @param {string} basePath - Base derivation path
+ * @param {string} standard - Wallet standard being used
+ * @param {Object} client - Electrum client
+ * @param {import('bitcoinjs-lib').Network} network - Network configuration
+ * @param {number} [limit=50] - Maximum number of addresses to scan
+ * @returns {Promise<DerivationScanResult>} Scan results including addresses and transactions
+ */
+/**
+ * Scans a derivation path for addresses and transactions
+ * @param {string} xpub - Extended public key
+ * @param {string} basePath - Base derivation path
+ * @param {string} standard - Wallet standard being used
+ * @param {ElectrumClient} client - Electrum client
+ * @param {Network} network - Network configuration
+ * @param {number} [limit=50] - Maximum number of addresses to scan
+ * @returns {Promise<DerivationScanResult>} Scan results
+ */
+async function scanDerivationPath(xpub, basePath, standard, client, network, limit = 50) {
     if(loglevel>=0) console.log(`\n🔍 Scanning derivation path: ${standard} ${basePath}`);
+    /** @type {Array<Object>} */
     const utxos = [];
+    /** @type {Array<Object>} */
     const history = [];
+    /** @type {Array<string>} */
     const addresses = [];
-    let unusedAddress = false;
+    /** @type {string|null} */
+    let unusedAddress = null;
+    /** @type {boolean} */
     let transactionsFound = false;
+    /** @type {number} */
+    let consecutiveUnused = 0;
+    /** @type {number} */
+    const GAP_LIMIT = 20;
+    /** @type {number} */
+    let currentBatchSize = batchSize;
 
-    for (let i = 0; i < limit; i++) {
-        const derivationPath = `${basePath}/${i}`;
-        const address = deriveAddress(xpub, derivationPath, network, standard === 'electrum-segwit' ? 'p2wpkh' : 'p2pkh');
-        
-        try {
-            const { utxos: addressUtxos, history: addressHistory } = await fetchAddressData(address, client, network);
-
-            if (addressHistory.length > 0 || addressUtxos.length > 0) {
-                transactionsFound = true;
-                if(limit===1) break;
-                limit = i + 20; // Adjust limit to i + 20
+    try {
+        for (let i = 0; i < limit && consecutiveUnused < GAP_LIMIT; i += currentBatchSize) {
+            if(loglevel>0) console.log(`\n📍 Processing batch ${Math.floor(i/currentBatchSize)}:`);
+            
+            const batchAddresses = [];
+            const batchPromises = [];
+            
+            // Derive addresses in batch
+            for (let j = 0; j < Math.min(currentBatchSize, limit - i); j++) {
+                const index = i + j;
+                const derivationPath = `${basePath}/${index}`;
+                if(loglevel>0) console.log(`├── Path: ${derivationPath}`);
+                if(loglevel>0) console.log(`├── Index: ${index}`);
+                
+                try {
+                    const address = deriveAddress(xpub, derivationPath, network, standard === 'electrum-segwit' ? 'p2wpkh' : 'p2pkh');
+                    if(loglevel>0) console.log(`└── ✅ Generated: ${address}`);
+                    batchAddresses.push(address);
+                    addresses.push(address);
+                    
+                    // Queue up address data fetching with rate limiting
+                    batchPromises.push(fetchAddressData(address, client, network, globalRateLimiter, RATE_LIMIT_MS));
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    if(loglevel>0) console.log(`└── ❌ Error: ${errorMessage}`);
+                    continue;
+                }
             }
 
-            utxos.push(...addressUtxos);
-            history.push(...addressHistory);
-            addresses.push(address);
-            // Check for the first unused address
-            if (addressUtxos.length === 0 && addressHistory.length === 0) {
-                unusedAddress = address;
+            if(loglevel>0) console.log(`\n🔄 Checking transactions for ${batchAddresses.length} addresses`);
+
+            try {
+                // Process batch of addresses in parallel
+                const results = await Promise.allSettled(batchPromises);
+                let batchHasTransactions = false;
+                
+                for (let j = 0; j < results.length; j++) {
+                    const result = results[j];
+                    const address = batchAddresses[j];
+                    
+                    if (result.status === 'fulfilled') {
+                        const { utxos: addressUtxos, history: addressHistory, balance } = result.value;
+                        
+                        // Update global address balances
+                        if (balance) {
+                            addressBalances.set(address, {
+                                confirmed: balance.confirmed,
+                                unconfirmed: balance.unconfirmed
+                            });
+                            if(loglevel>0) console.log(`└── 💰 Balance: ${balance.confirmed/100000000} BTC (confirmed)`);
+                        }
+
+                        if (addressHistory.length > 0 || addressUtxos.length > 0) {
+                            batchHasTransactions = true;
+                            consecutiveUnused = 0;
+                            if(loglevel>0) console.log(`└── ✨ Found ${addressHistory.length} transactions for ${address}`);
+                            
+                            // Extend scanning window when we find transactions
+                            if (limit !== 1) {
+                                limit = Math.max(limit, i + GAP_LIMIT + 10);
+                            }
+                        } else {
+                            consecutiveUnused++;
+                            if(loglevel>0) console.log(`└── 📭 No transactions found for ${address}`);
+                            if (!unusedAddress) {
+                                unusedAddress = address;
+                            }
+                        }
+
+                        utxos.push(...addressUtxos);
+                        history.push(...addressHistory);
+                        addresses.push(address);
+                        // Check for the first unused address
+                        if (addressUtxos.length === 0 && addressHistory.length === 0) {
+                            unusedAddress = address;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`Error fetching data for address ${address}:`, error);
             }
-        } catch (error) {
-            console.error(`Error fetching data for address ${address}:`, error);
         }
+    } catch (error) {
+        console.error(`Error in scanDerivationPath: ${error}`);
     }
 
-    return { addresses, utxos, history, unusedAddress, transactionsFound };
-}
-
-/**
- * Logs a message with timestamp and type
- * @param {string} message - Message to log
- * @param {('info'|'error'|'success')} [type='info'] - Type of log entry
- * @private
- */
-function log(message, type = 'info') {
     const timestamp = new Date().toISOString();
+    /** @type {LogEntry} */
     const logEntry = {
         timestamp,
-        message,
-        type // 'info', 'error', 'success'
+        message: `Scanned derivation path: ${basePath}`,
+        type: 'info'
     };
-    
-    logs.update(currentLogs => {
+
+    logStore.update(currentLogs => {
         const newLogs = [logEntry, ...currentLogs];
-        // Optionally limit the number of logs kept
         return newLogs.slice(0, 1000); // Keep last 1000 logs
     });
-    
-    // Still keep console.log for debugging
-    console.log(message);
+    console.log(`Scanned derivation path: ${basePath}`);
+
+    return {
+        addresses,
+        utxos,
+        history,
+        unusedAddress,
+        transactionsFound
+    };
 }
