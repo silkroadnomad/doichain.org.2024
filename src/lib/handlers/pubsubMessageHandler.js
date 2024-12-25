@@ -46,7 +46,18 @@ function handleContentMessage(event, libp2p) {
                     console.log("Ignoring CID message for unrequested CIDs");
                     return messages;
                 }
-                return [jsonData,...messages]
+
+                // Store the peerId and multiaddress along with the message
+                const peerId = event.detail.from.toString();
+                const multiaddress = libp2p.getMultiaddrs().map(ma => ma.toString());
+
+                const updatedMessage = {
+                    ...jsonData,
+                    peerId,
+                    multiaddress
+                };
+
+                return [updatedMessage, ...messages];
             })
         }
     } catch (e) {

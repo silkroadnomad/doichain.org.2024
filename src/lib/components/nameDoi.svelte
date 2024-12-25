@@ -320,6 +320,7 @@
     console.log("Received UTXOs:", utxos);
      utxosFetched = true; // Set to true if UTXOs are fetched
   }
+
 </script>
 {#if scanOpen}
   <ScanModal 
@@ -447,6 +448,17 @@
                                 <div class="flex items-center">
                                   <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
                                   <span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Peer ID:</span>
+                                  <div class="relative group">
+                                    <span class="text-sm text-gray-900 cursor-pointer">{relevantMessage.peerId}</span>
+                                    <div class="absolute left-0 mt-1 w-max bg-black text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      {#each relevantMessage.multiaddress as address}
+                                        <div>{address}</div>
+                                      {/each}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -773,6 +785,9 @@
     }
     .utxo-item:hover .tooltip {
       visibility: visible;
+      opacity: 1;
+    }
+    .group:hover .group-hover\:opacity-100 {
       opacity: 1;
     }
 </style>
