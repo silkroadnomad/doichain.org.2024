@@ -14,7 +14,7 @@ sed -i '' "s|/ipfs/[^\"}]*|/ipfs/$cid|g" vercel.json
 
 # Execute the docker-compose command on the remote server
 ssh root@ipfs.le-space.de "docker-compose exec ipfs ipfs add $cid"
-
+echo "IPFS CID $cid published on ipfs.le-space.de and vercel.json updated"
 # Get the current version from package.json
 version=$(node -p "require('./package.json').version")
 
