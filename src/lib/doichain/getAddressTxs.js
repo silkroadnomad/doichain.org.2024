@@ -77,9 +77,6 @@ const batchSize = 10; // Define batch size for address scanning
  * @property {(method: string, params: any[]) => Promise<any>} request - Method to make Electrum protocol requests
  */
 
-/** @type {Map<string, number>} */
-const globalRateLimiter = new Map();
-const RATE_LIMIT_MS = 100;
 
 /**
  * Retrieves and processes transactions for a given Bitcoin address or extended public key
@@ -212,8 +209,6 @@ function isValidBitcoinAddress(addressStr, network) {
  * @param {string} addr - Bitcoin address
  * @param {Object} client - Electrum client instance
  * @param {Network} network - Bitcoin network configuration
- * @param {Map<string, number>} [rateLimiter] - Optional rate limiter map
- * @param {number} [rateLimit] - Optional rate limit in milliseconds
  * @returns {Promise<AddressData>} Address data including UTXOs and history
  */
 // Type definitions moved to top of file
@@ -233,14 +228,6 @@ async function fetchAddressData(addr, client, network)  {
 
     try {
         // Apply rate limiting if configured
-            const now = Date.now();
-            const lastRequest = rateLimiter.get(addr) || 0;
-            const timeToWait = Math.max(0, rateLimit - (now - lastRequest));
-            if (timeToWait > 0) {
-                await new Promise(resolve => setTimeout(resolve, timeToWait));
-            }
-            rateLimiter.set(addr, Date.now());
-
         const [utxos, history, balance] = await Promise.all([
             client.request('blockchain.scripthash.listunspent', [reversedHash]),
             client.request('blockchain.scripthash.get_history', [reversedHash]),
@@ -448,11 +435,9 @@ const derivationConfig = {
  * @param {string} xpub - Extended public key
  * @param {Object} client - Electrum client
  * @param {Network} network - Network configuration
- * @param {Map<string, number>} [rateLimiter] - Optional rate limiter map
- * @param {number} [rateLimit] - Optional rate limit in milliseconds
  * @returns {Promise<ExtendedKeyScanResult>} Scan results
  */
-async function scanExtendedKey(xpub, client, network, rateLimiter, rateLimit) {
+async function scanExtendedKey(xpub, client, network) {
     /** @type {string|null} */
     let nextUnusedAddress = null;
     /** @type {string|null} */
@@ -709,7 +694,7 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
                     addresses.push(address);
                     
                     // Queue up address data fetching with rate limiting
-                    batchPromises.push(fetchAddressData(address, client, network, globalRateLimiter, RATE_LIMIT_MS));
+                    batchPromises.push(fetchAddressData(address, client, network));
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : String(error);
                     if(loglevel>0) console.log(`└── ❌ Error: ${errorMessage}`);
@@ -741,7 +726,7 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
                         }
 
                         if (addressHistory.length > 0 || addressUtxos.length > 0) {
-                            batchHasTransactions = true;
+                            transactionsFound = true;
                             consecutiveUnused = 0;
                             if(loglevel>0) console.log(`└── ✨ Found ${addressHistory.length} transactions for ${address}`);
                             
