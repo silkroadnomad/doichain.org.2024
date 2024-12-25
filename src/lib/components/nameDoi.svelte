@@ -523,7 +523,9 @@
                   recipientsAddress = nextUnusedAddress;
                   changeAddress = nextUnusedChangeAddress;  
                   utxos = transactions.filter( tx => 
-                      tx.type === 'output' && tx.utxo === true
+                      tx.type === 'output' && 
+                      tx.utxo === true &&
+                      tx.confirmations > 0  // Additional check to ensure transaction is confirmed
                   ).map(tx => ({
                       tx_hash: tx.txid,
                       tx_pos: tx.n,
