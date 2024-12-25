@@ -7,6 +7,16 @@ import BIP32Factory from 'bip32';
 const bip32 = BIP32Factory(ecc);
 import { logs } from '$lib/doichain/doichain-store.js';
 
+/** @type {Map<string, {confirmed: number, unconfirmed: number}>} */
+let addressBalances = new Map();
+
+/**
+ * @typedef {Object} LogEntry
+ * @property {string} timestamp - ISO timestamp
+ * @property {string} message - Log message
+ * @property {'info'|'error'|'success'} type - Log type
+ */
+
 /** @type {import('svelte/store').Writable<Array<LogEntry>>} */
 const logStore = logs;
 
@@ -14,7 +24,9 @@ const logStore = logs;
  * @typedef {import('bitcoinjs-lib').Network} Network
  */
 
-const loglevel = 0
+const loglevel = 0;
+const batchSize = 10; // Define batch size for address scanning
+
 /**
  * @module getAddressTxs
  * @description Handles transaction retrieval and processing for both single Bitcoin addresses
@@ -60,6 +72,24 @@ const loglevel = 0
  * @param {import('bitcoinjs-lib').Network} _network - Bitcoin network configuration
  * @returns {Promise<AddressScanResult>} Scan results including transactions and addresses
  */
+/**
+ * @typedef {Object} ElectrumClient
+ * @property {(method: string, params: any[]) => Promise<any>} request - Method to make Electrum protocol requests
+ */
+
+/** @type {Map<string, number>} */
+const globalRateLimiter = new Map();
+const RATE_LIMIT_MS = 100;
+
+/**
+ * Retrieves and processes transactions for a given Bitcoin address or extended public key
+ * @async
+ * @param {string} xpubOrDoiAddress - Bitcoin address or extended public key (xpub/zpub)
+ * @param {Array<Object>} _historyStore - Transaction history store
+ * @param {ElectrumClient} _electrumClient - Electrum client instance
+ * @param {Network} _network - Bitcoin network configuration
+ * @returns {Promise<AddressScanResult>} Scan results including transactions and addresses
+ */
 export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumClient, _network) => {
     try {
         if(loglevel>0)console.log("\n🔍 Processing address/xpub:", xpubOrDoiAddress);
@@ -81,21 +111,27 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
         if (isAddress) {
             if(loglevel>=0) console.log("📍 Single address mode");
             derivedAddresses.push(xpubOrDoiAddress);
-            const { utxos, history } = await fetchAddressData(xpubOrDoiAddress, _electrumClient, _network);
+            const { utxos, history } = await fetchAddressData(xpubOrDoiAddress, _electrumClient, _network, globalRateLimiter, RATE_LIMIT_MS);
             electrumUTXOs = utxos;
             _historyStore = history;
             if(loglevel>0) console.log(`✨ Found ${history.length} transactions`);
         } 
         else {
             if(loglevel>=0) console.log("🔑 Extended key mode");
-            const result = await scanExtendedKey(xpubOrDoiAddress, _electrumClient, _network);
-            console.log("result", result)
+            const result = await scanExtendedKey(xpubOrDoiAddress, _electrumClient, _network, globalRateLimiter, RATE_LIMIT_MS);
+            console.log("result", result);
+            
             derivedAddresses = result.addresses;
             electrumUTXOs = result.utxos;
             _historyStore = result.history;
             nextUnusedAddressesMap = result.nextUnusedAddressesMap;
-            nextUnusedAddress = result.nextUnusedAddress
-            nextUnusedChangeAddress = result.nextUnusedChangeAddress
+            nextUnusedAddress = result.nextUnusedAddress;
+            nextUnusedChangeAddress = result.nextUnusedChangeAddress;
+            
+            // Update global address balances
+            for (const [address, balance] of result.balances) {
+                addressBalances.set(address, balance);
+            }
 
             if(loglevel>0) console.log(`✨ Found ${_historyStore.length} transactions across ${derivedAddresses.length} addresses`);
         }
@@ -159,18 +195,40 @@ function isValidBitcoinAddress(addressStr, network) {
 }
 
 /**
- * Fetches UTXOs and transaction history for a single address
- * @async
- * @param {string} addr - Bitcoin address
- * @param {Object} client - Electrum client instance
- * @param {Object} network - Bitcoin network configuration
- * @returns {Promise<Object>} Object containing UTXOs and transaction history
+ * @typedef {Object} Balance
+ * @property {number} confirmed - Confirmed balance
+ * @property {number} unconfirmed - Unconfirmed balance
  */
+
 /**
  * @typedef {Object} AddressData
  * @property {Array<Object>} utxos - Unspent transaction outputs
  * @property {Array<Object>} history - Transaction history
+ * @property {Balance} balance - Address balance information
  */
+
+/**
+ * @typedef {Object} ExtendedKeyScanResult
+ * @property {Array<string>} addresses - List of derived addresses
+ * @property {Array<Object>} utxos - All UTXOs found
+ * @property {Array<Object>} history - All transaction history
+ * @property {Map<string, string>} nextUnusedAddressesMap - Map of unused addresses
+ * @property {string|null} nextUnusedAddress - Next unused receiving address
+ * @property {string|null} nextUnusedChangeAddress - Next unused change address
+ * @property {Map<string, Balance>} balances - Map of address balances
+ */
+
+/**
+ * Fetches UTXOs and transaction history for a single address
+ * @async
+ * @param {string} addr - Bitcoin address
+ * @param {Object} client - Electrum client instance
+ * @param {Network} network - Bitcoin network configuration
+ * @param {Map<string, number>} [rateLimiter] - Optional rate limiter map
+ * @param {number} [rateLimit] - Optional rate limit in milliseconds
+ * @returns {Promise<AddressData>} Address data including UTXOs and history
+ */
+// Type definitions moved to top of file
 
 /**
  * Fetches data for a Bitcoin address
@@ -179,21 +237,58 @@ function isValidBitcoinAddress(addressStr, network) {
  * @param {Network} network - Bitcoin network configuration
  * @returns {Promise<AddressData>} Address data including UTXOs and history
  */
-async function fetchAddressData(addr, client, network) {
+async function fetchAddressData(addr, client, network, rateLimiter, rateLimit) {
     console.log(`\n🔍 Fetching data for address: ${addr}`);
     const script = bitcoin.address.toOutputScript(addr, network);
     const hash = crypto.sha256(script);
     const reversedHash = Buffer.from(hash.reverse()).toString("hex");
 
     try {
-        const utxos = await client.request('blockchain.scripthash.listunspent', [reversedHash]);
-        const history = await client.request('blockchain.scripthash.get_history', [reversedHash]);
+        // Apply rate limiting if configured
+        if (rateLimiter && rateLimit) {
+            const now = Date.now();
+            const lastRequest = rateLimiter.get(addr) || 0;
+            const timeToWait = Math.max(0, rateLimit - (now - lastRequest));
+            if (timeToWait > 0) {
+                await new Promise(resolve => setTimeout(resolve, timeToWait));
+            }
+            rateLimiter.set(addr, Date.now());
+        }
+
+        const [utxos, history, balance] = await Promise.all([
+            client.request('blockchain.scripthash.listunspent', [reversedHash]),
+            client.request('blockchain.scripthash.get_history', [reversedHash]),
+            client.request('blockchain.scripthash.get_balance', [reversedHash])
+        ]);
+
+        // Update balance tracking
+        addressBalances.set(addr, {
+            confirmed: balance.confirmed,
+            unconfirmed: balance.unconfirmed
+        });
+
         console.log(`├── 💰 UTXOs: ${utxos.length}`);
+        console.log(`├── 💵 Balance: ${balance.confirmed/100000000} BTC (confirmed)`);
         console.log(`└── 📜 History: ${history.length} transactions`);
-        return { utxos, history };
+
+        return { 
+            utxos, 
+            history,
+            balance: {
+                confirmed: balance.confirmed,
+                unconfirmed: balance.unconfirmed
+            }
+        };
     } catch (error) {
         console.error("❌ Error fetching address data:", error);
-        return { utxos: [], history: [] };
+        return { 
+            utxos: [], 
+            history: [],
+            balance: {
+                confirmed: 0,
+                unconfirmed: 0
+            }
+        };
     }
 }
 
@@ -360,16 +455,18 @@ const derivationConfig = {
  * @property {boolean} transactionsFound - Whether any transactions were found
  */
 
-/**
- * @typedef {Object} ExtendedKeyScanResult
- * @property {string[]} addresses - List of all derived addresses
- * @property {Object[]} utxos - List of all UTXOs found
- * @property {Object[]} history - Combined transaction history
- * @property {string|null} nextUnusedAddress - Next unused receiving address
- * @property {string|null} nextUnusedChangeAddress - Next unused change address
- */
+// Type definitions moved to top of file
 
-async function scanExtendedKey(xpub, client, network) {
+/**
+ * Scans an extended public key for transactions and balances
+ * @param {string} xpub - Extended public key
+ * @param {Object} client - Electrum client
+ * @param {Network} network - Network configuration
+ * @param {Map<string, number>} [rateLimiter] - Optional rate limiter map
+ * @param {number} [rateLimit] - Optional rate limit in milliseconds
+ * @returns {Promise<ExtendedKeyScanResult>} Scan results
+ */
+async function scanExtendedKey(xpub, client, network, rateLimiter, rateLimit) {
     /** @type {string|null} */
     let nextUnusedAddress = null;
     /** @type {string|null} */
@@ -432,8 +529,10 @@ async function scanExtendedKey(xpub, client, network) {
         addresses,
         utxos: allUtxos,
         history: allHistory,
+        nextUnusedAddressesMap: new Map(),
         nextUnusedAddress,
-        nextUnusedChangeAddress
+        nextUnusedChangeAddress,
+        balances: addressBalances
     };
 }
 
@@ -581,6 +680,16 @@ const segwitNetwork = {
  * @param {number} [limit=50] - Maximum number of addresses to scan
  * @returns {Promise<DerivationScanResult>} Scan results including addresses and transactions
  */
+/**
+ * Scans a derivation path for addresses and transactions
+ * @param {string} xpub - Extended public key
+ * @param {string} basePath - Base derivation path
+ * @param {string} standard - Wallet standard being used
+ * @param {ElectrumClient} client - Electrum client
+ * @param {Network} network - Network configuration
+ * @param {number} [limit=50] - Maximum number of addresses to scan
+ * @returns {Promise<DerivationScanResult>} Scan results
+ */
 async function scanDerivationPath(xpub, basePath, standard, client, network, limit = 50) {
     if(loglevel>=0) console.log(`\n🔍 Scanning derivation path: ${standard} ${basePath}`);
     /** @type {Array<Object>} */
@@ -598,82 +707,106 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
     /** @type {number} */
     const GAP_LIMIT = 20;
     /** @type {number} */
-    let batchSize = 10; // Process addresses in batches for better performance
+    let currentBatchSize = batchSize;
 
     try {
-        for (let i = 0; i < limit && consecutiveUnused < GAP_LIMIT; i += batchSize) {
-            const currentBatchSize = Math.min(batchSize, limit - i);
-            const derivedAddresses = [];
-            const addressPromises = [];
+        for (let i = 0; i < limit && consecutiveUnused < GAP_LIMIT; i += currentBatchSize) {
+            if(loglevel>0) console.log(`\n📍 Processing batch ${Math.floor(i/currentBatchSize)}:`);
+            
+            const batchAddresses = [];
+            const batchPromises = [];
             
             // Derive addresses in batch
-            for (let j = 0; j < currentBatchSize; j++) {
+            for (let j = 0; j < Math.min(currentBatchSize, limit - i); j++) {
                 const index = i + j;
                 const derivationPath = `${basePath}/${index}`;
+                if(loglevel>0) console.log(`├── Path: ${derivationPath}`);
+                if(loglevel>0) console.log(`├── Index: ${index}`);
+                
                 try {
                     const address = deriveAddress(xpub, derivationPath, network, standard === 'electrum-segwit' ? 'p2wpkh' : 'p2pkh');
-                    derivedAddresses.push(address);
+                    if(loglevel>0) console.log(`└── ✅ Generated: ${address}`);
+                    batchAddresses.push(address);
                     addresses.push(address);
-                    // Queue up address data fetching
-                    addressPromises.push(fetchAddressData(address, client, network));
+                    
+                    // Queue up address data fetching with rate limiting
+                    batchPromises.push(fetchAddressData(address, client, network, globalRateLimiter, RATE_LIMIT_MS));
                 } catch (error) {
-                    console.error(`Error deriving address at ${derivationPath}:`, error);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    if(loglevel>0) console.log(`└── ❌ Error: ${errorMessage}`);
                     continue;
                 }
             }
 
+            if(loglevel>0) console.log(`\n🔄 Checking transactions for ${batchAddresses.length} addresses`);
+
             try {
                 // Process batch of addresses in parallel
-                const results = await Promise.allSettled(addressPromises);
+                const results = await Promise.allSettled(batchPromises);
+                let batchHasTransactions = false;
                 
                 for (let j = 0; j < results.length; j++) {
                     const result = results[j];
-                    const address = derivedAddresses[j];
+                    const address = batchAddresses[j];
                     
                     if (result.status === 'fulfilled') {
-                        const { utxos: currentUtxos, history: currentHistory } = result.value;
+                        const { utxos: addressUtxos, history: addressHistory, balance } = result.value;
+                        
+                        // Update global address balances
+                        if (balance) {
+                            addressBalances.set(address, {
+                                confirmed: balance.confirmed,
+                                unconfirmed: balance.unconfirmed
+                            });
+                            if(loglevel>0) console.log(`└── 💰 Balance: ${balance.confirmed/100000000} BTC (confirmed)`);
+                        }
 
-                        if (currentHistory.length > 0 || currentUtxos.length > 0) {
-                            transactionsFound = true;
-                            consecutiveUnused = 0; // Reset counter when we find activity
-                            if(limit===1) break;
+                        if (addressHistory.length > 0 || addressUtxos.length > 0) {
+                            batchHasTransactions = true;
+                            consecutiveUnused = 0;
+                            if(loglevel>0) console.log(`└── ✨ Found ${addressHistory.length} transactions for ${address}`);
+                            
                             // Extend scanning window when we find transactions
-                            limit = Math.max(limit, i + GAP_LIMIT + 10);
+                            if (limit !== 1) {
+                                limit = Math.max(limit, i + GAP_LIMIT + 10);
+                            }
                         } else {
                             consecutiveUnused++;
+                            if(loglevel>0) console.log(`└── 📭 No transactions found for ${address}`);
+                            if (!unusedAddress) {
+                                unusedAddress = address;
+                            }
                         }
 
-                        utxos.push(...currentUtxos);
-                        history.push(...currentHistory);
-
-                        // Set the first unused address we find
-                        if (!unusedAddress && currentUtxos.length === 0 && currentHistory.length === 0) {
-                            unusedAddress = address;
-                        }
+                        utxos.push(...addressUtxos);
+                        history.push(...addressHistory);
                     } else {
                         console.error(`Error fetching data for address ${address}:`, result.reason);
-                        // Don't count failed requests in consecutive unused
                         consecutiveUnused = Math.max(0, consecutiveUnused - 1);
                     }
                 }
 
+                // Update transaction found status
+                transactionsFound = batchHasTransactions;
+
                 // Adjust batch size based on success rate
                 const successRate = results.filter(r => r.status === 'fulfilled').length / results.length;
-                if (successRate < 0.8 && batchSize > 5) {
-                    batchSize = Math.max(5, Math.floor(batchSize * 0.8));
-                } else if (successRate > 0.9 && batchSize < 20) {
-                    batchSize = Math.min(20, Math.floor(batchSize * 1.2));
+                if (successRate < 0.8 && currentBatchSize > 5) {
+                    currentBatchSize = Math.max(5, Math.floor(currentBatchSize * 0.8));
+                    if(loglevel>0) console.log(`📉 Reducing batch size to ${currentBatchSize} due to low success rate`);
+                } else if (successRate > 0.9 && currentBatchSize < 20) {
+                    currentBatchSize = Math.min(20, Math.floor(currentBatchSize * 1.2));
+                    if(loglevel>0) console.log(`📈 Increasing batch size to ${currentBatchSize} due to high success rate`);
                 }
 
-                // Stop if we've found too many consecutive unused addresses
                 if (consecutiveUnused >= GAP_LIMIT) {
-                    if(loglevel>=0) console.log(`Found ${GAP_LIMIT} consecutive unused addresses, stopping scan`);
+                    if(loglevel>=0) console.log(`\n🛑 Found ${GAP_LIMIT} consecutive unused addresses, stopping scan`);
                     break;
                 }
             } catch (error) {
                 console.error(`Error processing batch starting at index ${i}:`, error);
-                // Reduce batch size on error
-                batchSize = Math.max(5, Math.floor(batchSize * 0.5));
+                currentBatchSize = Math.max(5, Math.floor(currentBatchSize * 0.5));
+                if(loglevel>0) console.log(`⚠️ Reduced batch size to ${currentBatchSize} due to error`);
             }
         }
     } catch (error) {
