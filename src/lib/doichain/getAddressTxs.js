@@ -7,7 +7,7 @@ import BIP32Factory from 'bip32';
 const bip32 = BIP32Factory(ecc);
 import { logs } from '$lib/doichain/doichain-store.js';
 
-const loglevel = 0
+const loglevel = 1 
 /**
  * @module getAddressTxs
  * @description Handles transaction retrieval and processing for both single Bitcoin addresses
@@ -69,7 +69,7 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
             nextUnusedChangeAddress
         };
     } catch (error) {
-        log(`Fatal error in getAddressTxs: ${error.message}`, 'error');
+        log(`Fatal error in Txs: ${error.message}`, 'error');
         return {
             transactions: [],
             nextUnusedAddressesMap: new Map(),
@@ -252,8 +252,8 @@ const derivationConfig = {
         pathTypes: ['m/0', 'm/1']
     },
     'electrum-segwit': {
-        basePath: "m/0'",
-        pathTypes: ["m/0'/0", "m/0'/1"]
+        basePath: "m",
+        pathTypes: ["m/0'", "m/1'"]
     },
     'bip84': {
         basePath: "m/84'/0'",
@@ -424,7 +424,7 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
                 pubkey: child.publicKey, 
                 network 
             }).address;
-            if(loglevel>0) log(`└─��� ✅ Generated legacy: ${address}`);
+            if(loglevel>0) log(`└── ✅ Generated legacy: ${address}`);
             return address;
         }
     } catch (error) {
