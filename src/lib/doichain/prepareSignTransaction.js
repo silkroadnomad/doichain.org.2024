@@ -87,7 +87,7 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
         console.log("totalOutputAmount", totalOutputAmount)
     }
 
-    const feeRate = 34 * 500; // TODO: get feeRate from an API
+    const feeRate = 34 * 1000; // TODO: get feeRate from an API _ was 500 25.12.2024
     const outputCount = _pinningDetails ? 2 : 1;
     transactionFee = (_utxoAddresses.length + outputCount) * 180 + 3 * feeRate;
     changeAmount = totalInputAmount - totalOutputAmount - transactionFee;
