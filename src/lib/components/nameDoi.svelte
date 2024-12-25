@@ -316,7 +316,11 @@
     console.log("nextUnusedChangeAddress:", result.nextUnusedChangeAddress);
     recipientsAddress = result.nextUnusedAddress;
     changeAddress = result.nextUnusedChangeAddress;
-    utxos = result.transactions.filter(tx => tx.type === 'output' && tx.utxo === true);
+    utxos = result.transactions.filter(tx => 
+      tx.type === 'output' && 
+      tx.utxo === true && 
+      tx.confirmations > 0  // Additional check to ensure transaction is confirmed
+    );
     console.log("Received UTXOs:", utxos);
      utxosFetched = true; // Set to true if UTXOs are fetched
   }

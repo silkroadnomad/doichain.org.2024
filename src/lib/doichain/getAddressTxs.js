@@ -364,9 +364,11 @@ function processOutput(vout, derivedAddresses, decryptedTx, index, utxos) {
             scriptPubKey: vout.scriptPubKey
         };
         console.log("tx", tx)
-        // Check UTXO status
+        // Check UTXO status - ensure it's unspent and confirmed
         tx.utxo = utxos.some(utxo => 
-            utxo.tx_hash === tx.txid && utxo.tx_pos === tx.n
+            utxo.tx_hash === tx.txid && 
+            utxo.tx_pos === tx.n &&
+            utxo.height > 0  // Ensure UTXO is confirmed (not in mempool and not spent)
         );
 
         // Process name operations
