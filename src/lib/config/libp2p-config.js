@@ -31,7 +31,9 @@ export function createLibp2pConfig() {
     // Network addresses
     //https://github.com/libp2p/js-libp2p/blob/3244ed08625516b25716485c936c26a34b69466a/doc/migrations/v0.42-v0.43.md
     config.addresses = { 
-        listen: ['/p2p-circuit', '/webrtc', '/webrtc-direct', '/wss', '/ws']
+        listen: dev 
+            ? ['/p2p-circuit', '/webrtc', '/webrtc-direct', '/wss', '/ws'] 
+            : ['/p2p-circuit', '/webrtc', '/webrtc-direct', '/wss']
     }
 
     // Transport configuration
@@ -77,17 +79,17 @@ export function createLibp2pConfig() {
     })
     config.services.pubsub = pubsubConfig
     //delete config.services['delegatedRouting']
+    // const bootstrapList = ['/ip4/127.0.0.1/tcp/8080/ws/p2p/12D3KooWQvNEC1EAnupGVsT517abvx7w6FcQ7u8LciKd2ha1XgCm']
+        const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2']: 
+        ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
+        '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj']
 
-        // const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2']: 
-        // ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
-        // '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj']
-
-    const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2',
-        // '/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
-       '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj'
-    ]
-    : ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
-       '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj']
+    // const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2',
+    //     // '/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
+    //    '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj'
+    // ]
+    // : ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
+    //    '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj']
 
     console.log("bootstrapList", bootstrapList)
     // Connection gater

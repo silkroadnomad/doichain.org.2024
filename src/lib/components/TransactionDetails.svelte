@@ -17,7 +17,7 @@
       {#if pinningFee > 0}
         <p class="flex justify-end">
           <span class="font-semibold mr-2">Pinning Fee:</span>
-          <span class="flex-1 text-right">{sb.toBitcoin(Math.round(pinningFee)).toFixed(8)}</span>
+          <span class="flex-1 text-right">-{sb.toBitcoin(Math.round(pinningFee)).toFixed(8)}</span>
           <span class="ml-1">DOI</span>
         </p>
       {/if}

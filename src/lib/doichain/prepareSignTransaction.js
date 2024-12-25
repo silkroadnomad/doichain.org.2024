@@ -75,13 +75,16 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
             totalOutputAmount = totalOutputAmount + _storageFee;
         }catch( ex ) { console.error(ex) }
     }
-
-    if (_pinningDetails && _pinningDetails.address && _pinningDetails.amount) {
+    console.log("pinningDetails", _pinningDetails)
+    if (_pinningDetails && _pinningDetails.paymentAddress && _pinningDetails.amount) {
+        console.log("adding pinning output", _pinningDetails)
         psbt.addOutput({
             address: _pinningDetails.paymentAddress,
             value: _pinningDetails.amount
         });
+        console.log("totalOutputAmount", totalOutputAmount)
         totalOutputAmount = totalOutputAmount + _pinningDetails.amount;
+        console.log("totalOutputAmount", totalOutputAmount)
     }
 
     const feeRate = 34 * 500; // TODO: get feeRate from an API

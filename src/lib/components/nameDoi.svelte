@@ -210,7 +210,7 @@
             changeAmount = result.changeAmount;
             totalAmount = result.totalAmount;
             console.log("result",result)
-            console.log("psbtBaseText",psbtBaseText)
+            console.log("psbtBaseText", psbtBaseText)
             renderBCUR(psbtBaseText).then(_qr => {
                 qrCodeData = _qr;
                 displayQrCodes();
