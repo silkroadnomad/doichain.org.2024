@@ -82,15 +82,16 @@ export function prepareSignTransaction(_utxoAddresses, _name, _nameValue, _netwo
             address: _pinningDetails.paymentAddress,
             value: _pinningDetails.amount
         });
-        console.log("totalOutputAmount", totalOutputAmount)
+        // Add pinning fee to total output amount
         totalOutputAmount = totalOutputAmount + _pinningDetails.amount;
-        console.log("totalOutputAmount", totalOutputAmount)
+        console.log("totalOutputAmount (including pinning fee)", totalOutputAmount)
     }
 
     const feeRate = 34 * 500; // TODO: get feeRate from an API
     const outputCount = _pinningDetails ? 2 : 1;
     transactionFee = (_utxoAddresses.length + outputCount) * 180 + 3 * feeRate;
     changeAmount = totalInputAmount - totalOutputAmount - transactionFee;
+    // Total amount is the sum of all outputs (including storage fee and pinning fee) plus the mining fee
     let totalAmount = totalOutputAmount + transactionFee;
     if(changeAmount < 0) {
         return {
