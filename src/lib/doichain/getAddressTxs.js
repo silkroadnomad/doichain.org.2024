@@ -7,7 +7,7 @@ import BIP32Factory from 'bip32';
 const bip32 = BIP32Factory(ecc);
 import { logs } from '$lib/doichain/doichain-store.js';
 
-const loglevel = 0;
+const loglevel = 2; // Temporarily increased for debugging
 /** @type {Map<string, {confirmed: number, unconfirmed: number}>} */
 let addressBalances = new Map();
 
@@ -77,6 +77,35 @@ const batchSize = 10; // Define batch size for address scanning
  * @property {(method: string, params: any[]) => Promise<any>} request - Method to make Electrum protocol requests
  */
 
+/**
+ * @typedef {Object} ElectrumTransaction
+ * @property {string} tx_hash - Transaction hash
+ * @property {number} height - Block height
+ */
+
+/**
+ * @typedef {Object} ElectrumBalance
+ * @property {number} confirmed - Confirmed balance
+ * @property {number} unconfirmed - Unconfirmed balance
+ */
+
+/**
+ * @typedef {Object} ElectrumUTXO
+ * @property {string} tx_hash - Transaction hash
+ * @property {number} tx_pos - Output position in transaction
+ * @property {number} height - Block height where transaction was confirmed (0 for unconfirmed)
+ * @property {number} value - Value in satoshis
+ */
+
+/** @type {(obj: any) => obj is ElectrumUTXO} */
+const isElectrumUTXO = (obj) => {
+    return obj 
+        && typeof obj.tx_hash === 'string'
+        && typeof obj.tx_pos === 'number'
+        && typeof obj.height === 'number'
+        && typeof obj.value === 'number';
+};
+
 
 /**
  * Retrieves and processes transactions for a given Bitcoin address or extended public key
@@ -92,7 +121,7 @@ export const getAddressTxs = async (xpubOrDoiAddress, _historyStore, _electrumCl
         if(loglevel>0)console.log("\n🔍 Processing address/xpub:", xpubOrDoiAddress);
         
         const isAddress = isValidBitcoinAddress(xpubOrDoiAddress, _network);
-        /** @type {Array<Object>} */
+        /** @type {Array<UTXO>} */
         let electrumUTXOs = [];
         /** @type {Array<Transaction>} */
         let ourTxs = [];
@@ -187,15 +216,23 @@ function isValidBitcoinAddress(addressStr, network) {
 
 /**
  * @typedef {Object} AddressData
- * @property {Array<Object>} utxos - Unspent transaction outputs
- * @property {Array<Object>} history - Transaction history
- * @property {Balance} balance - Address balance information
+ * @property {Array<UTXO>} utxos - Unspent transaction outputs
+ * @property {Array<ElectrumTransaction>} history - Transaction history
+ * @property {ElectrumBalance} balance - Address balance information
+ */
+
+/**
+ * @typedef {Object} UTXO
+ * @property {string} tx_hash - Transaction hash
+ * @property {number} tx_pos - Output position in transaction
+ * @property {number} height - Block height where transaction was confirmed (0 for unconfirmed)
+ * @property {number} value - Value in satoshis
  */
 
 /**
  * @typedef {Object} ExtendedKeyScanResult
  * @property {Array<string>} addresses - List of derived addresses
- * @property {Array<Object>} utxos - All UTXOs found
+ * @property {Array<UTXO>} utxos - All UTXOs found
  * @property {Array<Object>} history - All transaction history
  * @property {Map<string, string>} nextUnusedAddressesMap - Map of unused addresses
  * @property {string|null} nextUnusedAddress - Next unused receiving address
@@ -207,7 +244,7 @@ function isValidBitcoinAddress(addressStr, network) {
  * Fetches UTXOs and transaction history for a single address
  * @async
  * @param {string} addr - Bitcoin address
- * @param {Object} client - Electrum client instance
+ * @param {ElectrumClient} client - Electrum client instance
  * @param {Network} network - Bitcoin network configuration
  * @returns {Promise<AddressData>} Address data including UTXOs and history
  */
@@ -228,11 +265,23 @@ async function fetchAddressData(addr, client, network)  {
 
     try {
         // Apply rate limiting if configured
-        const [utxos, history, balance] = await Promise.all([
+        const [rawUtxos, history, balance] = await Promise.all([
             client.request('blockchain.scripthash.listunspent', [reversedHash]),
             client.request('blockchain.scripthash.get_history', [reversedHash]),
             client.request('blockchain.scripthash.get_balance', [reversedHash])
         ]);
+        
+        /** @type {Array<UTXO>} */
+        const utxos = rawUtxos.filter(isElectrumUTXO);
+        
+        if (loglevel > 0) {
+            console.log('\n🔍 Validating UTXOs from Electrum:');
+            utxos.forEach(utxo => {
+                console.log(`├── UTXO ${utxo.tx_hash}:${utxo.tx_pos}`);
+                console.log(`│   ├── Height: ${utxo.height}`);
+                console.log(`│   └── Value: ${utxo.value}`);
+            });
+        }
 
         // Update balance tracking
         addressBalances.set(addr, {
@@ -268,11 +317,11 @@ async function fetchAddressData(addr, client, network)  {
 /**
  * Processes a batch of transactions, handling both inputs and outputs
  * @async
- * @param {Array} history - Array of transaction history items
- * @param {Array} derivedAddresses - Array of derived addresses to check against
- * @param {Array} utxos - Array of unspent transaction outputs
- * @param {Object} client - Electrum client instance
- * @returns {Promise<Array>} Array of processed transactions
+ * @param {Array<ElectrumTransaction>} history - Array of transaction history items
+ * @param {Array<string>} derivedAddresses - Array of derived addresses to check against
+ * @param {Array<UTXO>} utxos - Array of unspent transaction outputs
+ * @param {ElectrumClient} client - Electrum client instance
+ * @returns {Promise<Array<Object>>} Array of processed transactions
  */
 async function processTransactions(history, derivedAddresses, utxos, client) {
     const transactions = [];
@@ -658,7 +707,7 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
  */
 async function scanDerivationPath(xpub, basePath, standard, client, network, limit = 50) {
     if(loglevel>=0) console.log(`\n🔍 Scanning derivation path: ${standard} ${basePath}`);
-    /** @type {Array<Object>} */
+    /** @type {Array<UTXO>} */
     const utxos = [];
     /** @type {Array<Object>} */
     const history = [];
@@ -744,7 +793,14 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
                             }
                         }
 
-                        utxos.push(...addressUtxos);
+                        // Filter out unconfirmed UTXOs (height <= 0) to prevent ghost UTXOs
+                        /** @type {Array<UTXO>} */
+                        const confirmedUtxos = addressUtxos.filter(isElectrumUTXO).filter(utxo => utxo.height > 0);
+                        if (loglevel > 0) {
+                            console.log(`├── 🔍 Found ${addressUtxos.length} total UTXOs`);
+                            console.log(`└── ✅ ${confirmedUtxos.length} confirmed UTXOs (height > 0)`);
+                        }
+                        utxos.push(...confirmedUtxos);
                         history.push(...addressHistory);
                         addresses.push(address);
                         // Check for the first unused address
