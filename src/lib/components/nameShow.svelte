@@ -40,7 +40,7 @@
 							<p>loading for nft data...</p>
 						{:then nft}
 
-							<p>NFT: {nft.name || 'no name'}</p>
+							<p>NFC: {nft.name || 'no name'}</p>
 							<p>Description: {nft.description || 'no description'}</p>
 							<p>&nbsp;</p>
 							{#await getImageUrlFromIPFS($helia,nft.image)}
