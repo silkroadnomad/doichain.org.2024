@@ -160,15 +160,9 @@
 			false
 		);
 
-		/** reader for image preview / convert image file to base64 string */
-		const readerToDataUrl = new FileReader();
-		readerToDataUrl.addEventListener(
-			'load',
-			() => {
-				previewImgSrc = readerToDataUrl.result;
-			},
-			false
-		);
+    /** reader for image preview / convert image file to base64 string */
+    const readerToDataUrl = new FileReader();
+    readerToDataUrl.addEventListener("load", () => { previewImgSrc = readerToDataUrl.result },false,)
 
 		if (file) {
 			readerToArrayBuffer.readAsArrayBuffer(file);
@@ -532,57 +526,46 @@
 														>
 													</div>
 
-													{#if $cidMessages.length > 0}
-														{#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
-															<div class="pt-2 border-t border-gray-200">
-																<h5 class="text-sm font-medium text-gray-900 mb-2">
-																	Storage Details
-																</h5>
-																<div class="space-y-2">
-																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24"
-																			>Metadata:</span
-																		>
-																		<span class="text-sm text-gray-900"
-																			>{relevantMessage.sizes.metadata}</span
-																		>
-																	</div>
-																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24"
-																			>Image:</span
-																		>
-																		<span class="text-sm text-gray-900"
-																			>{relevantMessage.sizes.image}</span
-																		>
-																	</div>
-																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24"
-																			>Total Size:</span
-																		>
-																		<span class="text-sm text-gray-900"
-																			>{relevantMessage.sizes.total}</span
-																		>
-																	</div>
-																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24"
-																			>Pinning Fee:</span
-																		>
-																		<span class="text-sm text-gray-900"
-																			>{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span
-																		>
-																	</div>
-																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24"
-																			>Duration:</span
-																		>
-																		<span class="text-sm text-gray-900"
-																			>{relevantMessage.fee.durationMonths} months</span
-																		>
-																	</div>
-																</div>
-															</div>
-														{/if}
-													{/if}
+                      {#if $cidMessages.length > 0}
+                          {#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
+                            <div class="pt-2 border-t border-gray-200">
+                              <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
+                              <div class="space-y-2">
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
+                                  <span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
+                                  <span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+                                </div>
+                                <div class="flex items-center">
+                                  <span class="text-sm font-medium text-gray-500 w-24">Peer ID:</span>
+                                  <div class="relative group">
+                                    <span class="text-sm text-gray-900 cursor-pointer">{relevantMessage.peerId}</span>
+                                    <div class="absolute left-0 mt-1 w-max bg-black text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      {#each relevantMessage.multiaddress as address}
+                                        <div>{address}</div>
+                                      {/each}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          {/if}
+                      {/if}
 
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Status:</span>
