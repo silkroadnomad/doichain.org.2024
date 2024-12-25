@@ -425,15 +425,15 @@ const derivationConfig = {
     },
     'electrum-segwit': {
         basePath: "m/0'",
-        pathTypes: ["m/0'/0", "m/0'/1"]
+        pathTypes: ["m/0'", "m/0'"]
     },
     'bip84': {
         basePath: "m/84'/0'",
-        pathTypes: ["m/84'/0'/0'", "m/84'/0'/1'"]
+        pathTypes: ["m/84'/0'", "m/84'/0'"]
     },
     'bip49': {
         basePath: "m/49'/0'",
-        pathTypes: ["m/49'/0'/0'", "m/49'/0'/1'"]
+        pathTypes: ["m/49'/0'", "m/49'/0'"]
     }
 };
 
