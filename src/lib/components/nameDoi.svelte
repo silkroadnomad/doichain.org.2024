@@ -17,15 +17,15 @@
 	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
 	import TransactionDetails from './TransactionDetails.svelte';
 
-	// Add event dispatcher
-	import { createEventDispatcher } from 'svelte';
-	const dispatch = createEventDispatcher();
+  // Add event dispatcher
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
 
 	const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || '/doichain-nfc/1/message/proto';
 
-	let scanOpen = false;
-	let scanTarget = '';
-	let scanData = '';
+  let scanOpen = false;
+  let scanTarget = ''; 
+  let scanData = ''; 
 
 	export let walletAddress = localStorage.getItem('walletAddress') || '';
 	let recipientsAddress = walletAddress;
@@ -63,11 +63,11 @@
 	});
 	$: pinningFee = relevantMessage?.fee?.amount || 0;
 
-	let nameRegistrationFee = storageFee;
-	let files = {
-		accepted: [],
-		rejected: []
-	};
+  let nameRegistrationFee = storageFee;
+  let files = {
+    accepted: [],
+    rejected: []
+  };
 
 	function handleFilesSelect(e) {
 		const { acceptedFiles, fileRejections } = e.detail;
@@ -81,14 +81,14 @@
 	let metadataCID;
 	let metadataJSON;
 
-	let retryCount = 0;
-	const MAX_RETRIES = 3;
-	const RETRY_DELAY = 2000; // 2 seconds
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds
 
-	async function publishCID(cid, type = 'NEW') {
-		const message = `${type}-CID:${cid}`;
-		let success = false;
-		retryCount = 0;
+  async function publishCID(cid, type = 'NEW') {
+    const message = `${type}-CID:${cid}`;
+    let success = false;
+    retryCount = 0;
 
 		const attemptPublish = async () => {
 			try {
@@ -212,16 +212,16 @@
 				console.warn('No matching CID message found for current transaction');
 			}
 
-			const result = prepareSignTransaction(
-				selectedUtxos,
-				nameId,
-				nameValue,
-				DOICHAIN,
-				storageFee,
-				recipientsAddress,
-				changeAddress,
-				pinningDetails
-			);
+        const result = prepareSignTransaction(
+            selectedUtxos,
+            nameId,
+            nameValue,
+            DOICHAIN,
+            storageFee,
+            recipientsAddress,
+            changeAddress,
+            pinningDetails
+        );
 
 			if (result.error) {
 				console.log('error', result.error);
@@ -262,20 +262,20 @@
 			});
 	}
 
-	let animationTimeout;
-	let currentSvgIndex;
+  let animationTimeout;
+  let currentSvgIndex;
 
-	function displayQrCodes() {
-		currentSvgIndex = 0;
-		if (animationTimeout) clearTimeout(animationTimeout);
-		animateQrCodes();
-	}
+  function displayQrCodes() {
+    currentSvgIndex = 0;
+    if (animationTimeout) clearTimeout(animationTimeout);
+    animateQrCodes();
+  }
 
-	function animateQrCodes() {
-		qrCode = qrCodeData[currentSvgIndex];
-		currentSvgIndex = (currentSvgIndex + 1) % qrCodeData.length;
-		animationTimeout = setTimeout(animateQrCodes, 300);
-	}
+  function animateQrCodes() {
+    qrCode = qrCodeData[currentSvgIndex];
+    currentSvgIndex = (currentSvgIndex + 1) % qrCodeData.length;
+    animationTimeout = setTimeout(animateQrCodes, 300);
+  }
 
 	onDestroy(() => {
 		if (animationTimeout) clearTimeout(animationTimeout);
@@ -505,9 +505,7 @@
 												<div class="space-y-3">
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Name:</span>
-														<span class="text-sm text-gray-900 truncate"
-															>{files.accepted[0].name}</span
-														>
+														<span class="text-sm text-gray-900 truncate">{files.accepted[0].name}</span>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Type:</span>
@@ -515,57 +513,53 @@
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Size:</span>
-														<span class="text-sm text-gray-900"
-															>{(files.accepted[0].size / 1024).toFixed(2)} KB</span
-														>
+														<span class="text-sm text-gray-900">{(files.accepted[0].size / 1024).toFixed(2)} KB</span>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">CID:</span>
-														<span class="text-sm text-gray-900 truncate"
-															>{imageCID || 'Generating...'}</span
-														>
+														<span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span>
 													</div>
 
-                      {#if $cidMessages.length > 0}
-                          {#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
-                            <div class="pt-2 border-t border-gray-200">
-                              <h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
-                              <div class="space-y-2">
-                                <div class="flex items-center">
-                                  <span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
-                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
-                                </div>
-                                <div class="flex items-center">
-                                  <span class="text-sm font-medium text-gray-500 w-24">Image:</span>
-                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
-                                </div>
-                                <div class="flex items-center">
-                                  <span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
-                                  <span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
-                                </div>
-                                <div class="flex items-center">
-                                  <span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
-                                  <span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
-                                </div>
-                                <div class="flex items-center">
-                                  <span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
-                                  <span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
-                                </div>
-                                <div class="flex items-center">
-                                  <span class="text-sm font-medium text-gray-500 w-24">Peer ID:</span>
-                                  <div class="relative group">
-                                    <span class="text-sm text-gray-900 cursor-pointer">{relevantMessage.peerId}</span>
-                                    <div class="absolute left-0 mt-1 w-max bg-black text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                      {#each relevantMessage.multiaddress as address}
-                                        <div>{address}</div>
-                                      {/each}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          {/if}
-                      {/if}
+													{#if $cidMessages.length > 0}
+														{#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
+															<div class="pt-2 border-t border-gray-200">
+																<h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
+																<div class="space-y-2">
+																	<div class="flex items-center">
+																		<span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
+																		<span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
+																	</div>
+																	<div class="flex items-center">
+																		<span class="text-sm font-medium text-gray-500 w-24">Image:</span>
+																		<span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
+																	</div>
+																	<div class="flex items-center">
+																		<span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
+																		<span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
+																	</div>
+																	<div class="flex items-center">
+																		<span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
+																		<span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
+																	</div>
+																	<div class="flex items-center">
+																		<span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
+																		<span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+																	</div>
+																	<div class="flex items-center">
+																		<span class="text-sm font-medium text-gray-500 w-24">Peer ID:</span>
+																		<div class="relative group">
+																			<span class="text-sm text-gray-900 cursor-pointer">{relevantMessage.peerId}</span>
+																			<div class="absolute left-0 mt-1 w-max bg-black text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+																				{#each relevantMessage.multiaddress as address}
+																					<div>{address}</div>
+																				{/each}
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														{/if}
+													{/if}
 
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Status:</span>
@@ -1026,16 +1020,16 @@
 </div>
 
 <style>
-	:global(.nameDoi) {
-		padding: 1rem;
-		font-size: small !important;
-		background-color: #f1f3f5;
-		color: var(--text-3);
-	}
+    :global(.nameDoi) {
+        padding: 1rem;
+        font-size: small !important;
+        background-color: #f1f3f5;
+        color: var(--text-3);
+    }
 
-	.nameShow {
-		overflow-x: hidden;
-	}
+    .nameShow {
+        overflow-x: hidden;
+    }
 
 	.nameShow input[type='text'],
 	.nameShow textarea {
