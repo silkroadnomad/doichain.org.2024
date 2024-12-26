@@ -4,21 +4,32 @@
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
 	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core' //https://svelteui.dev/core/card
-	let nameToCheck = 'PeaceDove-CC'
+	
+	export let nameId = ''; // Allow passing in nameId directly
+	let nameToCheck = nameId || 'PeaceDove-CC'; // Use nameId if provided, otherwise default
 	let results = [];
+	
+	// Load results when nameId is provided
+	$: if (nameId) {
+		(async () => {
+			results = await nameShow($electrumClient, nameId);
+		})();
+	}
 </script>
 
 <div class="nameShow">
-	<SimpleGrid  cols={2}>
-		<div>
-			<Input on:keydown={
-				async (event) => { if (event.key === 'Enter') { results = await nameShow($electrumClient,nameToCheck)} }}
-						 bind:value={nameToCheck} />
-		</div>
-		<div>
-			<Button on:click={ async () => results = await nameShow($electrumClient,nameToCheck)} >NameShow</Button>
-		</div>
-	</SimpleGrid>
+	{#if !nameId}
+		<SimpleGrid cols={2}>
+			<div>
+				<Input on:keydown={
+					async (event) => { if (event.key === 'Enter') { results = await nameShow($electrumClient,nameToCheck)} }}
+							bind:value={nameToCheck} />
+			</div>
+			<div>
+				<Button on:click={ async () => results = await nameShow($electrumClient,nameToCheck)} >NameShow</Button>
+			</div>
+		</SimpleGrid>
+	{/if}
 <p>&nbsp;</p>
 	{#if results.length > 0}
 		{#each results as tx}
