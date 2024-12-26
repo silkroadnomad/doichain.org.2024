@@ -30,7 +30,8 @@ function handleContentMessage(event, libp2p) {
             
             // Check if message is from the allowed peer
             if (event.detail.from.toString() !== '12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj' && 
-                    event.detail.from.toString() !== '12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2') { //local dev
+                event.detail.from.toString() !== '12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2' &&
+                event.detail.from.toString() !== '12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2') { //local dev
                 console.log("Ignoring CID message from unauthorized peer:", event.detail.from); 
                 return;
             }   
@@ -45,7 +46,18 @@ function handleContentMessage(event, libp2p) {
                     console.log("Ignoring CID message for unrequested CIDs");
                     return messages;
                 }
-                return [jsonData,...messages]
+
+                // Store the peerId and multiaddress along with the message
+                const peerId = event.detail.from.toString();
+                const multiaddress = libp2p.getMultiaddrs().map(ma => ma.toString());
+
+                const updatedMessage = {
+                    ...jsonData,
+                    peerId,
+                    multiaddress
+                };
+
+                return [updatedMessage, ...messages];
             })
         }
     } catch (e) {

@@ -33,6 +33,7 @@ export const libp2p = writable()
 export const helia = writable()
 export const orbitdb = writable()
 export const connectedPeers = writable([]);
+export const blockHeight = writable(0);
 export const nameOps = writable([]);
 export const requestedCids = writable([]);
 export const cidMessages = writable([]);

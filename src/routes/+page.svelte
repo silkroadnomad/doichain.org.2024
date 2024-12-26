@@ -1,5 +1,5 @@
 <script>
-	import { libp2p, nameOps} from '$lib/doichain/doichain-store.js'
+	import { libp2p, nameOps, blockHeight} from '$lib/doichain/doichain-store.js'
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
 	import NameDoi from '$lib/components/nameDoi.svelte';
@@ -349,12 +349,10 @@
 
 <div class="fixed top-4 right-4 transform rotate-3 bg-white/90 backdrop-blur-sm shadow-xl rounded-lg px-4 py-2 z-50">
     <div class="text-sm">
-        <span class="text-gray-600">Collection:</span>
-        <span class="font-bold text-gray-900 ml-1">{selectedFilter}</span>
+        <span class="font-bold text-gray-900 ml-1">{selectedFilter}: {filteredNameOps.length}</span>
     </div>
-    <div class="text-2xl font-bold text-gray-900">
-        {filteredNameOps.length}
-        <span class="text-sm text-gray-600">items</span>
+    <div class="text-xs text-gray-500 mt-2">
+        Current Block Height: {$blockHeight}
     </div>
 </div>
 
