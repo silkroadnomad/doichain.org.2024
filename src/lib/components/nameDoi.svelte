@@ -16,6 +16,7 @@
 	import ScanModal from '$lib/doichain/ScanModal.svelte';
 	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
 	import TransactionDetails from './TransactionDetails.svelte';
+  import { subscribeToAddress } from '$lib/doichain/nameDoi.js';
 
   // Add event dispatcher
   import { createEventDispatcher } from 'svelte';
