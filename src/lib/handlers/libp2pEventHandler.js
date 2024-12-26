@@ -44,10 +44,12 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 
                     // Filter for localhost addresses
                     const localhostAddrs = multiaddrs.filter(addr => addr.includes('127.0.0.1') || addr.includes('localhost'));
+                    console.log('Localhost Addresses:', localhostAddrs);
 
                     // Attempt to connect to localhost addresses first
                     for (const addr of localhostAddrs) {
                         try {
+                            console.log(`Trying to connect to localhost address: ${addr}`);
                             await libp2p.dialProtocol(peerId, addr);
                             console.log(`Connected to localhost peer at ${addr}`);
                             return; // Exit if connection is successful
@@ -58,8 +60,10 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 
                     // If no localhost connection, try other addresses
                     if (localhostAddrs.length === 0) {
+                        console.log('No localhost addresses found, trying other addresses.');
                         for (const addr of multiaddrs) {
                             try {
+                                console.log(`Trying to connect to address: ${addr}`);
                                 await libp2p.dialProtocol(peerId, addr);
                                 console.log(`Connected to peer at ${addr}`);
                                 return; // Exit if connection is successful
