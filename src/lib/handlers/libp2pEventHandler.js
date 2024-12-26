@@ -75,6 +75,13 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
                 }
             } catch (err) {
                 console.error('Reconnection attempt failed:', err);
+
+                // Check if the error message contains "Unsupported key type"
+                if (err.message.includes('Unsupported key type')) {
+                    console.warn('Unsupported key type detected. Clearing peerStore and aborting reconnection.');
+                    await libp2p.peerStore.clear(); // Clear all peers from the peerStore
+                    return; // Exit the reconnection attempt
+                }
             }
 
             // Check if there are any active connections
