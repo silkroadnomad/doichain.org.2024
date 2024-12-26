@@ -1,5 +1,4 @@
 <script>
-	import NameInput from '$lib/components/nameInput.svelte'
 	let title = `Doichain.org names on chain`
 	let description = "A name registration service for Doichain";
 	const url = "ipns://name-on-chain.com"

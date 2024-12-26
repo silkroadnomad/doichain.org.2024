@@ -4,7 +4,7 @@ import {
 	electrumClient,
 	electrumServerBanner,
 	electrumServers,
-	electrumServerVersion, network, connectedServer
+	electrumServerVersion, network, connectedServer, blockHeight
 } from './doichain-store.js';
 import { ElectrumxClient } from '$lib/doichain/electrumx-client.js';
 
@@ -29,7 +29,7 @@ export const connectElectrum = async (_network) => {
 	if (!_network) return;
 	
 	let retries = 0;
-	let randomServer
+	let randomServer;
 	while (retries < MAX_RETRIES) {
 
 		const networkNodes = electrumServers.filter(n => n.network === _network.name);
@@ -39,6 +39,23 @@ export const connectElectrum = async (_network) => {
 		try {
 			electrumClient.set(_electrumClient);
 			await _electrumClient.connect("electrum-client-js", "1.4.2");
+
+			// Subscribe to block height
+			console.log('Attempting to subscribe to blockchain headers...');
+			_electrumClient.subscribe.on('blockchain.headers.subscribe', (header) => {
+				console.log('Received new block header:', header);
+				blockHeight.set(header.height);
+				console.log('Current block height set to:', header.height);
+			});
+
+			try {
+				const subscriptionResult = await _electrumClient.request('blockchain.headers.subscribe');
+				console.log('Subscription successful:', subscriptionResult);
+				blockHeight.set(subscriptionResult.height);
+			} catch (error) {
+				console.error('Error during subscription request:', error);
+			}
+
 			break;
 		} catch (error) {
 			console.error("Connection failed, retrying...", error);
