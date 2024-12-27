@@ -146,7 +146,7 @@ export async function generateNameIdHTML(nameId, blockDate, description, imageUr
         <p class="block-date">Block date: ${safeBlockDate}</p>
     </main>
     <footer>
-        <p><a href="${currentServerUrl}/#${safeNameId}">Buy this Doichain NFC and others here!</a></p>
+        <p><a href="${currentServerUrl}/#/${safeNameId}">Buy this Doichain NFC and others here!</a></p>
     </footer>
 </body>
 </html>`;
