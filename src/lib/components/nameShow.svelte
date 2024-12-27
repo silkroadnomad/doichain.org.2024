@@ -4,21 +4,65 @@
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
 	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core' //https://svelteui.dev/core/card
-	let nameToCheck = 'PeaceDove-CC'
+	import { browser } from '$app/environment';
+	export let nameId = '';
 	let results = [];
+	
+	let title = '';
+	let description = '';
+	let imageUrl = '';
+	
+	$: if (nameId) {
+		// Fetch results when nameId changes
+		nameShow($electrumClient, nameId).then(async r => {
+			results = r;
+			if (r.length > 0 && r[0].scriptPubKey.nameOp) {
+				const nft = await getMetadataFromIPFS($helia, r[0].scriptPubKey.nameOp.value);
+				title = `${nameId} - Doichain Name Details`;
+				description = nft.description || `View details for ${nameId} on Doichain`;
+				if (nft.image) {
+					imageUrl = await getImageUrlFromIPFS($helia, nft.image);
+				}
+			}
+		});
+	}
 </script>
 
+<svelte:head>
+	{#if browser && title}
+		<title>{title}</title>
+		<meta property="og:title" content={title} />
+		<meta name="twitter:title" content={title} />
+	{/if}
+	{#if browser && description}
+		<meta property="og:description" content={description} />
+		<meta name="twitter:description" content={description} />
+	{/if}
+	{#if browser && imageUrl}
+		<meta property="og:image" content={imageUrl} />
+		<meta name="twitter:image" content={imageUrl} />
+	{/if}
+	{#if browser}
+		<meta property="og:url" content={window.location.href} />
+	{/if}
+</svelte:head>
+
 <div class="nameShow">
-	<SimpleGrid  cols={2}>
-		<div>
-			<Input on:keydown={
-				async (event) => { if (event.key === 'Enter') { results = await nameShow($electrumClient,nameToCheck)} }}
-						 bind:value={nameToCheck} />
-		</div>
-		<div>
-			<Button on:click={ async () => results = await nameShow($electrumClient,nameToCheck)} >NameShow</Button>
-		</div>
-	</SimpleGrid>
+	{#if !nameId}
+		<SimpleGrid cols={2}>
+			<div>
+				<Input on:keydown={
+					async (event) => { if (event.key === 'Enter') { results = await nameShow($electrumClient, event.target.value)} }}
+							placeholder="Enter name to search" />
+			</div>
+			<div>
+				<Button on:click={async (e) => {
+					const input = e.target.closest('.nameShow').querySelector('input');
+					if (input) results = await nameShow($electrumClient, input.value);
+				}}>NameShow</Button>
+			</div>
+		</SimpleGrid>
+	{/if}
 <p>&nbsp;</p>
 	{#if results.length > 0}
 		{#each results as tx}

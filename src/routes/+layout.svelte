@@ -10,6 +10,8 @@
 	import { createLibp2pConfig } from '$lib/config/libp2p-config'
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js'
 	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
+	import { currentNameId } from '$lib/hashRouter';
+	import NameShow from '$lib/components/nameShow.svelte';
 	
 	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	const config = createLibp2pConfig();
@@ -110,7 +112,13 @@
 		</section>
 
 		<main class="mb-16">
-			<slot />
+			{#if $currentNameId}
+				<div class="container mx-auto px-4">
+					<NameShow nameId={$currentNameId} />
+				</div>
+			{:else}
+				<slot />
+			{/if}
 		</main>
 	</div>
 
