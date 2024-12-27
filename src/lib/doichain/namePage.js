@@ -75,6 +75,8 @@ export async function generateNameIdHTML(nameId, blockDate, description, imageUr
     const safeImageUrl = imageUrl ? sanitize(getGatewayUrl(imageUrl)) : '';
     const safeBlockDate = blockDate ? sanitize(blockDate) : '';
 
+    const currentServerUrl = window.location.origin; // Get the current server URL
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -144,7 +146,7 @@ export async function generateNameIdHTML(nameId, blockDate, description, imageUr
         <p class="block-date">Block date: ${safeBlockDate}</p>
     </main>
     <footer>
-        <p><a href="https://www.doichain.org">Visit doichain.org</a></p>
+        <p><a href="${currentServerUrl}/#${safeNameId}">Buy this Doichain NFC and others here!</a></p>
     </footer>
 </body>
 </html>`;
