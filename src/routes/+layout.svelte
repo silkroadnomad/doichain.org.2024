@@ -26,6 +26,7 @@
 	let isConnected = false;
 	let attemptCount = 0;
 	const maxAttempts = 5;
+	let gatewayUrl = '';
 
 	/**
 	 * Generates and publishes an HTML page for a nameId to IPFS
@@ -144,19 +145,16 @@
 			
 				const nameData = getNameIdData($electrumClient, $helia, $currentNameId).then((nameData)=>{
 					console.log("nameData", nameData);
-					const htmlCid = writeNameIdHTMLToIPFS(
+					writeNameIdHTMLToIPFS(
 						$currentNameId,
 						nameData.blockDate,
 						nameData.description,
 						nameData.imageCid
 					).then((htmlCid) => {
 						// Forward to IPFS gateway
-						const gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
+						gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
 						console.log('HTML page available at:', gatewayUrl);
 						console.log('Added HTML page to IPFS:', htmlCid);
-
-						// Redirect the browser to the new URL
-						window.location.href = gatewayUrl;
 					})				
 				})
 			} catch (error) {
@@ -164,7 +162,14 @@
 				// Don't throw error to avoid blocking metadata publishing
 			}
 		}}
-		
+							// Function to copy the URL to the clipboard
+		function copyToClipboard() {
+			navigator.clipboard.writeText(gatewayUrl).then(() => {
+			alert('URL copied to clipboard!');
+			}).catch(err => {
+				console.error('Failed to copy: ', err);
+		})	;
+		}	
 	</script>
 
 <body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen pb-[footer-height]">
@@ -183,6 +188,10 @@
 			{#if $currentNameId}
 				<div class="container mx-auto px-4">
 					<NameShow nameId={$currentNameId} />
+					<!-- Share Button -->
+					<button on:click={copyToClipboard} class="bg-blue-500 text-white px-4 py-2 rounded mt-4">
+						Copy Share URL
+					</button>
 				</div>
 			{:else}
 				<slot />
