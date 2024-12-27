@@ -8,8 +8,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('NameId Page', () => {
     test.beforeEach(async ({ page }) => {
-        // Wait for IPFS initialization
-        await page.waitForTimeout(5000);
+        // Navigate to home page and wait for IPFS initialization
+        await page.goto('http://localhost:5173/');
+        
+        // Wait for IPFS initialization by checking helia store
+        await page.waitForFunction(() => {
+            const heliaScript = document.querySelector('script[data-helia-initialized]');
+            return heliaScript && heliaScript.getAttribute('data-helia-initialized') === 'true';
+        }, { timeout: 30000 });
     });
 
     test('should display nameId details and meta tags', async ({ page }) => {

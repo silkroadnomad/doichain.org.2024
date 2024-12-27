@@ -12,6 +12,13 @@
 	let description = '';
 	let imageUrl = '';
 	
+	// Add a marker when helia is initialized
+	$: if (browser && $helia) {
+		const script = document.createElement('script');
+		script.setAttribute('data-helia-initialized', 'true');
+		document.head.appendChild(script);
+	}
+
 	$: if (browser && nameId && $electrumClient) {
 		// Only fetch results on client-side when nameId changes and electrumClient is available
 		nameShow($electrumClient, nameId).then(async r => {
