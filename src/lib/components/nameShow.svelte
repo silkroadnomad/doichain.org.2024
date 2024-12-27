@@ -4,12 +4,13 @@
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
 	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core' //https://svelteui.dev/core/card
+	import { browser } from '$app/environment';
 	export let nameId = '';
 	export let metadata = {};
 	let results = [];
 	
-	$: if (nameId) {
-		// Fetch results when nameId changes
+	$: if (browser && nameId && $electrumClient) {
+		// Only fetch results on client-side when nameId changes and electrumClient is available
 		nameShow($electrumClient, nameId).then(r => {
 			results = r;
 		});
