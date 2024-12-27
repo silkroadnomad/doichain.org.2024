@@ -8,47 +8,62 @@
 	export let nameId = '';
 	export let metadata = {};
 	let results = [];
+	let title = '';
+	let description = '';
+	let imageUrl = '';
 	
 	$: if (browser && nameId && $electrumClient) {
 		// Only fetch results on client-side when nameId changes and electrumClient is available
-		nameShow($electrumClient, nameId).then(r => {
+		nameShow($electrumClient, nameId).then(async r => {
 			results = r;
+			if (r.length > 0 && r[0].scriptPubKey.nameOp) {
+				const nft = await getMetadataFromIPFS($helia, r[0].scriptPubKey.nameOp.value);
+				title = nft.name || nameId;
+				description = nft.description || `Details for ${nameId}`;
+				if (nft.image) {
+					imageUrl = await getImageUrlFromIPFS($helia, nft.image);
+				}
+			}
 		});
 	}
 </script>
 
 <svelte:head>
-	{#if browser && title}
-		<title>{title}</title>
-		<meta property="og:title" content={title} />
-		<meta name="twitter:title" content={title} />
-	{/if}
-	{#if browser && description}
-		<meta property="og:description" content={description} />
-		<meta name="twitter:description" content={description} />
-	{/if}
-	{#if browser && imageUrl}
-		<meta property="og:image" content={imageUrl} />
-		<meta name="twitter:image" content={imageUrl} />
-	{/if}
-	{#if browser}
-		<meta property="og:url" content={window.location.href} />
-	{/if}
+	<title>{title || nameId || 'Doichain Name Details'}</title>
+	<meta property="og:title" content={title || nameId || 'Doichain Name Details'} data-testid="meta-title" />
+	<meta name="twitter:title" content={title || nameId || 'Doichain Name Details'} />
+	<meta property="og:description" content={description || `Details for ${nameId}` || 'View Doichain name registration details'} data-testid="meta-description" />
+	<meta name="twitter:description" content={description || `Details for ${nameId}` || 'View Doichain name registration details'} />
+	<meta property="og:image" content={imageUrl || 'https://doichain.org/favicon.png'} data-testid="meta-image" />
+	<meta name="twitter:image" content={imageUrl || 'https://doichain.org/favicon.png'} />
+	<meta property="og:url" content={browser ? window.location.href : 'https://doichain.org'} />
+	<meta name="twitter:card" content="summary" data-testid="meta-twitter-card" />
 </svelte:head>
 
-<div class="nameShow">
+<div class="nameShow" data-testid="name-show-container">
 	{#if !nameId}
 		<SimpleGrid cols={2}>
 			<div>
-				<Input on:keydown={
-					async (event) => { if (event.key === 'Enter') { results = await nameShow($electrumClient, event.target.value)} }}
-							placeholder="Enter name to search" />
+				<Input 
+					data-testid="name-search-input"
+					on:keydown={async (event) => { 
+						if (event.key === 'Enter') { 
+							results = await nameShow($electrumClient, event.target.value)
+						}
+					}}
+					placeholder="Enter name to search" 
+				/>
 			</div>
 			<div>
-				<Button on:click={async (e) => {
-					const input = e.target.closest('.nameShow').querySelector('input');
-					if (input) results = await nameShow($electrumClient, input.value);
-				}}>NameShow</Button>
+				<Button 
+					data-testid="name-search-button"
+					on:click={async (e) => {
+						const input = e.target.closest('.nameShow').querySelector('input');
+						if (input) results = await nameShow($electrumClient, input.value);
+					}}
+				>
+					NameShow
+				</Button>
 			</div>
 		</SimpleGrid>
 	{/if}
