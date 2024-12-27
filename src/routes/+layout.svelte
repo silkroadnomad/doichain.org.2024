@@ -178,7 +178,9 @@
 			<div class="text-center max-w-4xl mx-auto px-4">
 				<div class="flex justify-center mb-12">
 					<div class="bg-gray-900 rounded-full p-4">
-						<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
+						<a href="/">
+							<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
+						</a>
 					</div>
 				</div>
 			</div>
