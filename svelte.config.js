@@ -10,14 +10,7 @@ const config = {
 			fallback: 'offline.html',
 			precompress: true,
 			strict: false
-		}),
-		prerender: {
-			entries: [
-				'/',
-				'/example-name-1',  // Example known nameId
-				'/example-name-2'   // Example known nameId
-			]
-		}
+		})
 	},
 	preprocess: vitePreprocess()
 };
