@@ -51,12 +51,15 @@
 	let relevantMessage;
 
 	$: relevantMessage = $cidMessages.find((msg) => {
+		if (!msg) return false;
+		
 		console.log(
 			`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,
 			msg
 		);
 		console.log(`imageCID: ${imageCID}`, msg.cid === imageCID);
-		console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID.toString());
+		console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID?.toString());
+		
 		return (
 			msg.status === 'ADDING-CID' &&
 			((imageCID && msg.cid === imageCID) || (metadataCID && msg.cid === metadataCID.toString()))
@@ -126,6 +129,65 @@
 		console.log('Added metadata file to IPFS:', metadataCID.toString());
 		await publishCID(metadataCID.toString());
 		requestedCids.update((cids) => [...cids, metadataCID.toString()]);
+
+		// Generate and publish HTML page
+		try {
+			const { getNameIdData } = await import('$lib/doichain/namePage.js');
+			const nameData = await getNameIdData($electrumClient, $helia, nftName);
+			const htmlCid = await writeNameIdHTMLToIPFS(
+				nftName,
+				nameData.blockDate,
+				nameData.description,
+				nameData.imageCid
+			);
+			
+			// Forward to IPFS gateway
+			const gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
+			console.log('HTML page available at:', gatewayUrl);
+			console.log('Added HTML page to IPFS:', htmlCid);
+		} catch (error) {
+			console.error('Error generating HTML page:', error);
+			// Don't throw error to avoid blocking metadata publishing
+		}
+	}
+
+	/**
+	 * Generates and publishes an HTML page for a nameId to IPFS
+	 * @param {string} nameId - The name identifier
+	 * @param {string} blockDate - The date from the blockchain
+	 * @param {string} description - Description of the name
+	 * @param {string} imageCid - IPFS CID of the associated image
+	 * @returns {Promise<string>} The IPFS CID of the generated HTML page
+	 */
+	async function writeNameIdHTMLToIPFS(nameId, blockDate, description, imageCid) {
+		const encoder = new TextEncoder();
+		const fs = unixfs($helia);
+
+		try {
+			// Import the generateNameIdHTML function
+			const { generateNameIdHTML } = await import('$lib/doichain/namePage.js');
+			
+			// Generate the HTML content
+			const htmlString = await generateNameIdHTML(
+				nameId,
+				blockDate,
+				description,
+				`https://ipfs.le-space.de/ipfs/${imageCid}`
+			);
+
+			// Add the HTML content to IPFS
+			const cid = await fs.addBytes(encoder.encode(htmlString));
+			console.log('Added nameId HTML to IPFS:', cid.toString());
+
+			// Publish the CID
+			await publishCID(cid.toString());
+			requestedCids.update((cids) => [...cids, cid.toString()]);
+
+			return cid.toString();
+		} catch (error) {
+			console.error('Error in writeNameIdHTMLToIPFS:', error);
+			throw error;
+		}
 	}
 
 	async function previewFile() {
