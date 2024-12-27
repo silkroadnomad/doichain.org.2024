@@ -16,8 +16,11 @@ test.describe('NameId Page', () => {
         // Navigate to a nameId page and wait for client-side routing
         await page.goto('http://localhost:5173/');
         
-        // Wait for initial page load and store initialization
-        await page.waitForSelector('[data-testid="name-show-container"]', { timeout: 10000 });
+        // Wait for page to be ready with IPFS initialization
+        await page.waitForFunction(() => {
+            const container = document.querySelector('[data-testid="name-show-container"]');
+            return container && window.getComputedStyle(container).display !== 'none';
+        }, { timeout: 60000 });
         
         // Set the hash and wait for navigation
         await page.evaluate(() => {
