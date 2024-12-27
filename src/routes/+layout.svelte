@@ -137,8 +137,12 @@
 		});
 
 		$: ({ isConnected } = getConnectionStatus($connectedServer));
+		$: {
+			console.log("isConnected", isConnected);
+			console.log("$currentNameId", $currentNameId);
+		}
 
-		$:{ if(isConnected){
+		$:{ if(isConnected && $currentNameId){
 			// Generate and publish HTML page
 			console.log("Generate and publish HTML page for", $currentNameId);
 			try {
@@ -178,9 +182,13 @@
 			<div class="text-center max-w-4xl mx-auto px-4">
 				<div class="flex justify-center mb-12">
 					<div class="bg-gray-900 rounded-full p-4">
-						<a href="/">
+						<div on:click={() => {  
+							// currentNameId.set(undefined); 
+							// console.log("currentNameId", $currentNameId);
+							window.location.href = '/';
+						}}>
 							<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16">
-						</a>
+						</div>
 					</div>
 				</div>
 			</div>
