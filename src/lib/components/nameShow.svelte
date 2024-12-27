@@ -4,26 +4,14 @@
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
 	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core' //https://svelteui.dev/core/card
-	import { browser } from '$app/environment';
 	export let nameId = '';
+	export let metadata = {};
 	let results = [];
-	
-	let title = '';
-	let description = '';
-	let imageUrl = '';
 	
 	$: if (nameId) {
 		// Fetch results when nameId changes
-		nameShow($electrumClient, nameId).then(async r => {
+		nameShow($electrumClient, nameId).then(r => {
 			results = r;
-			if (r.length > 0 && r[0].scriptPubKey.nameOp) {
-				const nft = await getMetadataFromIPFS($helia, r[0].scriptPubKey.nameOp.value);
-				title = `${nameId} - Doichain Name Details`;
-				description = nft.description || `View details for ${nameId} on Doichain`;
-				if (nft.image) {
-					imageUrl = await getImageUrlFromIPFS($helia, nft.image);
-				}
-			}
 		});
 	}
 </script>
