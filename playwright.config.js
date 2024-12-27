@@ -22,6 +22,7 @@ const config = {
     {
       name: 'chromium',
       use: {
+        headless: true,
         launchOptions: {
           args: ['--no-sandbox', '--disable-setuid-sandbox']
         }
