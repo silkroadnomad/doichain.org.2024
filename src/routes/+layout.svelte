@@ -40,10 +40,7 @@
 		const fs = unixfs($helia);
 
 		try {
-			// Import the generateNameIdHTML function
 			const { generateNameIdHTML } = await import('$lib/doichain/namePage.js');
-			
-			// Generate the HTML content
 			const htmlString = await generateNameIdHTML(
 				nameId,
 				blockDate,
@@ -51,11 +48,9 @@
 				`https://ipfs.le-space.de/ipfs/${imageCid}`
 			);
 
-			// Add the HTML content to IPFS
 			const cid = await fs.addBytes(encoder.encode(htmlString));
 			console.log('Added nameId HTML to IPFS:', cid.toString());
 
-			// Publish the CID
 			await publishCID(cid.toString());
 
 			return cid.toString();
@@ -66,7 +61,6 @@
 	}
 
 	function publishList100Request() {
-		// Check if we should continue publishing requests
 		if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
 			try {
 				const messageObject = {
@@ -160,6 +154,9 @@
 						const gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
 						console.log('HTML page available at:', gatewayUrl);
 						console.log('Added HTML page to IPFS:', htmlCid);
+
+						// Redirect the browser to the new URL
+						window.location.href = gatewayUrl;
 					})				
 				})
 			} catch (error) {
