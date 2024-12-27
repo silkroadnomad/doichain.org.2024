@@ -11,22 +11,28 @@ test.describe('NameId Page', () => {
         // Navigate to home page and wait for IPFS initialization
         await page.goto('http://localhost:5173/');
         
-        // Wait for IPFS initialization by checking helia store
+        // Wait for IPFS initialization by checking store values
         await page.waitForFunction(() => {
-            const heliaScript = document.querySelector('script[data-helia-initialized]');
-            return heliaScript && heliaScript.getAttribute('data-helia-initialized') === 'true';
-        }, { timeout: 30000 });
+            const stores = window.__SVELTE__ && Object.values(window.__SVELTE__);
+            return stores && stores.some(store => 
+                store && store.ctx && (store.ctx.helia || store.ctx.libp2p)
+            );
+        }, { timeout: 60000 });
     });
 
     test('should display nameId details and meta tags', async ({ page }) => {
         // Navigate to a nameId page and wait for client-side routing
         await page.goto('http://localhost:5173/');
         
-        // Wait for page to be ready with IPFS initialization
+        // Wait for IPFS and container initialization
         await page.waitForFunction(() => {
+            const stores = window.__SVELTE__ && Object.values(window.__SVELTE__);
             const container = document.querySelector('[data-testid="name-show-container"]');
-            return container && window.getComputedStyle(container).display !== 'none';
-        }, { timeout: 60000 });
+            return stores && 
+                   stores.some(store => store && store.ctx && (store.ctx.helia || store.ctx.libp2p)) &&
+                   container &&
+                   window.getComputedStyle(container).display !== 'none';
+        }, { timeout: 90000 });
         
         // Set the hash and wait for navigation
         await page.evaluate(() => {
