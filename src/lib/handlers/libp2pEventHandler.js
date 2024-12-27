@@ -1,9 +1,8 @@
 import { connectedPeers } from '$lib/doichain/doichain-store.js'
 import { handlePubsubMessage } from './pubsubMessageHandler.js'
 import { peerIdFromString } from '@libp2p/peer-id'
-
+import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
-    const CONTENT_TOPIC = '/doichain-nfc/1/message/proto'
     const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || ['doichain._peer-discovery._p2p._pubsub']
 
     // Subscribe to content topic

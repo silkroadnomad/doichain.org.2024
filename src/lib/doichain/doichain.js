@@ -1,3 +1,4 @@
+export const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 export const DOICHAIN = {
     name: 'doichain-mainnet',
     messagePrefix: '\x19Doichain Signed Message:\n',

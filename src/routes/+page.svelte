@@ -4,12 +4,12 @@
 	import NFTCard from '$lib/components/NFTCard.svelte';
 	import NameDoi from '$lib/components/nameDoi.svelte';
 	import { onMount } from 'svelte';
+	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 
-	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	let showHeroSection = true;
 	let inputValue = '';
-	let currentNameOp
-	let currentNameUtxo;
+	let currentNameOp = null;
+	let currentNameUtxo = null;
 	$: updatedCurrentNameOp = currentNameOp;
 	$: updatedCurrentNameUtxo = currentNameUtxo;
 	
@@ -49,7 +49,6 @@
 	let nameOpsSection;
 	let parallaxOffset = 0;
 	let gradientProgress = 0;
-
 	let selectedFilter;
 
 	const filters = [

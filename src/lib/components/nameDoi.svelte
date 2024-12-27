@@ -9,6 +9,7 @@
 		cidMessages,
 		requestedCids
 	} from '$lib/doichain/doichain-store.js';
+
 	import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js';
 	import { renderBCUR } from '../doichain/renderQR.js';
 	import { DOICHAIN } from '$lib/doichain/doichain.js';
@@ -16,18 +17,14 @@
 	import ScanModal from '$lib/doichain/ScanModal.svelte';
 	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
 	import TransactionDetails from './TransactionDetails.svelte';
-  import { subscribeToAddress } from '$lib/doichain/nameDoi.js';
-
-  // Add event dispatcher
-  import { createEventDispatcher } from 'svelte';
-  const dispatch = createEventDispatcher();
-
-	const CONTENT_TOPIC = import.meta.env.VITE_CONTENT_TOPIC || '/doichain-nfc/1/message/proto';
-
-  let scanOpen = false;
-  let scanTarget = ''; 
-  let scanData = ''; 
-
+    import { subscribeToAddress } from '$lib/doichain/nameDoi.js';
+	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+	// Add event dispatcher
+	import { createEventDispatcher } from 'svelte';
+	const dispatch = createEventDispatcher();
+	let scanOpen = false;
+	let scanTarget = ''; 
+	let scanData = ''; 
 	export let walletAddress = localStorage.getItem('walletAddress') || '';
 	let recipientsAddress = walletAddress;
 	let changeAddress = walletAddress;
@@ -51,27 +48,27 @@
 	let relevantMessage;
 
 	$: relevantMessage = $cidMessages.find((msg) => {
-		if (!msg) return false;
-		
-		console.log(
-			`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,
-			msg
-		);
-		console.log(`imageCID: ${imageCID}`, msg.cid === imageCID);
-		console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID?.toString());
-		
-		return (
-			msg.status === 'ADDING-CID' &&
-			((imageCID && msg.cid === imageCID) || (metadataCID && msg.cid === metadataCID.toString()))
-		);
-	});
-	$: pinningFee = relevantMessage?.fee?.amount || 0;
+			if (!msg) return false;
+			
+			console.log(
+				`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,
+				msg
+			);
+			console.log(`imageCID: ${imageCID}`, msg.cid === imageCID);
+			console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID?.toString());
+			
+			return (
+				msg.status === 'ADDING-CID' &&
+				((imageCID && msg.cid === imageCID) || (metadataCID && msg.cid === metadataCID.toString()))
+			);
+		});
+		$: pinningFee = relevantMessage?.fee?.amount || 0;
 
-  let nameRegistrationFee = storageFee;
-  let files = {
-    accepted: [],
-    rejected: []
-  };
+	let nameRegistrationFee = storageFee;
+	let files = {
+		accepted: [],
+		rejected: []
+	};
 
 	function handleFilesSelect(e) {
 		const { acceptedFiles, fileRejections } = e.detail;
@@ -84,35 +81,6 @@
 	let imageCID;
 	let metadataCID;
 	let metadataJSON;
-
-  let retryCount = 0;
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 2000; // 2 seconds
-
-  async function publishCID(cid, type = 'NEW') {
-    const message = `${type}-CID:${cid}`;
-    let success = false;
-    retryCount = 0;
-
-		const attemptPublish = async () => {
-			try {
-				await $libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
-				success = true;
-				console.log(`Successfully published ${message} on attempt ${retryCount + 1}`);
-			} catch (error) {
-				console.error(`Failed to publish ${message} on attempt ${retryCount + 1}:`, error);
-				if (retryCount < MAX_RETRIES) {
-					retryCount++;
-					console.log(`Retrying in ${RETRY_DELAY}ms...`);
-					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-					await attemptPublish();
-				}
-			}
-		};
-
-		await attemptPublish();
-		return success;
-	}
 
 	async function writeMetadata() {
 		const encoder = new TextEncoder();
@@ -129,65 +97,6 @@
 		console.log('Added metadata file to IPFS:', metadataCID.toString());
 		await publishCID(metadataCID.toString());
 		requestedCids.update((cids) => [...cids, metadataCID.toString()]);
-
-		// Generate and publish HTML page
-		try {
-			const { getNameIdData } = await import('$lib/doichain/namePage.js');
-			const nameData = await getNameIdData($electrumClient, $helia, nftName);
-			const htmlCid = await writeNameIdHTMLToIPFS(
-				nftName,
-				nameData.blockDate,
-				nameData.description,
-				nameData.imageCid
-			);
-			
-			// Forward to IPFS gateway
-			const gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
-			console.log('HTML page available at:', gatewayUrl);
-			console.log('Added HTML page to IPFS:', htmlCid);
-		} catch (error) {
-			console.error('Error generating HTML page:', error);
-			// Don't throw error to avoid blocking metadata publishing
-		}
-	}
-
-	/**
-	 * Generates and publishes an HTML page for a nameId to IPFS
-	 * @param {string} nameId - The name identifier
-	 * @param {string} blockDate - The date from the blockchain
-	 * @param {string} description - Description of the name
-	 * @param {string} imageCid - IPFS CID of the associated image
-	 * @returns {Promise<string>} The IPFS CID of the generated HTML page
-	 */
-	async function writeNameIdHTMLToIPFS(nameId, blockDate, description, imageCid) {
-		const encoder = new TextEncoder();
-		const fs = unixfs($helia);
-
-		try {
-			// Import the generateNameIdHTML function
-			const { generateNameIdHTML } = await import('$lib/doichain/namePage.js');
-			
-			// Generate the HTML content
-			const htmlString = await generateNameIdHTML(
-				nameId,
-				blockDate,
-				description,
-				`https://ipfs.le-space.de/ipfs/${imageCid}`
-			);
-
-			// Add the HTML content to IPFS
-			const cid = await fs.addBytes(encoder.encode(htmlString));
-			console.log('Added nameId HTML to IPFS:', cid.toString());
-
-			// Publish the CID
-			await publishCID(cid.toString());
-			requestedCids.update((cids) => [...cids, cid.toString()]);
-
-			return cid.toString();
-		} catch (error) {
-			console.error('Error in writeNameIdHTMLToIPFS:', error);
-			throw error;
-		}
 	}
 
 	async function previewFile() {
@@ -340,11 +249,12 @@
     animationTimeout = setTimeout(animateQrCodes, 300);
   }
 
-	onDestroy(() => {
+  onDestroy(() => {
 		if (animationTimeout) clearTimeout(animationTimeout);
-	});
-	let cidStatus = 'idle';
-	$: {
+  });
+
+  let cidStatus = 'idle';
+  $: {
 		console.log('Checking CID status:');
 		console.log('- Requested CIDs:', $requestedCids);
 		console.log('- CID Messages:', $cidMessages);
@@ -364,7 +274,7 @@
 				: 'idle';
 
 		console.log('Final cidStatus:', cidStatus);
-	}
+}
 
 	$: if (scanData) {
 		// Remove 'doichain:' prefix if present

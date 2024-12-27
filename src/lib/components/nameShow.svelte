@@ -1,5 +1,6 @@
 <script>
-	import { electrumClient, helia } from "../doichain/doichain-store.js";
+	import { electrumClient, helia, connectedServer } from "../doichain/doichain-store.js";
+	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
 	import { nameShow } from '../doichain/nameShow.js'
 	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js'
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js'
@@ -11,6 +12,8 @@
 	let title = '';
 	let description = '';
 	let imageUrl = '';
+	let isConnected = false;
+	$: ({ isConnected } = getConnectionStatus($connectedServer));
 	
 	// Add a marker when helia is initialized
 	$: if (browser && $helia) {
@@ -19,7 +22,7 @@
 		document.head.appendChild(script);
 	}
 
-	$: if (browser && nameId && $electrumClient) {
+	$: if (browser && nameId && isConnected) {
 		// Only fetch results on client-side when nameId changes and electrumClient is available
 		nameShow($electrumClient, nameId).then(async r => {
 			results = r;

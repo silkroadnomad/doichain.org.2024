@@ -1,6 +1,5 @@
 import { nameOps, cidMessages, requestedCids } from '$lib/doichain/doichain-store.js'
-
-const CONTENT_TOPIC = '/doichain-nfc/1/message/proto'
+import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 let _requestedCids = []
 requestedCids.subscribe((_) => {
 _requestedCids = _

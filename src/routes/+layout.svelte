@@ -1,10 +1,11 @@
 <script>
-	import { helia, libp2p, nameOps } from '$lib/doichain/doichain-store.js';
+	import { electrumClient, helia, libp2p, nameOps, connectedServer } from '$lib/doichain/doichain-store.js';
 	import "../app.css";
+	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
 	import { onMount, onDestroy } from "svelte";
 	import { browser } from '$app/environment';
 	import { createLibp2p } from 'libp2p'
-	import { createHelia, libp2pDefaults } from 'helia'
+	import { createHelia } from 'helia'
 	import { LevelBlockstore } from "blockstore-level"
 	import { LevelDatastore } from "datastore-level";
 	import { createLibp2pConfig } from '$lib/config/libp2p-config'
@@ -12,16 +13,57 @@
 	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
 	import { currentNameId } from '$lib/hashRouter';
 	import NameShow from '$lib/components/nameShow.svelte';
+	import { publishCID } from '$lib/doichain/nameDoi.js';
+	import { unixfs } from '@helia/unixfs';
+	import { getNameIdData } from '$lib/doichain/namePage.js'
+	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	
-	const CONTENT_TOPIC = '/doichain-nfc/1/message/proto';
 	const config = createLibp2pConfig();
 
 	let blockstore = new LevelBlockstore("./helia-blocks");
 	let datastore = new LevelDatastore("./helia-data");
 	let addressUpdateInterval;
-
+	let isConnected = false;
 	let attemptCount = 0;
 	const maxAttempts = 5;
+
+	/**
+	 * Generates and publishes an HTML page for a nameId to IPFS
+	 * @param {string} nameId - The name identifier
+	 * @param {string} blockDate - The date from the blockchain
+	 * @param {string} description - Description of the name
+	 * @param {string} imageCid - IPFS CID of the associated image
+	 * @returns {Promise<string>} The IPFS CID of the generated HTML page
+	 */
+	 async function writeNameIdHTMLToIPFS(nameId, blockDate, description, imageCid) {
+		const encoder = new TextEncoder();
+		const fs = unixfs($helia);
+
+		try {
+			// Import the generateNameIdHTML function
+			const { generateNameIdHTML } = await import('$lib/doichain/namePage.js');
+			
+			// Generate the HTML content
+			const htmlString = await generateNameIdHTML(
+				nameId,
+				blockDate,
+				description,
+				`https://ipfs.le-space.de/ipfs/${imageCid}`
+			);
+
+			// Add the HTML content to IPFS
+			const cid = await fs.addBytes(encoder.encode(htmlString));
+			console.log('Added nameId HTML to IPFS:', cid.toString());
+
+			// Publish the CID
+			await publishCID(cid.toString());
+
+			return cid.toString();
+		} catch (error) {
+			console.error('Error in writeNameIdHTMLToIPFS:', error);
+			throw error;
+		}
+	}
 
 	function publishList100Request() {
 		// Check if we should continue publishing requests
@@ -70,6 +112,7 @@
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore });
 		window.helia = $helia;
 
+
 		try {
 			if($libp2p) {
 				setupLibp2pEventHandlers($libp2p, publishList100Request)
@@ -88,7 +131,8 @@
 						console.log('Service Worker registered with scope:', registration.scope);
 					})
 					.catch((error) => {
-						console.error('Service Worker registration failed:', error);
+						console.log("Service Worker not enabled!");
+						//console.error('Service Worker registration failed:', error);
 					});
 			}
 		})
@@ -96,6 +140,33 @@
 		onDestroy(() => {
 			clearInterval(addressUpdateInterval);
 		});
+
+		$: ({ isConnected } = getConnectionStatus($connectedServer));
+
+		$:{ if(isConnected){
+			// Generate and publish HTML page
+			console.log("Generate and publish HTML page for", $currentNameId);
+			try {
+			
+				const nameData = getNameIdData($electrumClient, $helia, $currentNameId).then((nameData)=>{
+					console.log("nameData", nameData);
+					const htmlCid = writeNameIdHTMLToIPFS(
+						$currentNameId,
+						nameData.blockDate,
+						nameData.description,
+						nameData.imageCid
+					).then((htmlCid) => {
+						// Forward to IPFS gateway
+						const gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
+						console.log('HTML page available at:', gatewayUrl);
+						console.log('Added HTML page to IPFS:', htmlCid);
+					})				
+				})
+			} catch (error) {
+				console.error('Error generating HTML page:', error);
+				// Don't throw error to avoid blocking metadata publishing
+			}
+		}}
 		
 	</script>
 

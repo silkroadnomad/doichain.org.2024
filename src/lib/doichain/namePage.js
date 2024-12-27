@@ -15,22 +15,20 @@ export async function getNameIdData(electrumClient, helia, nameId) {
         if (!nameResults || nameResults.length === 0) {
             throw new Error(`No transactions found for nameId: ${nameId}`);
         }
-
+        console.log("nameResults", nameResults);
         // Get the most recent transaction
         const latestTx = nameResults[0];
+        console.log("latestTx", latestTx);
         const blockDate = latestTx.formattedBlocktime;
-
+        console.log("blockDate", blockDate);
         // Get metadata from IPFS
-        const tokenURI = latestTx.nameValue;
+        const tokenURI = latestTx.scriptPubKey?.nameOp?.value;
         if (!tokenURI || !tokenURI.startsWith('ipfs://')) {
             throw new Error(`Invalid token URI for nameId: ${nameId}`);
         }
-
+        console.log("tokenURI", tokenURI);
         const metadata = await getMetadataFromIPFS(helia, tokenURI);
-        if (!metadata || !metadata.image || !metadata.description) {
-            throw new Error(`Invalid metadata for nameId: ${nameId}`);
-        }
-
+        console.log("metadata", metadata);
         // Extract image CID from ipfs:// URL
         const imageCid = metadata.image.split('//')[1];
 
@@ -73,9 +71,9 @@ export async function generateNameIdHTML(nameId, blockDate, description, imageUr
     })[char]);
 
     const safeNameId = sanitize(nameId);
-    const safeDesc = sanitize(description);
-    const safeImageUrl = sanitize(getGatewayUrl(imageUrl));
-    const safeBlockDate = sanitize(blockDate);
+    const safeDesc = description ? sanitize(description) : '';
+    const safeImageUrl = imageUrl ? sanitize(getGatewayUrl(imageUrl)) : '';
+    const safeBlockDate = blockDate ? sanitize(blockDate) : '';
 
     const html = `<!DOCTYPE html>
 <html lang="en">

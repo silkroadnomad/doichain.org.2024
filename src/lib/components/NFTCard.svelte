@@ -129,8 +129,8 @@
                 </div>
                 <p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
                     {#if nftMetadata}
-                        <p>Name: {nftMetadata.name || 'No name available'}</p>
-                        <p>Description: {nftMetadata.description || 'No description available'}</p>
+                        <p>Name: {nftMetadata.name || 'not available'}</p>
+                        <p>Description: {nftMetadata.description || 'not available'}</p>
                     {:else}
                         <p>Loading NFT data from {$connectedPeers.length} peers...</p>
                     {/if}
