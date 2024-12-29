@@ -25,6 +25,51 @@
 	let scanOpen = false;
 	let scanTarget = '';
 	let scanData = '';
+	
+	// Collections tab state
+	let previewImgSrc;
+	let imageCID;
+	let metadataCID;
+	let metadataJSON;
+	let nameIdForCollection = '';
+	let searchTerm = '';
+	let searchResults = [];
+	let collectionsList = [];
+
+	async function addToCollections(result) {
+		// Check if the item is already in the collection
+		const isDuplicate = collectionsList.some(item => item.nameId === result.nameId);
+		if (!isDuplicate) {
+			try {
+				// Get metadata to extract IPFS image CID
+				const metadata = await getMetadataFromIPFS($helia, result.nameValue);
+				const imageCID = metadata.image.split('//')[1];
+				
+				collectionsList = [...collectionsList, {
+					...result,
+					imageCID,
+					metadata
+				}];
+			} catch (error) {
+				console.error('Error getting metadata for collection item:', error);
+			}
+		}
+	}
+	
+	async function searchHandler() {
+		if (!searchTerm) {
+			searchResults = [];
+			return;
+		}
+		try {
+			// Use existing getAddressTxs function to search
+			const txs = await getAddressTxs(searchTerm, DOICHAIN);
+			searchResults = txs.filter(tx => tx.nameId && tx.nameValue); // Only show valid NFCs
+		} catch (error) {
+			console.error('Error searching NFCs:', error);
+			searchResults = [];
+		}
+	}
 	export let walletAddress = localStorage.getItem('walletAddress') || '';
 	let recipientsAddress = walletAddress;
 	let changeAddress = walletAddress;
@@ -77,10 +122,6 @@
 		files.rejected = fileRejections;
 	}
 
-	let previewImgSrc;
-	let imageCID;
-	let metadataCID;
-	let metadataJSON;
 
 	async function writeMetadata() {
 		const encoder = new TextEncoder();
@@ -91,6 +132,11 @@
 			description: nftDescription,
 			image: `ipfs://${imageCID}`
 		};
+
+		// Add images array for collections tab
+		if (activeTab === 'collections' && collectionsList.length > 0) {
+			metadataJSON.images = collectionsList.map(item => `ipfs://${item.imageCID}`);
+		}
 
 		metadataCID = await fs.addBytes(encoder.encode(JSON.stringify(metadataJSON)));
 		nameValue = `ipfs://${metadataCID.toString()}`;
@@ -394,10 +440,89 @@
 								>
 									Key-Value Transaction
 								</a>
+								<a
+									class="border-b-2 py-2 px-4 text-sm font-medium {activeTab === 'collections'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+									href="#"
+									on:click|preventDefault={() => (activeTab = 'collections')}
+								>
+									Collections
+								</a>
 							</nav>
 						</div>
 						<div class="py-4">
-							{#if activeTab === 'nfc'}
+							{#if activeTab === 'collections'}
+								<div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
+									<div class="font-semibold text-left">NameId:</div>
+									<div>
+										<input
+											type="text"
+											bind:value={nameIdForCollection}
+											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											placeholder="Enter NameId"
+										/>
+									</div>
+
+									<div class="font-semibold text-left">Search NFCs:</div>
+									<div>
+										<div class="flex gap-2">
+											<input
+												type="text"
+												bind:value={searchTerm}
+												class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+												placeholder="Search existing NameIds"
+											/>
+											<button
+												on:click={searchHandler}
+												class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+											>
+												Search
+											</button>
+										</div>
+										
+										{#if searchResults.length > 0}
+											<div class="mt-4 space-y-2">
+												{#each searchResults as result}
+													<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+														<span class="text-gray-900">{result.nameId}</span>
+														<button
+															on:click={() => addToCollections(result)}
+															class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+															disabled={collectionsList.some(item => item.nameId === result.nameId)}
+														>
+															{collectionsList.some(item => item.nameId === result.nameId) ? 'Added' : 'Add'}
+														</button>
+													</div>
+												{/each}
+											</div>
+										{:else if searchTerm}
+											<p class="mt-2 text-sm text-gray-500">No results found</p>
+										{/if}
+
+										{#if collectionsList.length > 0}
+											<div class="mt-6">
+												<h3 class="text-lg font-semibold mb-3">Selected NFCs</h3>
+												<div class="space-y-2">
+													{#each collectionsList as item}
+														<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+															<span class="text-gray-900">{item.nameId}</span>
+															<button
+																on:click={() => {
+																	collectionsList = collectionsList.filter(i => i.nameId !== item.nameId);
+																}}
+																class="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+															>
+																Remove
+															</button>
+														</div>
+													{/each}
+												</div>
+											</div>
+										{/if}
+									</div>
+								</div>
+							{:elif activeTab === 'nfc'}
 								<div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
 									<div class="font-semibold text-left">NFC-Name:</div>
 									<div>
@@ -633,8 +758,46 @@
 							</div>
 							<div>
 								<button
-									on:click={() => activeTimeLine++}
-									class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+									on:click={async () => {
+										if (activeTab === 'collections') {
+											if (!nameIdForCollection) {
+												alert('Please enter a NameId for the collection');
+												return;
+											}
+											if (collectionsList.length === 0) {
+												alert('Please add at least one NFC to the collection');
+												return;
+											}
+											nameId = nameIdForCollection;
+											nftName = nameIdForCollection;
+											nftDescription = `Collection of ${collectionsList.length} NFCs`;
+											
+											// Update metadata to include collection images
+											const metadataJSON = {
+												name: nftName,
+												description: nftDescription,
+												image: collectionsList[0].imageCID ? `ipfs://${collectionsList[0].imageCID}` : '',
+												images: collectionsList.map(item => `ipfs://${item.imageCID}`)
+											};
+											
+											try {
+												const fs = unixfs($helia);
+												const encoder = new TextEncoder();
+												const bytes = encoder.encode(JSON.stringify(metadataJSON, null, 2));
+												const cid = await fs.addBytes(bytes);
+												metadataCID = cid;
+												await publishCID(cid.toString());
+												activeTimeLine++;
+											} catch (error) {
+												console.error('Error generating metadata:', error);
+												alert('Error generating metadata. Please try again.');
+											}
+										} else {
+											activeTimeLine++;
+										}
+									}}
+									disabled={activeTab === 'collections' ? (!nameIdForCollection || collectionsList.length === 0) : false}
+									class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
 									>Next</button
 								>
 							</div>
