@@ -5,7 +5,7 @@ export const makeRequest = (method, params, id) => {
 		jsonrpc: '2.0',
 		method: method,
 		params: params,
-		id: id,
+		id: id
 	});
 };
 
@@ -30,7 +30,6 @@ export const createPromiseResultBatch = (resolve, reject, argz) => {
 };
 
 export class ElectrumxClient {
-
 	constructor(host, port, protocol, options) {
 		this.id = 0;
 		this.port = port;
@@ -59,27 +58,23 @@ export class ElectrumxClient {
 			this.ws = ws;
 
 			ws.onopen = () => {
-				console.log("connected websocket main component");
+				console.log('connected websocket main component');
 				resolve();
 			};
 
 			ws.onmessage = (messageEvent) => {
 				this.onMessage(messageEvent.data);
-			}
+			};
 
-			ws.onclose = e => {
+			ws.onclose = (e) => {
 				console.log('Socket is closed: ' + JSON.stringify(e));
 				this.status = 0;
 				this.onClose();
 			};
 
-			const errorHandler = e => reject(e);
-			ws.onerror = err => {
-				console.error(
-					"Socket encountered error: ",
-					err.message,
-					"Closing socket"
-				);
+			const errorHandler = (e) => reject(e);
+			ws.onerror = (err) => {
+				console.error('Socket encountered error: ', err.message, 'Closing socket');
 				this.status = 0;
 				ws.close();
 				errorHandler();
@@ -100,11 +95,13 @@ export class ElectrumxClient {
 
 	request(method, params) {
 		if (this.status === 0) {
-			return this.connect().then(() => {
-				return this._sendRequest(method, params);
-			}).catch(() => {
-				return Promise.reject(new Error('ESOCKET'));
-			});
+			return this.connect()
+				.then(() => {
+					return this._sendRequest(method, params);
+				})
+				.catch(() => {
+					return Promise.reject(new Error('ESOCKET'));
+				});
 		}
 		return this._sendRequest(method, params);
 	}
@@ -120,11 +117,13 @@ export class ElectrumxClient {
 
 	requestBatch(method, params, secondParam) {
 		if (this.status === 0) {
-			return this.connect().then(() => {
-				return this._sendBatchRequest(method, params, secondParam);
-			}).catch(() => {
-				return Promise.reject(new Error('ESOCKET'));
-			});
+			return this.connect()
+				.then(() => {
+					return this._sendBatchRequest(method, params, secondParam);
+				})
+				.catch(() => {
+					return Promise.reject(new Error('ESOCKET'));
+				});
 		}
 		return this._sendBatchRequest(method, params, secondParam);
 	}
@@ -143,7 +142,11 @@ export class ElectrumxClient {
 				arguments_far_calls[id] = param;
 			}
 			const content = '[' + contents.join(',') + ']';
-			this.callback_message_queue[this.id] = createPromiseResultBatch(resolve, reject, arguments_far_calls);
+			this.callback_message_queue[this.id] = createPromiseResultBatch(
+				resolve,
+				reject,
+				arguments_far_calls
+			);
 			// callback will exist only for max id
 			this.ws.send(content + '\n', 'utf8');
 		});
@@ -190,10 +193,9 @@ export class ElectrumxClient {
 
 	onClose(e) {
 		this.status = 0;
-		Object.keys(this.callback_message_queue).forEach(key => {
+		Object.keys(this.callback_message_queue).forEach((key) => {
 			this.callback_message_queue[key](new Error('close connect'));
 			delete this.callback_message_queue[key];
 		});
 	}
-
 }

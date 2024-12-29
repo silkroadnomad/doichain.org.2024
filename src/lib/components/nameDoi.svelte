@@ -17,14 +17,14 @@
 	import ScanModal from '$lib/doichain/ScanModal.svelte';
 	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
 	import TransactionDetails from './TransactionDetails.svelte';
-    import { subscribeToAddress } from '$lib/doichain/nameDoi.js';
-	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+	import { subscribeToAddress } from '$lib/doichain/nameDoi.js'; 
+	import { publishCID } from '$lib/doichain/nameDoi.js';
 	// Add event dispatcher
 	import { createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
 	let scanOpen = false;
-	let scanTarget = ''; 
-	let scanData = ''; 
+	let scanTarget = '';
+	let scanData = '';
 	export let walletAddress = localStorage.getItem('walletAddress') || '';
 	let recipientsAddress = walletAddress;
 	let changeAddress = walletAddress;
@@ -48,21 +48,21 @@
 	let relevantMessage;
 
 	$: relevantMessage = $cidMessages.find((msg) => {
-			if (!msg) return false;
-			
-			console.log(
-				`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,
-				msg
-			);
-			console.log(`imageCID: ${imageCID}`, msg.cid === imageCID);
-			console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID?.toString());
-			
-			return (
-				msg.status === 'ADDING-CID' &&
-				((imageCID && msg.cid === imageCID) || (metadataCID && msg.cid === metadataCID.toString()))
-			);
-		});
-		$: pinningFee = relevantMessage?.fee?.amount || 0;
+		if (!msg) return false;
+
+		console.log(
+			`matchingCidMessage for ${imageCID} or ${metadataCID} to show storage details`,
+			msg
+		);
+		console.log(`imageCID: ${imageCID}`, msg.cid === imageCID);
+		console.log(`metadataCID: ${metadataCID}`, msg.cid === metadataCID?.toString());
+
+		return (
+			msg.status === 'ADDING-CID' &&
+			((imageCID && msg.cid === imageCID) || (metadataCID && msg.cid === metadataCID.toString()))
+		);
+	});
+	$: pinningFee = relevantMessage?.fee?.amount || 0;
 
 	let nameRegistrationFee = storageFee;
 	let files = {
@@ -132,9 +132,15 @@
 			false
 		);
 
-    /** reader for image preview / convert image file to base64 string */
-    const readerToDataUrl = new FileReader();
-    readerToDataUrl.addEventListener("load", () => { previewImgSrc = readerToDataUrl.result },false,)
+		/** reader for image preview / convert image file to base64 string */
+		const readerToDataUrl = new FileReader();
+		readerToDataUrl.addEventListener(
+			'load',
+			() => {
+				previewImgSrc = readerToDataUrl.result;
+			},
+			false
+		);
 
 		if (file) {
 			readerToArrayBuffer.readAsArrayBuffer(file);
@@ -145,9 +151,9 @@
 	$: {
 		if (files.accepted.length > 0) previewFile();
 	}
-	$: {
-		if (nftName || nftDescription) writeMetadata();
-	}
+	// $: {
+	// 	if (nftName || nftDescription) writeMetadata();
+	// }
 
 	let activeTimeLine = 0;
 	let selectedUtxos = [];
@@ -184,16 +190,16 @@
 				console.warn('No matching CID message found for current transaction');
 			}
 
-        const result = prepareSignTransaction(
-            selectedUtxos,
-            nameId,
-            nameValue,
-            DOICHAIN,
-            storageFee,
-            recipientsAddress,
-            changeAddress,
-            pinningDetails
-        );
+			const result = prepareSignTransaction(
+				selectedUtxos,
+				nameId,
+				nameValue,
+				DOICHAIN,
+				storageFee,
+				recipientsAddress,
+				changeAddress,
+				pinningDetails
+			);
 
 			if (result.error) {
 				console.log('error', result.error);
@@ -234,27 +240,27 @@
 			});
 	}
 
-  let animationTimeout;
-  let currentSvgIndex;
+	let animationTimeout;
+	let currentSvgIndex;
 
-  function displayQrCodes() {
-    currentSvgIndex = 0;
-    if (animationTimeout) clearTimeout(animationTimeout);
-    animateQrCodes();
-  }
-
-  function animateQrCodes() {
-    qrCode = qrCodeData[currentSvgIndex];
-    currentSvgIndex = (currentSvgIndex + 1) % qrCodeData.length;
-    animationTimeout = setTimeout(animateQrCodes, 300);
-  }
-
-  onDestroy(() => {
+	function displayQrCodes() {
+		currentSvgIndex = 0;
 		if (animationTimeout) clearTimeout(animationTimeout);
-  });
+		animateQrCodes();
+	}
 
-  let cidStatus = 'idle';
-  $: {
+	function animateQrCodes() {
+		qrCode = qrCodeData[currentSvgIndex];
+		currentSvgIndex = (currentSvgIndex + 1) % qrCodeData.length;
+		animationTimeout = setTimeout(animateQrCodes, 300);
+	}
+
+	onDestroy(() => {
+		if (animationTimeout) clearTimeout(animationTimeout);
+	});
+
+	let cidStatus = 'idle';
+	$: {
 		console.log('Checking CID status:');
 		console.log('- Requested CIDs:', $requestedCids);
 		console.log('- CID Messages:', $cidMessages);
@@ -274,7 +280,7 @@
 				: 'idle';
 
 		console.log('Final cidStatus:', cidStatus);
-}
+	}
 
 	$: if (scanData) {
 		// Remove 'doichain:' prefix if present
@@ -478,7 +484,9 @@
 												<div class="space-y-3">
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Name:</span>
-														<span class="text-sm text-gray-900 truncate">{files.accepted[0].name}</span>
+														<span class="text-sm text-gray-900 truncate"
+															>{files.accepted[0].name}</span
+														>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Type:</span>
@@ -486,43 +494,75 @@
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Size:</span>
-														<span class="text-sm text-gray-900">{(files.accepted[0].size / 1024).toFixed(2)} KB</span>
+														<span class="text-sm text-gray-900"
+															>{(files.accepted[0].size / 1024).toFixed(2)} KB</span
+														>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">CID:</span>
-														<span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span>
+														<span class="text-sm text-gray-900 truncate"
+															>{imageCID || 'Generating...'}</span
+														>
 													</div>
 
 													{#if $cidMessages.length > 0}
 														{#if relevantMessage && relevantMessage.status === 'ADDING-CID'}
 															<div class="pt-2 border-t border-gray-200">
-																<h5 class="text-sm font-medium text-gray-900 mb-2">Storage Details</h5>
+																<h5 class="text-sm font-medium text-gray-900 mb-2">
+																	Storage Details
+																</h5>
 																<div class="space-y-2">
 																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24">Metadata:</span>
-																		<span class="text-sm text-gray-900">{relevantMessage.sizes.metadata}</span>
+																		<span class="text-sm font-medium text-gray-500 w-24"
+																			>Metadata:</span
+																		>
+																		<span class="text-sm text-gray-900"
+																			>{relevantMessage.sizes.metadata}</span
+																		>
 																	</div>
 																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24">Image:</span>
-																		<span class="text-sm text-gray-900">{relevantMessage.sizes.image}</span>
+																		<span class="text-sm font-medium text-gray-500 w-24"
+																			>Image:</span
+																		>
+																		<span class="text-sm text-gray-900"
+																			>{relevantMessage.sizes.image}</span
+																		>
 																	</div>
 																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24">Total Size:</span>
-																		<span class="text-sm text-gray-900">{relevantMessage.sizes.total}</span>
+																		<span class="text-sm font-medium text-gray-500 w-24"
+																			>Total Size:</span
+																		>
+																		<span class="text-sm text-gray-900"
+																			>{relevantMessage.sizes.total}</span
+																		>
 																	</div>
 																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24">Pinning Fee:</span>
-																		<span class="text-sm text-gray-900">{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span>
+																		<span class="text-sm font-medium text-gray-500 w-24"
+																			>Pinning Fee:</span
+																		>
+																		<span class="text-sm text-gray-900"
+																			>{(relevantMessage.fee.amount / 100000000).toFixed(8)} DOI</span
+																		>
 																	</div>
 																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24">Duration:</span>
-																		<span class="text-sm text-gray-900">{relevantMessage.fee.durationMonths} months</span>
+																		<span class="text-sm font-medium text-gray-500 w-24"
+																			>Duration:</span
+																		>
+																		<span class="text-sm text-gray-900"
+																			>{relevantMessage.fee.durationMonths} months</span
+																		>
 																	</div>
 																	<div class="flex items-center">
-																		<span class="text-sm font-medium text-gray-500 w-24">Peer ID:</span>
+																		<span class="text-sm font-medium text-gray-500 w-24"
+																			>Peer ID:</span
+																		>
 																		<div class="relative group">
-																			<span class="text-sm text-gray-900 cursor-pointer">{relevantMessage.peerId}</span>
-																			<div class="absolute left-0 mt-1 w-max bg-black text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+																			<span class="text-sm text-gray-900 cursor-pointer"
+																				>{relevantMessage.peerId}</span
+																			>
+																			<div
+																				class="absolute left-0 mt-1 w-max bg-black text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+																			>
 																				{#each relevantMessage.multiaddress as address}
 																					<div>{address}</div>
 																				{/each}
@@ -993,16 +1033,16 @@
 </div>
 
 <style>
-    :global(.nameDoi) {
-        padding: 1rem;
-        font-size: small !important;
-        background-color: #f1f3f5;
-        color: var(--text-3);
-    }
+	:global(.nameDoi) {
+		padding: 1rem;
+		font-size: small !important;
+		background-color: #f1f3f5;
+		color: var(--text-3);
+	}
 
-    .nameShow {
-        overflow-x: hidden;
-    }
+	.nameShow {
+		overflow-x: hidden;
+	}
 
 	.nameShow input[type='text'],
 	.nameShow textarea {
