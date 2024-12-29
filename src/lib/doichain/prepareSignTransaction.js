@@ -56,18 +56,18 @@ export function prepareSignTransaction(
 		const isSegWit = utxo?.scriptPubKey?.type === 'witness_v0_keyhash';
 		if (isSegWit) {
 			psbt.addInput({
-				hash: utxo.hash,
+				hash: utxo.txid,
 				index: utxo.n,
 				witnessUtxo: {
-					script: Buffer.from(utxo?.scriptPubKey.hex, 'hex'),
+					script: Buffer.from(utxo.scriptPubKey.hex, 'hex'),
 					value: sb.toSatoshi(utxo.value)
 				}
 			});
 		} else {
 			psbt.addInput({
-				hash: utxo.hash,
+				hash: utxo.txid,
 				index: utxo.n,
-				nonWitnessUtxo: Buffer.from(utxo?.hex, 'hex')
+				nonWitnessUtxo: Buffer.from(utxo.hex, 'hex')
 			});
 		}
 		totalInputAmount += sb.toSatoshi(utxo.value);
