@@ -9,38 +9,38 @@ import { getMetadataFromIPFS } from './nfc/getMetadataFromIPFS.js';
  * @returns {Promise<Object>} Object containing blockDate, description, and imageCid
  */
 export async function getNameIdData(electrumClient, helia, nameId) {
-    try {
-        // Get name transactions
-        const nameResults = await nameShow(electrumClient, nameId);
-        if (!nameResults || nameResults.length === 0) {
-            throw new Error(`No transactions found for nameId: ${nameId}`);
-        }
-        console.log("nameResults", nameResults);
-        // Get the most recent transaction
-        const latestTx = nameResults[0];
-        console.log("latestTx", latestTx);
-        const blockDate = latestTx.formattedBlocktime;
-        console.log("blockDate", blockDate);
-        // Get metadata from IPFS
-        const tokenURI = latestTx.scriptPubKey?.nameOp?.value;
-        if (!tokenURI || !tokenURI.startsWith('ipfs://')) {
-            throw new Error(`Invalid token URI for nameId: ${nameId}`);
-        }
-        console.log("tokenURI", tokenURI);
-        const metadata = await getMetadataFromIPFS(helia, tokenURI);
-        console.log("metadata", metadata);
-        // Extract image CID from ipfs:// URL
-        const imageCid = metadata.image.split('//')[1];
+	try {
+		// Get name transactions
+		const nameResults = await nameShow(electrumClient, nameId);
+		if (!nameResults || nameResults.length === 0) {
+			throw new Error(`No transactions found for nameId: ${nameId}`);
+		}
+		console.log('nameResults', nameResults);
+		// Get the most recent transaction
+		const latestTx = nameResults[0];
+		console.log('latestTx', latestTx);
+		const blockDate = latestTx.formattedBlocktime;
+		console.log('blockDate', blockDate);
+		// Get metadata from IPFS
+		const tokenURI = latestTx.scriptPubKey?.nameOp?.value;
+		if (!tokenURI || !tokenURI.startsWith('ipfs://')) {
+			throw new Error(`Invalid token URI for nameId: ${nameId}`);
+		}
+		console.log('tokenURI', tokenURI);
+		const metadata = await getMetadataFromIPFS(helia, tokenURI);
+		console.log('metadata', metadata);
+		// Extract image CID from ipfs:// URL
+		const imageCid = metadata.image.split('//')[1];
 
-        return {
-            blockDate,
-            description: metadata.description,
-            imageCid
-        };
-    } catch (error) {
-        console.error('Error in getNameIdData:', error);
-        throw error;
-    }
+		return {
+			blockDate,
+			description: metadata.description,
+			imageCid
+		};
+	} catch (error) {
+		console.error('Error in getNameIdData:', error);
+		throw error;
+	}
 }
 
 /**
@@ -52,32 +52,37 @@ export async function getNameIdData(electrumClient, helia, nameId) {
  * @returns {string} Complete HTML document as a string
  */
 export async function generateNameIdHTML(nameId, blockDate, description, imageUrl) {
-    // Convert IPFS URLs to gateway URLs
-    const getGatewayUrl = (url) => {
-        if (url.startsWith('ipfs://')) {
-            const cid = url.replace('ipfs://', '');
-            return `https://ipfs.le-space.de/ipfs/${cid}`;
-        }
-        return url;
-    };
+	// Convert IPFS URLs to gateway URLs
+	const getGatewayUrl = (url) => {
+		if (url.startsWith('ipfs://')) {
+			const cid = url.replace('ipfs://', '');
+			return `https://ipfs.le-space.de/ipfs/${cid}`;
+		}
+		return url;
+	};
 
-    // Sanitize inputs to prevent XSS
-    const sanitize = (str) => str.replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    })[char]);
+	// Sanitize inputs to prevent XSS
+	const sanitize = (str) =>
+		str.replace(
+			/[&<>"']/g,
+			(char) =>
+				({
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#39;'
+				})[char]
+		);
 
-    const safeNameId = sanitize(nameId);
-    const safeDesc = description ? sanitize(description) : '';
-    const safeImageUrl = imageUrl ? sanitize(getGatewayUrl(imageUrl)) : '';
-    const safeBlockDate = blockDate ? sanitize(blockDate) : '';
+	const safeNameId = sanitize(nameId);
+	const safeDesc = description ? sanitize(description) : '';
+	const safeImageUrl = imageUrl ? sanitize(getGatewayUrl(imageUrl)) : '';
+	const safeBlockDate = blockDate ? sanitize(blockDate) : '';
 
-    const currentServerUrl = window.location.origin; // Get the current server URL
+	const currentServerUrl = window.location.origin; // Get the current server URL
 
-    const html = `<!DOCTYPE html>
+	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -151,5 +156,5 @@ export async function generateNameIdHTML(nameId, blockDate, description, imageUr
 </body>
 </html>`;
 
-    return html;
+	return html;
 }

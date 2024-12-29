@@ -4,7 +4,7 @@ import { DOICHAIN, NETWORK_FEE, VERSION } from './doichain.js';
 import { CONTENT_TOPIC } from './doichain.js';
 
 let _libp2p;
-libp2p.subscribe((value) => _libp2p = value);
+libp2p.subscribe((value) => (_libp2p = value));
 
 /**
  * @typedef {Object} UTXO
@@ -177,26 +177,26 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
 
 export async function publishCID(cid, type = 'NEW') {
-    const message = `${type}-CID:${cid}`;
-    let success = false;
-    retryCount = 0;
+	const message = `${type}-CID:${cid}`;
+	let success = false;
+	retryCount = 0;
 
-		const attemptPublish = async () => {
-			try {
-				await _libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
-				success = true;
-				console.log(`Successfully published ${message} on attempt ${retryCount + 1}`);
-			} catch (error) {
-				console.error(`Failed to publish ${message} on attempt ${retryCount + 1}:`, error);
-				if (retryCount < MAX_RETRIES) {
-					retryCount++;
-					console.log(`Retrying in ${RETRY_DELAY}ms...`);
-					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-					await attemptPublish();
-				}
+	const attemptPublish = async () => {
+		try {
+			await _libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
+			success = true;
+			console.log(`Successfully published ${message} on attempt ${retryCount + 1}`);
+		} catch (error) {
+			console.error(`Failed to publish ${message} on attempt ${retryCount + 1}:`, error);
+			if (retryCount < MAX_RETRIES) {
+				retryCount++;
+				console.log(`Retrying in ${RETRY_DELAY}ms...`);
+				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+				await attemptPublish();
 			}
-		};
+		}
+	};
 
-		await attemptPublish();
-		return success;
+	await attemptPublish();
+	return success;
 }

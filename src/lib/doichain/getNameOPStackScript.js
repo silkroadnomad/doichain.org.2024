@@ -1,13 +1,13 @@
 import { address, script } from 'bitcoinjs-lib';
 
-export const NAME_MAX_LENGTH = 255
-export const VALUE_MAX_LENGTH = 520
+export const NAME_MAX_LENGTH = 255;
+export const VALUE_MAX_LENGTH = 520;
 
 const ERRORS = {
-    NAME_ID_DEFINED: "nameId and nameValue must be defined",
-    NAME_ID_LENGTH: `nameId must be at least 3 characters and not longer than ${NAME_MAX_LENGTH}`,
-    NAME_VALUE_LENGTH: `nameValue must not be longer than ${VALUE_MAX_LENGTH}`,
-    INVALID_ADDRESS: "Invalid recipient address: "
+	NAME_ID_DEFINED: 'nameId and nameValue must be defined',
+	NAME_ID_LENGTH: `nameId must be at least 3 characters and not longer than ${NAME_MAX_LENGTH}`,
+	NAME_VALUE_LENGTH: `nameValue must not be longer than ${VALUE_MAX_LENGTH}`,
+	INVALID_ADDRESS: 'Invalid recipient address: '
 };
 
 /**
@@ -23,29 +23,29 @@ const ERRORS = {
  * @returns {Buffer} The compiled script as a Buffer.
  */
 export const getNameOPStackScript = (nameId, nameValue, recipientAddress, network) => {
-    if (!nameId || nameValue===undefined) {
-        throw new Error(ERRORS.NAME_ID_DEFINED);
-    }
+	if (!nameId || nameValue === undefined) {
+		throw new Error(ERRORS.NAME_ID_DEFINED);
+	}
 
-    if (nameId.length > NAME_MAX_LENGTH || nameId.length < 3) {
-        throw new Error(ERRORS.NAME_ID_LENGTH);
-    }
+	if (nameId.length > NAME_MAX_LENGTH || nameId.length < 3) {
+		throw new Error(ERRORS.NAME_ID_LENGTH);
+	}
 
-    if (nameValue.length > VALUE_MAX_LENGTH) {
-        throw new Error(ERRORS.NAME_VALUE_LENGTH);
-    }
+	if (nameValue.length > VALUE_MAX_LENGTH) {
+		throw new Error(ERRORS.NAME_VALUE_LENGTH);
+	}
 
-    const op_name = Buffer.from(nameId).toString('hex');
-    const op_value = Buffer.from(nameValue).toString('hex');
+	const op_name = Buffer.from(nameId).toString('hex');
+	const op_value = Buffer.from(nameValue).toString('hex');
 
-    let op_address;
-    let opCodesStackScript;
-    let decoded;
-    try {
-        decoded = address.fromBase58Check(recipientAddress);
-        op_address = decoded.hash.toString('hex');
-        opCodesStackScript = script.fromASM(
-            `
+	let op_address;
+	let opCodesStackScript;
+	let decoded;
+	try {
+		decoded = address.fromBase58Check(recipientAddress);
+		op_address = decoded.hash.toString('hex');
+		opCodesStackScript = script.fromASM(
+			`
                                               OP_10
                                               ${op_name}
                                               ${op_value}
@@ -56,16 +56,17 @@ export const getNameOPStackScript = (nameId, nameValue, recipientAddress, networ
                                               ${op_address}
                                               OP_EQUALVERIFY
                                               OP_CHECKSIG
-                                        `.trim().replace(/\s+/g, ' '),
-        )
-    } catch (legacyError) {
+                                        `
+				.trim()
+				.replace(/\s+/g, ' ')
+		);
+	} catch (legacyError) {
+		try {
+			decoded = address.fromBech32(recipientAddress);
+			op_address = decoded.data.toString('hex');
 
-        try {
-            decoded = address.fromBech32(recipientAddress);
-            op_address = decoded.data.toString('hex');
-
-            opCodesStackScript = script.fromASM(
-                `
+			opCodesStackScript = script.fromASM(
+				`
                                               OP_10
                                               ${op_name}
                                               ${op_value}
@@ -73,14 +74,14 @@ export const getNameOPStackScript = (nameId, nameValue, recipientAddress, networ
                                               OP_DROP
                                               OP_0
                                               ${op_address}
-                                        `.trim().replace(/\s+/g, ' '),
-            )
-        } catch (segwitError) {
-            throw new Error(ERRORS.INVALID_ADDRESS + legacyError.message + " or " + segwitError.message);
-        }
+                                        `
+					.trim()
+					.replace(/\s+/g, ' ')
+			);
+		} catch (segwitError) {
+			throw new Error(ERRORS.INVALID_ADDRESS + legacyError.message + ' or ' + segwitError.message);
+		}
+	}
 
-    }
-
-
-    return opCodesStackScript;
+	return opCodesStackScript;
 };
