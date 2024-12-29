@@ -522,7 +522,7 @@
 										{/if}
 									</div>
 								</div>
-							{:elif activeTab === 'nfc'}
+							{:else if activeTab === 'nfc'}
 								<div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
 									<div class="font-semibold text-left">NFC-Name:</div>
 									<div>
