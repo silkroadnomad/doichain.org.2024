@@ -143,18 +143,18 @@ export const generatePSBT = async (
  * @param {(data: { scripthash: string, status: string }) => void} onMempoolTx - Callback function when mempool transaction is detected
  * @returns {Promise<void>}
  */
-export const subscribeToAddress = async (electrumClient, address, onMempoolTx) => {
+export const subscribeToAddress = async (electrumClient, _address, onMempoolTx) => {
 	if (!electrumClient || !address || !onMempoolTx) return;
 
 	try {
 		// Convert address to script hash for Electrum
-		const script = address.toOutputScript(address, DOICHAIN);
+		const script = address.toOutputScript(_address, DOICHAIN);
 		const hash = crypto.sha256(script);
 		const reversedHash = Buffer.from(hash.reverse()).toString('hex');
 
 		// Subscribe to address
 		await electrumClient.request('blockchain.scripthash.subscribe', [reversedHash]);
-		console.log(`Subscribed to address: ${address}`);
+		console.log(`Subscribed to address: ${_address}`);
 
 		// Set up event listener for address updates
 		/** @param {string} scripthash - The script hash of the monitored address
@@ -162,7 +162,7 @@ export const subscribeToAddress = async (electrumClient, address, onMempoolTx) =
 		 */
 		electrumClient.subscribe.on('blockchain.scripthash.subscribe', (scripthash, status) => {
 			if (scripthash === reversedHash && status === 'mempool') {
-				console.log(`Detected mempool transaction for address: ${address}`);
+				console.log(`Detected mempool transaction for address: ${_address}`);
 				onMempoolTx({ scripthash, status });
 			}
 		});

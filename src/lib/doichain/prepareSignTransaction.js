@@ -52,6 +52,7 @@ export function prepareSignTransaction(
 	let changeAmount;
 
 	_utxoAddresses.forEach((utxo) => {
+		console.log('utxo', utxo);
 		const isSegWit = utxo?.scriptPubKey?.type === 'witness_v0_keyhash';
 		if (isSegWit) {
 			psbt.addInput({
