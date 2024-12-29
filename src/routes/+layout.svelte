@@ -33,6 +33,7 @@
 	let attemptCount = 0;
 	const maxAttempts = 5;
 	let gatewayUrl = '';
+	let isDarkMode = false;
 
 	/**
 	 * Generates and publishes an HTML page for a nameId to IPFS
@@ -189,9 +190,14 @@
 				console.error('Failed to copy: ', err);
 			});
 	}
+
+	function toggleDarkMode() {
+		isDarkMode = !isDarkMode;
+	}
 </script>
 
 <body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen pb-[footer-height]">
+	<div class={isDarkMode ? 'dark-mode' : ''}>
 	<div class="flex-grow">
 		<section class="flex items-center justify-center mt-8">
 			<div class="text-center max-w-4xl mx-auto px-4">
@@ -255,6 +261,12 @@
 			</div>
 		{/each}
 	</div>
+
+	<!-- Toggle Button -->
+	<button on:click={toggleDarkMode} class="toggle-dark-mode">
+		{isDarkMode ? 'Light Mode' : 'Dark Mode'}
+	</button>
+	</div>
 </body>
 
 <style lang="postcss">
@@ -317,5 +329,26 @@
 			transform: scale(1);
 			opacity: 0.5;
 		}
+	}
+
+	.dark-mode {
+		background-color: #121212;
+		color: #ffffff;
+	}
+
+	.toggle-dark-mode {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		background-color: #007bff;
+		color: white;
+		border: none;
+		padding: 5px 10px;
+		cursor: pointer;
+		border-radius: 5px;
+	}
+
+	.toggle-dark-mode:hover {
+		background-color: #0056b3;
 	}
 </style>
