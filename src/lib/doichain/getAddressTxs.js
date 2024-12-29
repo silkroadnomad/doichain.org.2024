@@ -708,16 +708,6 @@ export function deriveAddress(xpubOrZpub, derivationPath, network, type) {
  * @param {string} xpub - Extended public key
  * @param {string} basePath - Base derivation path
  * @param {string} standard - Wallet standard being used
- * @param {Object} client - Electrum client
- * @param {import('bitcoinjs-lib').Network} network - Network configuration
- * @param {number} [limit=50] - Maximum number of addresses to scan
- * @returns {Promise<DerivationScanResult>} Scan results including addresses and transactions
- */
-/**
- * Scans a derivation path for addresses and transactions
- * @param {string} xpub - Extended public key
- * @param {string} basePath - Base derivation path
- * @param {string} standard - Wallet standard being used
  * @param {ElectrumClient} client - Electrum client
  * @param {Network} network - Network configuration
  * @param {number} [limit=50] - Maximum number of addresses to scan
@@ -766,8 +756,6 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
 					if (loglevel > 0) console.log(`└── ✅ Generated: ${address}`);
 					batchAddresses.push(address);
 					addresses.push(address);
-
-					// Queue up address data fetching with rate limiting
 					batchPromises.push(fetchAddressData(address, client, network));
 				} catch (error) {
 					const errorMessage = error instanceof Error ? error.message : String(error);
@@ -780,9 +768,7 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
 				console.log(`\n🔄 Checking transactions for ${batchAddresses.length} addresses`);
 
 			try {
-				// Process batch of addresses in parallel
 				const results = await Promise.allSettled(batchPromises);
-				let batchHasTransactions = false;
 
 				for (let j = 0; j < results.length; j++) {
 					const result = results[j];
@@ -791,54 +777,52 @@ async function scanDerivationPath(xpub, basePath, standard, client, network, lim
 					if (result.status === 'fulfilled') {
 						const { utxos: addressUtxos, history: addressHistory, balance } = result.value;
 
-						// Update global address balances
 						if (balance) {
 							addressBalances.set(address, {
 								confirmed: balance.confirmed,
 								unconfirmed: balance.unconfirmed
 							});
-							if (loglevel > 0)
-								console.log(`└── 💰 Balance: ${balance.confirmed / 100000000} BTC (confirmed)`);
+							if (loglevel > 0) console.log(`└── 💰 Balance: ${balance.confirmed / 100000000} BTC (confirmed)`);
 						}
 
-						if (addressHistory.length > 0 || addressUtxos.length > 0) {
+						// Check if this address has any activity
+						const hasActivity = addressHistory.length > 0 || addressUtxos.length > 0;
+
+						if (hasActivity) {
 							transactionsFound = true;
 							consecutiveUnused = 0;
-							if (loglevel > 0)
-								console.log(`└── ✨ Found ${addressHistory.length} transactions for ${address}`);
 
+							// unusedAddress = null;
+							
 							// Extend scanning window when we find transactions
 							if (limit !== 1) {
 								limit = Math.max(limit, i + GAP_LIMIT + 10);
 							}
+							if (loglevel > 0) console.log(`└── ✨ Found ${addressHistory.length} transactions for ${address}`);
+
+							// Filter out unconfirmed UTXOs (height <= 0) to prevent ghost UTXOs
+							/** @type {Array<UTXO>} */
+							const confirmedUtxos = addressUtxos
+								.filter(isElectrumUTXO)
+								.filter((utxo) => utxo.height > 0);
+							if (loglevel > 0) {
+								console.log(`├── 🔍 Found ${addressUtxos.length} total UTXOs`);
+								console.log(`└── ✅ ${confirmedUtxos.length} confirmed UTXOs (height > 0)`);
+							}
+							utxos.push(...confirmedUtxos);
+							history.push(...addressHistory);
 						} else {
 							consecutiveUnused++;
 							if (loglevel > 0) console.log(`└── 📭 No transactions found for ${address}`);
-							if (!unusedAddress) {
+							// Set unusedAddress only if we haven't found one yet
+							if (unusedAddress === null) {
 								unusedAddress = address;
 							}
-						}
-
-						// Filter out unconfirmed UTXOs (height <= 0) to prevent ghost UTXOs
-						/** @type {Array<UTXO>} */
-						const confirmedUtxos = addressUtxos
-							.filter(isElectrumUTXO)
-							.filter((utxo) => utxo.height > 0);
-						if (loglevel > 0) {
-							console.log(`├── 🔍 Found ${addressUtxos.length} total UTXOs`);
-							console.log(`└── ✅ ${confirmedUtxos.length} confirmed UTXOs (height > 0)`);
-						}
-						utxos.push(...confirmedUtxos);
-						history.push(...addressHistory);
-						addresses.push(address);
-						// Check for the first unused address
-						if (addressUtxos.length === 0 && addressHistory.length === 0) {
-							unusedAddress = address;
 						}
 					}
 				}
 			} catch (error) {
-				console.error(`Error fetching data for address ${address}:`, error);
+				console.error(`Error fetching data for batch:`, error);
 			}
 		}
 	} catch (error) {
