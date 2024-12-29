@@ -151,9 +151,9 @@
 	$: {
 		if (files.accepted.length > 0) previewFile();
 	}
-	$: {
-		if (nftName || nftDescription) writeMetadata();
-	}
+	// $: {
+	// 	if (nftName || nftDescription) writeMetadata();
+	// }
 
 	let activeTimeLine = 0;
 	let selectedUtxos = [];
