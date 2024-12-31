@@ -2,12 +2,15 @@ import { nameShow } from '$lib/doichain/nameShow.js';
 import { debounce } from 'lodash';
 
 export const checkName = debounce((electrumClient, currentNameAddress, name, callback) => {
+	console.log('debounce', electrumClient, currentNameAddress, name);
 	_checkName(electrumClient, currentNameAddress, name).then((result) => {
+		console.log('debounce-result', result);
 		callback(result);
 	});
 }, 300);
 
 export async function _checkName(electrumClient, currentNameAddress, _name) {
+	console.log('_checkName', electrumClient, currentNameAddress, _name);
 	let nameErrorMessage = '';
 	let utxoErrorMessage = '';
 	let isNameValid = true;
@@ -26,7 +29,9 @@ export async function _checkName(electrumClient, currentNameAddress, _name) {
 		return { nameErrorMessage };
 	}
 	if (_name.length > 3) {
+		console.log('nameShow', _name);
 		const res = await nameShow(electrumClient, _name);
+		console.log('res', res);
 		if (res.length > 0) {
 			for (let utxo of res) {
 				const scriptPubKey = utxo.scriptPubKey;
