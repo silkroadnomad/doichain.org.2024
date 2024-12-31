@@ -2,6 +2,7 @@ import { libp2pDefaults } from 'helia';
 import { bootstrap } from '@libp2p/bootstrap';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { webSockets } from '@libp2p/websockets';
+import { webTransport } from '@libp2p/webtransport';
 import * as filters from '@libp2p/websockets/filters';
 import { noise } from '@chainsafe/libp2p-noise';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
@@ -17,7 +18,7 @@ import { devToolsMetrics } from '@libp2p/devtools-metrics';
 const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || [
 	'doichain._peer-discovery._p2p._pubsub'
 ];
-
+console.log('pubsubPeerDiscoveryTopics', pubsubPeerDiscoveryTopics);
 export function createLibp2pConfig() {
 	const config = libp2pDefaults();
 	config.metrics = devToolsMetrics();
@@ -40,6 +41,8 @@ export function createLibp2pConfig() {
 
 	// Transport configuration
 	config.transports = [
+		circuitRelayTransport(),
+		webTransport(),
 		webSockets({ filter: filters.all }),
 		webRTC({
 			rtcConfiguration: {
@@ -55,23 +58,20 @@ export function createLibp2pConfig() {
 			}
 		}),
 		webRTCDirect(),
-		circuitRelayTransport()
 	];
 
 	config.connectionEncrypters = [noise()];
-	config.streamMuxers = [
+	config.streamMuxers = [	
 		yamux({
 			enableKeepAlive: true,
 			keepAliveInterval: 10000,
-			keepAliveTimeout: 30000
 		})
 	];
 
 	config.connectionManager = {
 		...config.connectionManager,
 		maxConnections: 50,
-		autoDialInterval: 10000,
-		autoDial: true
+		autoDialInterval: 10000
 	};
 
 	const pubsubConfig = gossipsub({
@@ -99,16 +99,15 @@ export function createLibp2pConfig() {
 	console.log('bootstrapList', bootstrapList);
 	// Connection gater
 	config.connectionGater = {
-		denyDialMultiaddr: () => false
+		denyDialMultiaddr: () => false,
+		denyDialPeerId: () => false
 	};
 
 	// Peer discovery configuration
 	config.peerDiscovery = [
 		bootstrap({ list: bootstrapList }),
 		pubsubPeerDiscovery({
-			interval: 10000,
-			topics: pubsubPeerDiscoveryTopics,
-			listenOnly: false
+			topics: pubsubPeerDiscoveryTopics
 		})
 	];
 
