@@ -52,12 +52,13 @@
 	let selectedFilter;
 
 	const filters = [
-		{ id: 'all', label: 'All' },
+		{ id: 'collections', label: 'Collections' },
 		{ id: 'nfc', label: 'Non-Fungible-Coins (NFC)' },
 		{ id: 'names', label: 'Names' },
 		{ id: 'e', label: 'DOI (e/)' },
 		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
-		{ id: 'bp', label: 'BlockPro (/bp)' }
+		{ id: 'bp', label: 'BlockPro (/bp)' },
+		{ id: 'all', label: 'All' }
 	];
 
 	$: if (selectedFilter) {
@@ -89,6 +90,9 @@
 		}
 		if (selectedFilter === 'nfc') {
 			return nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://');
+		}
+		if (selectedFilter === 'collections') {
+			return nameOp.nameId.startsWith('collections/');
 		}
 		return true;
 	});
@@ -176,6 +180,7 @@
 	}
 
 	let currentFromMap = {
+		collections: 0,
 		all: 0,
 		other: 0,
 		names: 0,
