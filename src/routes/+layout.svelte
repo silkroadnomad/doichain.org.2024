@@ -24,6 +24,7 @@
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import { multiaddr } from '@multiformats/multiaddr';
+	import SplashScreen from '$lib/components/SplashScreen.svelte';
 
 	const config = createLibp2pConfig();
 
@@ -35,6 +36,7 @@
 	const maxAttempts = 5;
 	let gatewayUrl = '';
 	let isDarkMode = false;
+	let showSplash = false;
 
 	/**
 	 * Generates and publishes an HTML page for a nameId to IPFS
@@ -108,7 +110,23 @@
 		console.log('Updated node addresses:', nodeAddresses);
 	}
 
+	// Function to detect system dark mode preference
+	function detectSystemDarkMode() {
+		const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+		isDarkMode = false //prefersDarkScheme.matches;
+
+		// Listen for changes in the system preference
+		prefersDarkScheme.addEventListener('change', (event) => {
+			isDarkMode = event.matches;
+		});
+	}
+
 	onMount(async () => {
+		if (browser) {
+			const agreed = localStorage.getItem('splashAgreed');
+			showSplash = !agreed; // show if not agreed
+		}
+
 		$libp2p = await createLibp2p(config);
 		window.libp2p = $libp2p;
 
@@ -148,6 +166,8 @@
 					//console.error('Service Worker registration failed:', error);
 				});
 		}
+
+		detectSystemDarkMode();
 	});
 
 	onDestroy(() => {
@@ -155,11 +175,6 @@
 	});
 
 	$: ({ isConnected } = getConnectionStatus($connectedServer));
-	$: {
-		console.log('isConnected', isConnected);
-		console.log('$currentNameId', $currentNameId);
-	}
-
 	$: {
 		if (isConnected && $currentNameId) {
 			// Generate and publish HTML page
@@ -200,78 +215,83 @@
 	function toggleDarkMode() {
 		isDarkMode = !isDarkMode;
 	}
+
+	function closeSplash() {
+		showSplash = false;
+	}
 </script>
 
 <body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen pb-[footer-height]">
 	<div class={isDarkMode ? 'dark-mode' : ''}>
-	<div class="flex-grow">
-		<section class="flex items-center justify-center mt-8">
-			<div class="text-center max-w-4xl mx-auto px-4">
-				<div class="flex justify-center mb-12">
-					<div class="bg-gray-900 rounded-full p-4">
-						<div
-							on:click={() => {
-								// currentNameId.set(undefined);
-								// console.log("currentNameId", $currentNameId);
-								window.location.href = '/';
-							}}
+		{#if showSplash}
+			<SplashScreen onClose={closeSplash} />
+		{/if}
+		<div class="flex-grow">
+			<section class="flex items-center justify-center mt-8">
+				<div class="text-center max-w-4xl mx-auto px-4">
+					<div class="flex justify-center mb-12">
+						<div class="bg-gray-900 rounded-full p-4">
+							<div
+								on:click={() => {
+									// currentNameId.set(undefined);
+									// console.log("currentNameId", $currentNameId);
+									window.location.href = '/';
+								}}
+							>
+								<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<main class="mb-16">
+				{#if $currentNameId}
+					<div class="container mx-auto px-4">
+						<NameShow nameId={$currentNameId} />
+						<!-- Share Button -->
+						<button
+							on:click={copyToClipboard}
+							class="bg-blue-500 text-white px-4 py-2 rounded mt-4"
 						>
-							<img src="/doichain_logo-min.svg" alt="Doichain Logo" class="h-16" />
+							Copy Share URL
+						</button>
+					</div>
+				{:else}
+					<slot />
+				{/if}
+			</main>
+		</div>
+
+		<footer class="fixed bottom-2 left-0 right-0 z-50">
+			<div class="container mx-auto px-4 py-2">
+				<div class="network-stats-grid">
+					<div class="stat-card group">
+						<div class="flex items-center gap-2 mb-1">
+							<LibP2PTransportTags class="interactive-stats" variant="stats" />
 						</div>
 					</div>
 				</div>
 			</div>
-		</section>
+		</footer>
 
-		<main class="mb-16">
-			{#if $currentNameId}
-				<div class="container mx-auto px-4">
-					<NameShow nameId={$currentNameId} />
-					<!-- Share Button -->
-					<button on:click={copyToClipboard} class="bg-blue-500 text-white px-4 py-2 rounded mt-4">
-						Copy Share URL
-					</button>
-				</div>
-			{:else}
-				<slot />
-			{/if}
-		</main>
-	</div>
-
-	<footer class="fixed bottom-2 left-0 right-0 z-50">
-		<div class="container mx-auto px-4 py-2">
-			<div class="network-stats-grid">
-				<div class="stat-card group">
-					<div class="flex items-center gap-2 mb-1">
-						<LibP2PTransportTags class="interactive-stats" variant="stats" />
-					</div>
-				</div>
-			</div>
-		</div>
-	</footer>
-
-	<div class="fixed inset-0 pointer-events-none">
-		{#each nodeAddresses as address, i}
-			<div
-				class="constellation-node"
-				style="
+		<div class="fixed inset-0 pointer-events-none">
+			{#each nodeAddresses as address, i}
+				<div
+					class="constellation-node"
+					style="
 					--x: {Math.random() * 100}%;
 					--y: {Math.random() * 100}%;
 					--speed: {3 + Math.random() * 2}s;
 				"
-			>
-				<div class="h-2 w-2 bg-blue-400 rounded-full" />
-				<div class="tooltip">
-					<code class="text-xs">{address}</code>
+				>
+					<div class="h-2 w-2 bg-blue-400 rounded-full" />
+					<div class="tooltip">
+						<code class="text-xs">{address}</code>
+					</div>
 				</div>
-			</div>
 		{/each}
 	</div>
-
-	<!-- Toggle Button -->
-	<button on:click={toggleDarkMode} class="toggle-dark-mode">
-		{isDarkMode ? 'Light Mode' : 'Dark Mode'}
-	</button>
 	</div>
 </body>
 
@@ -340,21 +360,5 @@
 	.dark-mode {
 		background-color: #121212;
 		color: #ffffff;
-	}
-
-	.toggle-dark-mode {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		background-color: #007bff;
-		color: white;
-		border: none;
-		padding: 5px 10px;
-		cursor: pointer;
-		border-radius: 5px;
-	}
-
-	.toggle-dark-mode:hover {
-		background-color: #0056b3;
 	}
 </style>

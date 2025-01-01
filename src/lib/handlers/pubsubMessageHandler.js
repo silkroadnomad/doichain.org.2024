@@ -24,7 +24,9 @@ function handleContentMessage(event, libp2p) {
 			handleNameOpsMessage(message);
 		} else if (
 			typeof jsonData === 'object' &&
-			(jsonData.status === 'ADDING-CID' || jsonData.status === 'ADDED-CID')
+			(	jsonData.status === 'ADDING-CID' ||
+				jsonData.status === 'ADDED-CID' || 
+				jsonData.status === "CID-PINNED-WITH-NAME")
 		) {
 			console.log('Received CID message:', jsonData);
 
