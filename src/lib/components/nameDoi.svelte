@@ -19,12 +19,25 @@
 	import TransactionDetails from './TransactionDetails.svelte';
 	import { subscribeToAddress } from '$lib/doichain/nameDoi.js'; 
 	import { publishCID } from '$lib/doichain/nameDoi.js';
+	import { checkName } from '$lib/doichain/nameValidation.js';
+	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
 	// Add event dispatcher
 	import { createEventDispatcher } from 'svelte';
+	import moment from 'moment';
 	const dispatch = createEventDispatcher();
 	let scanOpen = false;
 	let scanTarget = '';
 	let scanData = '';
+	
+	// Collections tab state
+	let previewImgSrc;
+	let imageCID;
+	let metadataCID;
+	let metadataJSON;
+	let nameIdForCollection = '';
+	let searchTerm = '';
+	let searchResults = [];
+	let collectionsList = [];
 	export let walletAddress = localStorage.getItem('walletAddress') || '';
 	let recipientsAddress = walletAddress;
 	let changeAddress = walletAddress;
@@ -70,6 +83,7 @@
 		rejected: []
 	};
 
+
 	function handleFilesSelect(e) {
 		const { acceptedFiles, fileRejections } = e.detail;
 		if (files.accepted.length > 0) files.accepted.pop();
@@ -77,12 +91,9 @@
 		files.rejected = fileRejections;
 	}
 
-	let previewImgSrc;
-	let imageCID;
-	let metadataCID;
-	let metadataJSON;
 
 	async function writeMetadata() {
+		console.log('writeMetadata', nftName, nftDescription, imageCID);
 		const encoder = new TextEncoder();
 		const fs = unixfs($helia);
 
@@ -92,11 +103,18 @@
 			image: `ipfs://${imageCID}`
 		};
 
+		// Add images array for collections tab
+		if (activeTab === 'collections' && collectionsList.length > 0) {
+			metadataJSON.images = collectionsList.map(item => `ipfs://${item.imageCID}`);
+		}
+
 		metadataCID = await fs.addBytes(encoder.encode(JSON.stringify(metadataJSON)));
+		console.log('nameValue before', nameValue);
 		nameValue = `ipfs://${metadataCID.toString()}`;
+		console.log('nameValue', nameValue);
 		console.log('Added metadata file to IPFS:', metadataCID.toString());
-		await publishCID(metadataCID.toString());
 		requestedCids.update((cids) => [...cids, metadataCID.toString()]);
+		await publishCID(metadataCID.toString());
 	}
 
 	async function previewFile() {
@@ -150,10 +168,7 @@
 
 	$: {
 		if (files.accepted.length > 0) previewFile();
-	}
-	// $: {
-	// 	if (nftName || nftDescription) writeMetadata();
-	// }
+	}		
 
 	let activeTimeLine = 0;
 	let selectedUtxos = [];
@@ -169,6 +184,11 @@
 	}
 
 	$: {
+		console.log('selectedUtxosCount', selectedUtxosCount);
+		console.log('nameId', nameId);
+		console.log('nameValue', nameValue);
+		console.log('imageCID', imageCID);
+		console.log('metadataCID', metadataCID);
 		if (selectedUtxosCount > 0 && nameId && nameValue) {
 			console.log('prepare signing transaction', selectedUtxos);
 
@@ -199,7 +219,7 @@
 				recipientsAddress,
 				changeAddress,
 				pinningDetails
-			);
+			)
 
 			if (result.error) {
 				console.log('error', result.error);
@@ -355,6 +375,90 @@
 		console.log('Received UTXOs:', utxos);
 		utxosFetched = true; // Set to true if UTXOs are fetched
 	}
+
+
+	async function addToCollections(result) {
+		console.log('addToCollections', result);
+		// Check if the item is already in the collection
+		const isDuplicate = collectionsList.some(item => item.nameId === result.nameId);
+		if (!isDuplicate) {
+			try {
+				console.log('addToCollections', result);
+				// Get metadata to extract IPFS image CID
+				const metadata = await getMetadataFromIPFS($helia, result.nameValue);
+				console.log('metadata', metadata);
+				const imageCID = metadata.image.split('//')[1];
+				console.log('imageCID', imageCID);
+				requestedCids.update((cids) => [...cids, imageCID]);
+				//we publish because we want to make sure the image was pinned and receive the expiration date
+				await publishCID(imageCID.toString());
+				console.log('publishCID', imageCID.toString());
+				collectionsList = [...collectionsList, {
+					...result,
+					imageCID,
+					metadata
+				}];
+				console.log('collectionsList', collectionsList);
+			} catch (error) {
+				console.error('Error getting metadata for collection item:', error);
+			}
+		}
+	}
+	
+	async function searchHandler() {
+		if (!searchTerm) {
+			searchResults = [];
+			return;
+		}
+		try {
+			await checkName($electrumClient, walletAddress, searchTerm, handleSearchResult);
+		} catch (error) {
+			console.error('Error searching nameId:', error);
+			searchResults = [];
+		}
+	}
+
+	function handleSearchResult(result) {
+		if (result && !result.isNameValid) {
+			searchResults = [{ nameId: searchTerm, nameValue: result.currentNameOp.value }];
+			console.log('searchResults', searchResults);
+			addToCollections(searchResults[0]);
+			// if (!collectionsList.some(item => item.nameId === searchTerm)) {
+				// collectionsList = [...collectionsList, { nameId: searchTerm, nameValue: result.currentNameOp.value }];
+			// }
+		} else {
+			searchResults = [];
+			console.error('Invalid nameId:', result.nameErrorMessage);
+		}
+	}
+
+	// Function to handle CID pinned messages
+	function handleCidPinnedMessage(jsonData) {
+		if (activeTab === 'collections') {
+			// Find the item in the collection list and update it
+			const index = collectionsList.findIndex(item => item.nameId === jsonData.nameId);
+			if (index !== -1) {
+				collectionsList[index] = {
+					...collectionsList[index],
+					expirationDate: jsonData.expirationDate,
+					remainingDays: jsonData.remainingDays
+				};
+				console.log('Updated collectionsList:', collectionsList);
+			}
+		} else if (activeTab === 'nfc') {
+			// Show notification and disable the next button for normal NFC
+			alert(`CID is already pinned with nameId: ${jsonData.nameId}. 
+				   Expiration Date: ${jsonData.expirationDate}. 
+				   Remaining Days: ${jsonData.remainingDays}`);
+		}
+	}
+
+	$: {
+		const pinnedMessage = $cidMessages.find(msg => msg.status === "CID-PINNED-WITH-NAME");
+		if (pinnedMessage) {
+			handleCidPinnedMessage(pinnedMessage);
+		}
+	}
 </script>
 
 {#if scanOpen}
@@ -371,7 +475,7 @@
 					{#if activeTimeLine === 0}
 						<p class="text-sm text-gray-500">
 							<li>Mint a NFC (non-fungible-coin),</li>
-							<li>send an individual key-value transaction!</li>
+							<li>Create a key-value transaction!</li>
 						</p>
 						<p class="mt-4">&nbsp;</p>
 						<div class="border-b border-gray-200">
@@ -394,10 +498,90 @@
 								>
 									Key-Value Transaction
 								</a>
+								<a
+									class="border-b-2 py-2 px-4 text-sm font-medium {activeTab === 'collections'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+									href="#"
+									on:click|preventDefault={() => (activeTab = 'collections')}
+								>
+									Collections
+								</a>
 							</nav>
 						</div>
 						<div class="py-4">
-							{#if activeTab === 'nfc'}
+							{#if activeTab === 'collections'}
+								<div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
+									<div class="font-semibold text-left">Collection NameId:</div>
+									<div>
+										<input
+											type="text"
+											bind:value={nameId}
+											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											placeholder="Enter NameId for NFC-Collection"
+										/>
+									</div>
+									<div class="font-semibold text-left">Description:</div>
+									<div>
+										<input
+											type="text"
+											bind:value={nftDescription}
+											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										/>
+									</div>
+
+									<div class="font-semibold text-left">Search & Add existing NFCs:</div>
+									<div>
+										<div class="flex gap-2">
+											<input
+												type="text"
+												bind:value={searchTerm}
+												class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+												placeholder="Search existing NameIds"
+												on:keydown={(event) => {
+													if (event.key === 'Enter') {
+														searchHandler();
+													}
+												}}
+											/>
+											<button
+												on:click={searchHandler}
+												class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+											>
+												Search
+											</button>
+										</div>
+										
+										{#if collectionsList.length > 0}
+											<div class="mt-6">
+												<h3 class="text-lg font-semibold mb-3">Selected NFCs</h3>
+												<div class="space-y-2">
+													{#each collectionsList as item}
+														<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+															<div>
+																<span class="text-gray-900">{item.nameId}</span>
+																{#if item.expirationDate && item.remainingDays}
+																	<div class="text-sm text-gray-600">
+																		Pinned until: {moment(item.expirationDate).locale(navigator.language).format('LL')}, Remaining Days: {item.remainingDays}
+																	</div>
+																{/if}
+															</div>
+															<button
+																on:click={() => {
+																	collectionsList = collectionsList.filter(i => i.nameId !== item.nameId);
+																}}
+																class="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+															>
+																Remove
+															</button>
+														</div>
+													{/each}
+												</div>
+											</div>
+										{/if}
+									</div>
+								</div>
+							{:else if activeTab === 'nfc'}
 								<div class="grid grid-cols-[auto,1fr] gap-6 items-start mb-8">
 									<div class="font-semibold text-left">NFC-Name:</div>
 									<div>
@@ -625,16 +809,59 @@
 
 						<div class="grid grid-cols-2 gap-4">
 							<div>
-								<button
+								<!-- <button
 									on:click={() => activeTimeLine--}
 									class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
 									>Back</button
-								>
+								> -->
 							</div>
 							<div>
 								<button
-									on:click={() => activeTimeLine++}
-									class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+									on:click={async () => {
+										if (activeTab === 'collections') {
+											console.log('activeTab', activeTab);
+											if (!nameId) {
+												alert('Please enter a NameId for the collection');
+												return;
+											}
+											if (collectionsList.length === 0) {
+												alert('Please add at least one NFC to the collection');
+												return;
+											}
+											nftName = nameId;
+											nftDescription = `Collection of ${collectionsList.length} NFCs`;
+											
+											// Update metadata to include collection images
+											const metadataJSON = {
+												name: nftName,
+												description: nftDescription,
+												image: collectionsList[0].imageCID ? `ipfs://${collectionsList[0].imageCID}` : '',
+												images: collectionsList.map(item => `ipfs://${item.imageCID}`)
+											};
+											console.log('metadataJSON', metadataJSON);
+											try {
+												const fs = unixfs($helia);
+												const encoder = new TextEncoder();
+												const bytes = encoder.encode(JSON.stringify(metadataJSON, null, 2));
+												const cid = await fs.addBytes(bytes);
+												metadataCID = cid;
+												console.log('metadataCID', metadataCID);
+												nameValue = `ipfs://${metadataCID.toString()}`;
+												console.log('nameValue', nameValue);
+												requestedCids.update((cids) => [...cids, metadataCID.toString()]);
+												await publishCID(cid.toString());
+												console.log('publishCID', cid.toString());
+												activeTimeLine++;
+											} catch (error) {
+												console.error('Error generating metadata:', error);
+												alert('Error generating metadata. Please try again.');
+											}
+										} else {
+											activeTimeLine++;
+										}
+									}}
+									disabled={activeTab === 'collections' ? (!nameId || collectionsList.length === 0) : false}
+									class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
 									>Next</button
 								>
 							</div>
@@ -841,6 +1068,7 @@
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 											id="recipientsAddress"
 											type="text"
+											size="60"
 											placeholder="Recipient address"
 											bind:value={recipientsAddress}
 										/>
@@ -884,6 +1112,7 @@
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 											id="changeAddress"
 											type="text"
+											size="60"
 											placeholder="Change address"
 											bind:value={changeAddress}
 										/>
