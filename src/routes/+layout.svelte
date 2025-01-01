@@ -24,10 +24,6 @@
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
-<<<<<<< HEAD
-	import { multiaddr } from '@multiformats/multiaddr';
-=======
->>>>>>> dev
 
 	const config = createLibp2pConfig();
 
@@ -293,18 +289,8 @@
 						<code class="text-xs">{address}</code>
 					</div>
 				</div>
-<<<<<<< HEAD
-			{/each}
-		</div>
-
-		<!-- Toggle Button -->
-		<button on:click={toggleDarkMode} class="toggle-dark-mode">
-			{isDarkMode ? 'Light Mode' : 'Dark Mode'}
-		</button>
-=======
 		{/each}
 	</div>
->>>>>>> dev
 	</div>
 </body>
 
