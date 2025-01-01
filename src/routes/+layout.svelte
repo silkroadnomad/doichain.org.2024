@@ -24,7 +24,10 @@
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
+<<<<<<< HEAD
 	import { multiaddr } from '@multiformats/multiaddr';
+=======
+>>>>>>> dev
 
 	const config = createLibp2pConfig();
 
@@ -110,6 +113,17 @@
 		console.log('Updated node addresses:', nodeAddresses);
 	}
 
+	// Function to detect system dark mode preference
+	function detectSystemDarkMode() {
+		const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+		isDarkMode = false //prefersDarkScheme.matches;
+
+		// Listen for changes in the system preference
+		prefersDarkScheme.addEventListener('change', (event) => {
+			isDarkMode = event.matches;
+		});
+	}
+
 	onMount(async () => {
 		if (browser) {
 			const agreed = localStorage.getItem('splashAgreed');
@@ -155,6 +169,8 @@
 					//console.error('Service Worker registration failed:', error);
 				});
 		}
+
+		detectSystemDarkMode();
 	});
 
 	onDestroy(() => {
@@ -162,11 +178,6 @@
 	});
 
 	$: ({ isConnected } = getConnectionStatus($connectedServer));
-	$: {
-		console.log('isConnected', isConnected);
-		console.log('$currentNameId', $currentNameId);
-	}
-
 	$: {
 		if (isConnected && $currentNameId) {
 			// Generate and publish HTML page
@@ -282,6 +293,7 @@
 						<code class="text-xs">{address}</code>
 					</div>
 				</div>
+<<<<<<< HEAD
 			{/each}
 		</div>
 
@@ -289,6 +301,10 @@
 		<button on:click={toggleDarkMode} class="toggle-dark-mode">
 			{isDarkMode ? 'Light Mode' : 'Dark Mode'}
 		</button>
+=======
+		{/each}
+	</div>
+>>>>>>> dev
 	</div>
 </body>
 
@@ -357,21 +373,5 @@
 	.dark-mode {
 		background-color: #121212;
 		color: #ffffff;
-	}
-
-	.toggle-dark-mode {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		background-color: #007bff;
-		color: white;
-		border: none;
-		padding: 5px 10px;
-		cursor: pointer;
-		border-radius: 5px;
-	}
-
-	.toggle-dark-mode:hover {
-		background-color: #0056b3;
 	}
 </style>

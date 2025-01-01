@@ -415,12 +415,42 @@
 	function handleSearchResult(result) {
 		if (result && !result.isNameValid) {
 			searchResults = [{ nameId: searchTerm, nameValue: result.currentNameOp.value }];
-			if (!collectionsList.some(item => item.nameId === searchTerm)) {
-				collectionsList = [...collectionsList, { nameId: searchTerm, nameValue: result.currentNameOp.value }];
-			}
+			console.log('searchResults', searchResults);
+			addToCollections(searchResults[0]);
+			// if (!collectionsList.some(item => item.nameId === searchTerm)) {
+				// collectionsList = [...collectionsList, { nameId: searchTerm, nameValue: result.currentNameOp.value }];
+			// }
 		} else {
 			searchResults = [];
 			console.error('Invalid nameId:', result.nameErrorMessage);
+		}
+	}
+
+	// Function to handle CID pinned messages
+	function handleCidPinnedMessage(jsonData) {
+		if (activeTab === 'collections') {
+			// Find the item in the collection list and update it
+			const index = collectionsList.findIndex(item => item.nameId === jsonData.nameId);
+			if (index !== -1) {
+				collectionsList[index] = {
+					...collectionsList[index],
+					expirationDate: jsonData.expirationDate,
+					remainingDays: jsonData.remainingDays
+				};
+				console.log('Updated collectionsList:', collectionsList);
+			}
+		} else if (activeTab === 'nfc') {
+			// Show notification and disable the next button for normal NFC
+			alert(`CID is already pinned with nameId: ${jsonData.nameId}. 
+				   Expiration Date: ${jsonData.expirationDate}. 
+				   Remaining Days: ${jsonData.remainingDays}`);
+		}
+	}
+
+	$: {
+		const pinnedMessage = $cidMessages.find(msg => msg.status === "CID-PINNED-WITH-NAME");
+		if (pinnedMessage) {
+			handleCidPinnedMessage(pinnedMessage);
 		}
 	}
 </script>
@@ -439,7 +469,7 @@
 					{#if activeTimeLine === 0}
 						<p class="text-sm text-gray-500">
 							<li>Mint a NFC (non-fungible-coin),</li>
-							<li>send an individual key-value transaction!</li>
+							<li>Create a key-value transaction!</li>
 						</p>
 						<p class="mt-4">&nbsp;</p>
 						<div class="border-b border-gray-200">
@@ -485,8 +515,16 @@
 											placeholder="Enter NameId for NFC-Collection"
 										/>
 									</div>
+									<div class="font-semibold text-left">Description:</div>
+									<div>
+										<input
+											type="text"
+											bind:value={nftDescription}
+											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										/>
+									</div>
 
-									<div class="font-semibold text-left">Search minted NFCs:</div>
+									<div class="font-semibold text-left">Search & Add existing NFCs:</div>
 									<div>
 										<div class="flex gap-2">
 											<input
@@ -494,6 +532,11 @@
 												bind:value={searchTerm}
 												class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 												placeholder="Search existing NameIds"
+												on:keydown={(event) => {
+													if (event.key === 'Enter') {
+														searchHandler();
+													}
+												}}
 											/>
 											<button
 												on:click={searchHandler}
@@ -503,31 +546,20 @@
 											</button>
 										</div>
 										
-										{#if searchResults.length > 0}
-											<div class="mt-4 space-y-2">
-												{#each searchResults as result}
-													<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-														<span class="text-gray-900">{result.nameId}</span>
-														<button
-															on:click={() => addToCollections(result)}
-															class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-														>
-															{collectionsList.some(item => item.nameId === result.nameId) ? 'Added' : 'Add'}
-														</button>
-													</div>
-												{/each}
-											</div>
-										{:else if searchTerm}
-											<p class="mt-2 text-sm text-gray-500">No results found</p>
-										{/if}
-
 										{#if collectionsList.length > 0}
 											<div class="mt-6">
 												<h3 class="text-lg font-semibold mb-3">Selected NFCs</h3>
 												<div class="space-y-2">
 													{#each collectionsList as item}
 														<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-															<span class="text-gray-900">{item.nameId}</span>
+															<div>
+																<span class="text-gray-900">{item.nameId}</span>
+																{#if item.expirationDate && item.remainingDays}
+																	<div class="text-sm text-gray-600">
+																		Pinned until: {item.expirationDate}, Remaining Days: {item.remainingDays}
+																	</div>
+																{/if}
+															</div>
 															<button
 																on:click={() => {
 																	collectionsList = collectionsList.filter(i => i.nameId !== item.nameId);

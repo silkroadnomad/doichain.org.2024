@@ -17,6 +17,8 @@
 	let showDetails = false;
 	let isIPFS = false;
 	let showTransactionDetails = false;
+	let currentSlideIndex = 0;
+	let imageUrls = [];
 
 	$: {
 		if (currentNameOp.nameId) {
@@ -38,14 +40,49 @@
 	async function loadNFTData() {
 		try {
 			nftMetadata = await getMetadataFromIPFS($helia, currentNameOp.value);
-			if (nftMetadata && nftMetadata.image) {
-				const newImageUrl = await getImageUrlFromIPFS($helia, nftMetadata.image);
-				if (newImageUrl) {
-					imageUrl = newImageUrl;
+			if (nftMetadata) {
+				// Handle single image
+				if (nftMetadata.image) {
+					const newImageUrl = await getImageUrlFromIPFS($helia, nftMetadata.image);
+					if (newImageUrl) {
+						imageUrl = newImageUrl;
+						imageUrls = [newImageUrl];
+					}
+				}
+				// Handle multiple images for collections
+				if (nftMetadata.images && Array.isArray(nftMetadata.images)) {
+					imageUrls = await Promise.all(
+						nftMetadata.images.map(async (imgUrl) => {
+							try {
+								return await getImageUrlFromIPFS($helia, imgUrl);
+							} catch (err) {
+								console.error(`Error loading collection image: ${imgUrl}`, err);
+								return null;
+							}
+						})
+					);
+					imageUrls = imageUrls.filter(url => url !== null);
+					if (imageUrls.length > 0) {
+						imageUrl = imageUrls[0];
+					}
 				}
 			}
 		} catch (error) {
 			console.error('Error loading NFT data:', error);
+		}
+	}
+
+	function nextSlide() {
+		if (imageUrls.length > 1) {
+			currentSlideIndex = (currentSlideIndex + 1) % imageUrls.length;
+			imageUrl = imageUrls[currentSlideIndex];
+		}
+	}
+
+	function prevSlide() {
+		if (imageUrls.length > 1) {
+			currentSlideIndex = (currentSlideIndex - 1 + imageUrls.length) % imageUrls.length;
+			imageUrl = imageUrls[currentSlideIndex];
 		}
 	}
 
@@ -123,6 +160,25 @@
 				class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square"
 			>
 				<img src={imageUrl || defaultImageUrl} alt="NFT image" class="object-cover w-full h-full" />
+				{#if imageUrls.length > 1}
+					<div class="absolute inset-x-0 bottom-0 flex justify-between p-4 bg-black bg-opacity-50">
+						<button
+							class="px-3 py-1 text-white bg-gray-800 rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+							on:click={prevSlide}
+						>
+							←
+						</button>
+						<span class="text-white">
+							{currentSlideIndex + 1} / {imageUrls.length}
+						</span>
+						<button
+							class="px-3 py-1 text-white bg-gray-800 rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+							on:click={nextSlide}
+						>
+							→
+						</button>
+					</div>
+				{/if}
 			</div>
 			<div class="p-6">
 				<div class="flex items-center justify-between mb-2">
