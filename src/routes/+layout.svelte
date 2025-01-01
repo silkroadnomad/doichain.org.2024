@@ -170,11 +170,6 @@
 
 	$: ({ isConnected } = getConnectionStatus($connectedServer));
 	$: {
-		console.log('isConnected', isConnected);
-		console.log('$currentNameId', $currentNameId);
-	}
-
-	$: {
 		if (isConnected && $currentNameId) {
 			// Generate and publish HTML page
 			console.log('Generate and publish HTML page for', $currentNameId);
