@@ -112,7 +112,7 @@
 	// Function to detect system dark mode preference
 	function detectSystemDarkMode() {
 		const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-		isDarkMode = prefersDarkScheme.matches;
+		isDarkMode = false //prefersDarkScheme.matches;
 
 		// Listen for changes in the system preference
 		prefersDarkScheme.addEventListener('change', (event) => {
