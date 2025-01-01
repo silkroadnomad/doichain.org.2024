@@ -2,6 +2,8 @@ import { connectedPeers } from '$lib/doichain/doichain-store.js';
 import { handlePubsubMessage } from './pubsubMessageHandler.js';
 import { peerIdFromString } from '@libp2p/peer-id';
 import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+import { multiaddr } from '@multiformats/multiaddr'
+
 export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || [
 		'doichain._peer-discovery._p2p._pubsub'
@@ -13,7 +15,13 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 	pubsub.addEventListener('message', async (event) => {
 		handlePubsubMessage(event, libp2p);
 	});
-
+	// implement a listener which libp2p:discovery:pubsub message is received
+	// libp2p.addEventListener('peer', (event) => {
+	// 	console.log('PubSubPeerDiscovery: dialing discoveryed peer', event);
+	// 	const multiaddr = event.detail.message.data.toString();
+	// 	const addr = multiaddr(multiaddr);
+	// 	libp2p.dial(addr);
+	// });
 	// Connection events
 	libp2p.addEventListener('connection:open', (p) => {
 		connectedPeers.update((peers) => [...peers, p.detail]);
@@ -127,17 +135,46 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 	//     // Pubsub logging events
 	//     libp2p.services.pubsub.addEventListener('publish', (evt) => {
 	//         if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
+	// 			//if its a pubsubPeerDiscoveryTopics, we want to dial the multiaddr
+	// 			console.log('Publishing peer discovery message on topic:', evt.detail.topic)
+	// 			const multiaddr = evt.detail.message.data.toString();
+	// 			const addr = multiaddr(multiaddr);
+	// 			libp2p.dial(addr);
 	// //            console.log('Publishing peer discovery message on topic:', evt.detail.topic)
 	//         }
 	//     })
 
-	//     libp2p.services.pubsub.addEventListener('message', (evt) => {
-	//         if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
-	//    //         console.log('Received peer discovery message on topic:', evt.detail.topic)
-	//         }
-	//     })
+	    libp2p.services.pubsub.addEventListener('message', (evt) => {
+			if (evt.detail.topic === pubsubPeerDiscoveryTopics || evt.detail.topic === '_peer-discovery._p2p._pubsub') {
+				//if its a pubsubPeerDiscoveryTopics, we want to dial the multiaddr
+				console.log('received peer discovery message on topic:', evt.detail.topic)
+				const multiaddr = evt.detail.message.data.toString();
+				const addr = multiaddr(multiaddr);
+				libp2p.dial(addr);
+	//            console.log('Publishing peer discovery message on topic:', evt.detail.topic)
+	        }
+	    })
 
-	//     libp2p.addEventListener('peer:discovery', (evt) => {
-	//        // console.log('Discovered new peer:', evt.detail.id.toString())
-	//     })
+	    libp2p.addEventListener('peer:discovery', (evt) => {
+	       console.log('Discovered new peer:', evt.detail.id.toString())
+	    })
+
+	// Update the peer event listener
+	libp2p.addEventListener('peer', (event) => {
+		console.log('PubSubPeerDiscovery: discovered peer', event.detail);
+		
+		// Extract multiaddrs from the event detail
+		const multiaddrs = event.detail.multiaddrs;
+		
+		// Try to dial each multiaddr
+		for (const addr of multiaddrs) {
+			try {
+				libp2p.dial(addr).catch(err => {
+					console.warn(`Failed to dial address ${addr.toString()}:`, err);
+				});
+			} catch (err) {
+				console.warn(`Error processing address ${addr.toString()}:`, err);
+			}
+		}
+	});
 }

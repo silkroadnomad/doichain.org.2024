@@ -24,6 +24,7 @@
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
+	import { multiaddr } from '@multiformats/multiaddr';
 
 	const config = createLibp2pConfig();
 
@@ -123,6 +124,11 @@
 
 		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore });
 		window.helia = $helia;
+		//i need a function in the window to dial multiaddr
+		window.dialMultiaddr = (multiaddr_string) => {
+			const addr = multiaddr(multiaddr_string);
+			return $libp2p.dial(addr);
+		};
 
 		try {
 			if ($libp2p) {
