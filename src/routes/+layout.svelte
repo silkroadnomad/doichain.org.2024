@@ -289,7 +289,6 @@
 						<code class="text-xs">{address}</code>
 					</div>
 				</div>
-			</div>
 		{/each}
 	</div>
 	</div>
