@@ -107,6 +107,17 @@
 		console.log('Updated node addresses:', nodeAddresses);
 	}
 
+	// Function to detect system dark mode preference
+	function detectSystemDarkMode() {
+		const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+		isDarkMode = prefersDarkScheme.matches;
+
+		// Listen for changes in the system preference
+		prefersDarkScheme.addEventListener('change', (event) => {
+			isDarkMode = event.matches;
+		});
+	}
+
 	onMount(async () => {
 		$libp2p = await createLibp2p(config);
 		window.libp2p = $libp2p;
@@ -142,6 +153,8 @@
 					//console.error('Service Worker registration failed:', error);
 				});
 		}
+
+		detectSystemDarkMode();
 	});
 
 	onDestroy(() => {
@@ -189,10 +202,6 @@
 			.catch((err) => {
 				console.error('Failed to copy: ', err);
 			});
-	}
-
-	function toggleDarkMode() {
-		isDarkMode = !isDarkMode;
 	}
 </script>
 
@@ -261,11 +270,6 @@
 			</div>
 		{/each}
 	</div>
-
-	<!-- Toggle Button -->
-	<button on:click={toggleDarkMode} class="toggle-dark-mode">
-		{isDarkMode ? 'Light Mode' : 'Dark Mode'}
-	</button>
 	</div>
 </body>
 
@@ -334,21 +338,5 @@
 	.dark-mode {
 		background-color: #121212;
 		color: #ffffff;
-	}
-
-	.toggle-dark-mode {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		background-color: #007bff;
-		color: white;
-		border: none;
-		padding: 5px 10px;
-		cursor: pointer;
-		border-radius: 5px;
-	}
-
-	.toggle-dark-mode:hover {
-		background-color: #0056b3;
 	}
 </style>
