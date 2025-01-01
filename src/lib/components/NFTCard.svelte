@@ -56,7 +56,7 @@
 							try {
 								return await getImageUrlFromIPFS($helia, imgUrl);
 							} catch (err) {
-								console.error('Error loading collection image:', err);
+								console.error(`Error loading collection image: ${imgUrl}`, err);
 								return null;
 							}
 						})

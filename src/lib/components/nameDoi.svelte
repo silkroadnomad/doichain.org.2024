@@ -23,6 +23,7 @@
 	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
 	// Add event dispatcher
 	import { createEventDispatcher } from 'svelte';
+	import moment from 'moment';
 	const dispatch = createEventDispatcher();
 	let scanOpen = false;
 	let scanTarget = '';
@@ -388,6 +389,10 @@
 				console.log('metadata', metadata);
 				const imageCID = metadata.image.split('//')[1];
 				console.log('imageCID', imageCID);
+				requestedCids.update((cids) => [...cids, imageCID]);
+				//we publish because we want to make sure the image was pinned and receive the expiration date
+				await publishCID(imageCID.toString());
+				console.log('publishCID', imageCID.toString());
 				collectionsList = [...collectionsList, {
 					...result,
 					imageCID,
@@ -424,6 +429,34 @@
 		} else {
 			searchResults = [];
 			console.error('Invalid nameId:', result.nameErrorMessage);
+		}
+	}
+
+	// Function to handle CID pinned messages
+	function handleCidPinnedMessage(jsonData) {
+		if (activeTab === 'collections') {
+			// Find the item in the collection list and update it
+			const index = collectionsList.findIndex(item => item.nameId === jsonData.nameId);
+			if (index !== -1) {
+				collectionsList[index] = {
+					...collectionsList[index],
+					expirationDate: jsonData.expirationDate,
+					remainingDays: jsonData.remainingDays
+				};
+				console.log('Updated collectionsList:', collectionsList);
+			}
+		} else if (activeTab === 'nfc') {
+			// Show notification and disable the next button for normal NFC
+			alert(`CID is already pinned with nameId: ${jsonData.nameId}. 
+				   Expiration Date: ${jsonData.expirationDate}. 
+				   Remaining Days: ${jsonData.remainingDays}`);
+		}
+	}
+
+	$: {
+		const pinnedMessage = $cidMessages.find(msg => msg.status === "CID-PINNED-WITH-NAME");
+		if (pinnedMessage) {
+			handleCidPinnedMessage(pinnedMessage);
 		}
 	}
 </script>
@@ -525,7 +558,14 @@
 												<div class="space-y-2">
 													{#each collectionsList as item}
 														<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-															<span class="text-gray-900">{item.nameId}</span>
+															<div>
+																<span class="text-gray-900">{item.nameId}</span>
+																{#if item.expirationDate && item.remainingDays}
+																	<div class="text-sm text-gray-600">
+																		Pinned until: {moment(item.expirationDate).locale(navigator.language).format('LL')}, Remaining Days: {item.remainingDays}
+																	</div>
+																{/if}
+															</div>
 															<button
 																on:click={() => {
 																	collectionsList = collectionsList.filter(i => i.nameId !== item.nameId);
