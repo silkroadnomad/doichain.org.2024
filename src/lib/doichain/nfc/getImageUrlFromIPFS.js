@@ -1,4 +1,5 @@
 import { unixfs } from '@helia/unixfs';
+import { fileTypeFromBuffer } from 'file-type';
 
 export const getImageUrlFromIPFS = async (helia, tokenURI) => {
 	let cid;
@@ -11,6 +12,11 @@ export const getImageUrlFromIPFS = async (helia, tokenURI) => {
 	for await (const chunk of fs.cat(cid)) {
 		chunks.push(chunk);
 	}
-	const blob = new Blob(chunks, { type: 'image/jpeg' }); // adjust the type according to your image
-	return URL.createObjectURL(blob);
+	const buffer = Buffer.concat(chunks);
+	const fileType = await fileTypeFromBuffer(buffer);
+	const mimeType = fileType ? fileType.mime : 'application/octet-stream'; // default to a generic binary type
+	const blob = new Blob([buffer], { type: mimeType });
+	// const blob = new Blob([buffer], { type: 'image/jpg' });
+	const url = URL.createObjectURL(blob); 
+	return url
 };

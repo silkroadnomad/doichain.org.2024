@@ -2,10 +2,10 @@
 	import { electrumClient, helia, connectedServer } from '../doichain/doichain-store.js';
 	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
 	import { nameShow } from '../doichain/nameShow.js';
-	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js';
-	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
+	import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core'; //https://svelteui.dev/core/card
 	import { browser } from '$app/environment';
+	import NFTImage from '$lib/components/NFTImage.svelte';
 	export let nameId = '';
 	export let metadata = {};
 	let results = [];
@@ -14,7 +14,6 @@
 	let imageUrl = '';
 	let isConnected = false;
 	$: ({ isConnected } = getConnectionStatus($connectedServer));
-
 	// Add a marker when helia is initialized
 	$: if (browser && $helia) {
 		const script = document.createElement('script');
@@ -23,18 +22,15 @@
 	}
 
 	$: if (browser && nameId && isConnected) {
-		// Only fetch results on client-side when nameId changes and electrumClient is available
 		nameShow($electrumClient, nameId).then(async (r) => {
 			results = r;
 			if (r.length > 0 && r[0].scriptPubKey.nameOp) {
-				const nft = await getMetadataFromIPFS($helia, r[0].scriptPubKey.nameOp.value);
+				const { metadata: nft, imageUrl: img } = await getNFTData($helia, r[0].scriptPubKey.nameOp.value);
 				title = nft.name || nameId;
 				description = nft.description || `Details for ${nameId}`;
-				if (nft.image) {
-					imageUrl = await getImageUrlFromIPFS($helia, nft.image);
-				}
+				imageUrl = img;
 			}
-		});
+		});	
 	}
 </script>
 
@@ -97,38 +93,18 @@
 		{#each results as tx}
 			{#if tx.scriptPubKey.nameOp}
 				<Card shadow="sm" padding="lg">
-					<!--						<Card.Section first padding='lg'>-->
-					<!--							<Image-->
-					<!--								src='./image.png'-->
-					<!--								height={160}-->
-					<!--								alt='NFT'-->
-					<!--							/>-->
-					<!--						</Card.Section>-->
 					<Group position="apart">
 						<Text weight={500}>{tx.scriptPubKey.nameOp.name} ({tx.formattedBlocktime})</Text>
 						<!--							<Badge color='pink' variant='light'>on sale</Badge>-->
 					</Group>
 					<Text>
-						{#await getMetadataFromIPFS($helia, tx.scriptPubKey.nameOp.value)}
+						{#await getNFTData($helia, tx.scriptPubKey.nameOp.value)}
 							<p>loading for nft data...</p>
-						{:then nft}
+						{:then { metadata: nft, imageUrl, imageUrls }}
 							<p>NFC: {nft.name || 'no name'}</p>
 							<p>Description: {nft.description || 'no description'}</p>
 							<p>&nbsp;</p>
-							{#await getImageUrlFromIPFS($helia, nft.image)}
-								<p>
-									loading for img from ipfs url {nft.image}... <br />
-									(can take some time - helia node needs to find enough peers!)
-								</p>
-							{:then img}
-								{#if img}
-									<img
-										src={img}
-										alt={nft.name}
-										style="max-width: 300px; max-height: 300px; object-fit: contain;"
-									/>
-								{/if}
-							{/await}
+							<NFTImage {imageUrl} {imageUrls} />
 						{/await}
 					</Text>
 					<p>&nbsp;</p>

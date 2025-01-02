@@ -278,8 +278,6 @@
 						<div class="bg-gray-900 rounded-full p-4">
 							<div
 								on:click={() => {
-									// currentNameId.set(undefined);
-									// console.log("currentNameId", $currentNameId);
 									window.location.href = '/';
 								}}
 							>

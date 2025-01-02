@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
-	import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js';
+	import { getNFTData } from '$lib/utils/ipfsUtils.js';
+	import NFTImage from '$lib/components/NFTImage.svelte';
 	import { helia, connectedPeers } from '../doichain/doichain-store.js';
 	import { adaptNameOp } from '$lib/doichain/utxoHelpers.js';
 	import moment from 'moment';
 	import { Button, SimpleGrid, Notification } from '@svelteuidev/core';
-	import { createEventDispatcher } from 'svelte';
 
 	export let currentNameOp;
 	export let currentNameUtxo;
+	
 	const defaultImageUrl =
 		'https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80';
 
@@ -31,46 +31,18 @@
 		isIPFS = typeof currentNameOp.value === 'string' && currentNameOp.value.startsWith('ipfs://');
 		if (isIPFS) {
 			loadNFTData();
-			showDetails = false;
+			showDetails = false;	
 		} else {
 			showDetails = false;
 		}
 	}
 
 	async function loadNFTData() {
-		try {
-			nftMetadata = await getMetadataFromIPFS($helia, currentNameOp.value);
-			if (nftMetadata) {
-				// Handle single image
-				if (nftMetadata.image) {
-					const newImageUrl = await getImageUrlFromIPFS($helia, nftMetadata.image);
-					if (newImageUrl) {
-						imageUrl = newImageUrl;
-						imageUrls = [newImageUrl];
-					}
-				}
-				// Handle multiple images for collections
-				if (nftMetadata.images && Array.isArray(nftMetadata.images)) {
-					imageUrls = await Promise.all(
-						nftMetadata.images.map(async (imgUrl) => {
-							try {
-								return await getImageUrlFromIPFS($helia, imgUrl);
-							} catch (err) {
-								console.error(`Error loading collection image: ${imgUrl}`, err);
-								return null;
-							}
-						})
-					);
-					imageUrls = imageUrls.filter(url => url !== null);
-					if (imageUrls.length > 0) {
-						imageUrl = imageUrls[0];
-					}
-				}
-			}
-		} catch (error) {
-			console.error('Error loading NFT data:', error);
-		}
-	}
+		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
+		nftMetadata = metadata;
+		imageUrl = _imageUrl;
+		imageUrls = _imageUrls;
+	}	
 
 	function nextSlide() {
 		if (imageUrls.length > 1) {
@@ -159,7 +131,7 @@
 			<div
 				class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square"
 			>
-				<img src={imageUrl || defaultImageUrl} alt="NFT image" class="object-cover w-full h-full" />
+				<NFTImage {imageUrl} {imageUrls} defaultImageUrl={defaultImageUrl} />
 				{#if imageUrls.length > 1}
 					<div class="absolute inset-x-0 bottom-0 flex justify-between p-4 bg-black bg-opacity-50">
 						<button
