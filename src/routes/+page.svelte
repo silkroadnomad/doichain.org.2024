@@ -89,7 +89,6 @@
 		localStorage.setItem('selectedFilter', selectedFilter);
 	}
 	$: filteredNameOps = $nameOps.filter((nameOp) => {
-		//TODO this filter we use on the server
 
 		const hasNameValue =
 			nameOp.nameValue &&
@@ -115,9 +114,9 @@
 		if (selectedFilter === 'nfc') {
 			return nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://');
 		}
-		// if (selectedFilter === 'collections') {
-		// 	return nameOp.nameId.startsWith('collections/');
-		// }
+		if (selectedFilter === 'collections') {
+			return nameOp.nameValue.startsWith('ipfs://') && nameOp.metadata?.images?.length > 0;
+		}
 		return true;
 	});
 
@@ -377,7 +376,6 @@
 	.poppins-heading {
 		font-family: 'Poppins', sans-serif;
 	}
-
 	/* Replace the global styles with more specific ones */
 	:global(.nft-card) {
 		-webkit-transform: none !important;

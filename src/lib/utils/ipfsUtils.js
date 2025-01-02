@@ -7,6 +7,9 @@ export async function getNFTData(helia, ipfsUrl) {
         const metadata = await getMetadataFromIPFS(helia, ipfsUrl);
         let imageUrl = null;
         let imageUrls = [];
+        if (metadata && metadata.image) {
+            imageUrl = await getImageUrlFromIPFS(helia, metadata.image);
+        }
         if (metadata && metadata.images) {
             imageUrls = await Promise.all(
                 metadata.images.map(async (image) => {
@@ -19,11 +22,6 @@ export async function getNFTData(helia, ipfsUrl) {
                 })
             );
         }
-
-        if (metadata && metadata.image) {
-            imageUrl = await getImageUrlFromIPFS(helia, metadata.image);
-        }
-
         return { metadata, imageUrl, imageUrls };
     } catch (error) {
         console.error('Error fetching NFT data:', error);

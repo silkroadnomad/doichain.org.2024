@@ -8,9 +8,6 @@
 
 	export let currentNameOp;
 	export let currentNameUtxo;
-	
-	const defaultImageUrl =
-		'https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80';
 
 	let nftMetadata = null;
 	let imageUrl = null;
@@ -40,23 +37,12 @@
 	async function loadNFTData() {
 		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
 		nftMetadata = metadata;
+		console.log("metadata",metadata)
 		imageUrl = _imageUrl;
 		imageUrls = _imageUrls;
+		console.log("imageUrl",imageUrl)
+		console.log("imageUrls",imageUrls)
 	}	
-
-	function nextSlide() {
-		if (imageUrls.length > 1) {
-			currentSlideIndex = (currentSlideIndex + 1) % imageUrls.length;
-			imageUrl = imageUrls[currentSlideIndex];
-		}
-	}
-
-	function prevSlide() {
-		if (imageUrls.length > 1) {
-			currentSlideIndex = (currentSlideIndex - 1 + imageUrls.length) % imageUrls.length;
-			imageUrl = imageUrls[currentSlideIndex];
-		}
-	}
 
 	function isConfirmedDOI(nameOp) {
 		if (typeof nameOp.value === 'string') {
@@ -131,26 +117,7 @@
 			<div
 				class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square"
 			>
-				<NFTImage {imageUrl} {imageUrls} defaultImageUrl={defaultImageUrl} />
-				{#if imageUrls.length > 1}
-					<div class="absolute inset-x-0 bottom-0 flex justify-between p-4 bg-black bg-opacity-50">
-						<button
-							class="px-3 py-1 text-white bg-gray-800 rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
-							on:click={prevSlide}
-						>
-							←
-						</button>
-						<span class="text-white">
-							{currentSlideIndex + 1} / {imageUrls.length}
-						</span>
-						<button
-							class="px-3 py-1 text-white bg-gray-800 rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
-							on:click={nextSlide}
-						>
-							→
-						</button>
-					</div>
-				{/if}
+				<NFTImage {imageUrl} {imageUrls} />
 			</div>
 			<div class="p-6">
 				<div class="flex items-center justify-between mb-2">
