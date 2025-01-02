@@ -95,7 +95,6 @@ function handleList100Request(libp2p) {
 }
 
 function handleNameOpsMessage(message) {
-	// console.log('handleNameOpsMessage', message);
 	nameOps.update((currentOps) => {
 		try {
 			const jsonMessage = JSON.parse(message);
@@ -107,7 +106,7 @@ function handleNameOpsMessage(message) {
 				return !isDuplicate;
 			});
 
-			console.log('newNameOps.length', newNameOps.length);
+			// console.log('newNameOps.length', newNameOps.length);
 
 			if (newNameOps.length > 0) {
 				const updatedOps = [...currentOps, ...newNameOps].sort((a, b) => {
@@ -121,7 +120,7 @@ function handleNameOpsMessage(message) {
 				);
 				return updatedOps;
 			}
-			console.log('No new unique nameOps to add.');
+			// console.log('No new unique nameOps to add.');
 			return currentOps;
 		} catch (e) {
 			console.log('message', message);

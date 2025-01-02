@@ -3,9 +3,9 @@
 	import { onMount } from 'svelte';
 
 	// Internal modules
-	import { libp2p, nameOps, blockHeight } from '$lib/doichain/doichain-store.js';
+	import { libp2p, nameOps, helia, blockHeight } from '$lib/doichain/doichain-store.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
-
+    import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	// Components
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
@@ -21,11 +21,14 @@
 	let isNameAvailable = false;
 	let isLoading = false;
 	let lastRequestTime = 0;
-	let selectedFilter;
 	let nameOpsSection;
 	let parallaxOffset = 0;
 	let gradientProgress = 0;
 	let overWriteValue;
+	// nameOps = []; // Assume this is populated with initial data
+    let metadataMap = new Map();
+    let filteredNameOps = [];
+    let selectedFilter = 'all';
 
 	// Messages
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to observe!";
@@ -88,37 +91,64 @@
 	$: if (selectedFilter) {
 		localStorage.setItem('selectedFilter', selectedFilter);
 	}
-	$: filteredNameOps = $nameOps.filter((nameOp) => {
 
-		const hasNameValue =
-			nameOp.nameValue &&
-			nameOp.nameValue !== '' &&
-			nameOp.nameValue !== ' ' &&
-			nameOp.nameValue !== 'empty';
+    async function fetchMetadataForCollections() {
+        const promises = $nameOps.map(async (nameOp) => {
+            if (nameOp.nameValue.startsWith('ipfs://') && !metadataMap.has(nameOp.nameId)) {
+                const { metadata } = await getNFTData($helia, nameOp.nameValue); // Pass appropriate helia instance
+                metadataMap.set(nameOp.nameId, metadata);
+            }
+        });
 
-		const isNotSpecialPrefix =
-			!nameOp.nameId.startsWith('e/') &&
-			!nameOp.nameId.startsWith('pe/') &&
-			!nameOp.nameId.startsWith('poe/') &&
-			!nameOp.nameId.startsWith('nft/') &&
-			!nameOp.nameId.startsWith('bp/');
+        await Promise.all(promises);
+        applyFilter();
+    }
 
-		if (selectedFilter === 'all') return true;
-		if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
-		if (selectedFilter === 'pe')
-			return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
-		if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
-		if (selectedFilter === 'names') {
-			return !hasNameValue && isNotSpecialPrefix;
-		}
-		if (selectedFilter === 'nfc') {
-			return nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://');
-		}
-		if (selectedFilter === 'collections') {
-			return nameOp.nameValue.startsWith('ipfs://') && nameOp.metadata?.images?.length > 0;
-		}
-		return true;
-	});
+    // Apply filter based on selectedFilter and fetched metadata
+    function applyFilter() {
+
+        filteredNameOps = $nameOps.filter((nameOp) => {
+            const metadata = metadataMap.get(nameOp.nameId);
+
+            const hasNameValue =
+                nameOp.nameValue &&
+                nameOp.nameValue !== '' &&
+                nameOp.nameValue !== ' ' &&
+                nameOp.nameValue !== 'empty';
+
+            const isNotSpecialPrefix =
+                !nameOp.nameId.startsWith('e/') &&
+                !nameOp.nameId.startsWith('pe/') &&
+                !nameOp.nameId.startsWith('poe/') &&
+                !nameOp.nameId.startsWith('nft/') &&
+                !nameOp.nameId.startsWith('bp/');
+
+            if (selectedFilter === 'all') return true;
+            if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
+            if (selectedFilter === 'pe')
+                return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
+            if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
+            if (selectedFilter === 'names') {
+                return !hasNameValue && isNotSpecialPrefix;
+            }
+            if (selectedFilter === 'nfc') {
+                return nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://');
+            }
+            if (selectedFilter === 'collections') {
+                return metadata?.images?.length > 0;
+            }
+            return true;
+        });
+    }
+
+    // Watch for changes in selectedFilter and fetch metadata if needed
+    $: if (selectedFilter) {
+        if (selectedFilter === 'collections') {
+            fetchMetadataForCollections();
+        } else {
+            applyFilter();
+        }
+    }
 
 	onMount(async () => {
 		selectedFilter = localStorage.getItem('selectedFilter') || 'other';

@@ -104,6 +104,6 @@
     .normal-image {
         width: 100%;
         height: 100%;
-        object-fit: cover; /* Ensures the image covers the container while maintaining aspect ratio */
+       object-fit: cover;  /*containEnsures the image covers the container while maintaining aspect ratio*/
     }
 </style>
