@@ -55,25 +55,13 @@
 	const favicon = './favicon.svg';
 	const DEBOUNCE_DELAY = 1000; // 1 second delay between requests
 
-	// Filters
+	// Filters - Only showing License NFCs
 	const filters = [
-		{ id: 'collections', label: 'Collections' },
-		{ id: 'nfc', label: 'Non-Fungible-Coins (NFC)' },
-		{ id: 'names', label: 'Names' },
-		{ id: 'e', label: 'DOI (e/)' },
-		{ id: 'pe', label: 'Proof-Of-Existence (/pe /poe)' },
-		{ id: 'bp', label: 'BlockPro (/bp)' },
-		{ id: 'all', label: 'All' }
+		{ id: 'nfc', label: 'Licenses (NFC)' }
 	];
 
 	let currentFromMap = {
-		collections: 0,
-		all: 0,
-		other: 0,
-		names: 0,
-		e: 0,
-		pe: 0,
-		bp: 0
+		nfc: 0
 	};
 
 	// Input Handler
@@ -96,28 +84,11 @@
 			nameOp.nameValue !== ' ' &&
 			nameOp.nameValue !== 'empty';
 
-		const isNotSpecialPrefix =
-			!nameOp.nameId.startsWith('e/') &&
-			!nameOp.nameId.startsWith('pe/') &&
-			!nameOp.nameId.startsWith('poe/') &&
-			!nameOp.nameId.startsWith('nft/') &&
-			!nameOp.nameId.startsWith('bp/');
-
-		if (selectedFilter === 'all') return true;
-		if (selectedFilter === 'e') return nameOp.nameId.startsWith('e/');
-		if (selectedFilter === 'pe')
-			return nameOp.nameId.startsWith('pe/') || nameOp.nameId.startsWith('poe/');
-		if (selectedFilter === 'bp') return nameOp.nameId.startsWith('bp/');
-		if (selectedFilter === 'names') {
-			return !hasNameValue && isNotSpecialPrefix;
-		}
+		// Only show NFCs (which will be licenses)
 		if (selectedFilter === 'nfc') {
 			return nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://');
 		}
-		if (selectedFilter === 'collections') {
-			return nameOp.nameValue.startsWith('ipfs://') && nameOp.metadata?.images?.length > 0;
-		}
-		return true;
+		return false;
 	});
 
 	onMount(async () => {

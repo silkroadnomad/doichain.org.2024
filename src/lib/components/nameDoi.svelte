@@ -44,10 +44,10 @@
 	let changeAmount;
 	export let nameId;
 	export let nameValue;
-	export let nftName;
-	$: nameId = nftName;
+	export let licenseName;
+	$: nameId = licenseName;
 
-	let nftDescription;
+	let licenseDescription;
 	let utxos = [];
 	let psbtBaseText;
 	let utxoErrorMessage;
@@ -93,13 +93,13 @@
 
 
 	async function writeMetadata() {
-		console.log('writeMetadata', nftName, nftDescription, imageCID);
+		console.log('writeMetadata', licenseName, licenseDescription, imageCID);
 		const encoder = new TextEncoder();
 		const fs = unixfs($helia);
 
 		metadataJSON = {
-			name: nftName,
-			description: nftDescription,
+			name: licenseName,
+			description: licenseDescription,
 			image: `ipfs://${imageCID}`
 		};
 
@@ -120,7 +120,7 @@
 	async function previewFile() {
 		console.log('rendering preview with file', files.accepted[0].name);
 		const fs = unixfs($helia);
-		if (!nftName) nftName = files.accepted[0].name;
+		if (!licenseName) licenseName = files.accepted[0].name;
 		if (!nameId) nameId = files.accepted[0].name;
 		let file = files.accepted[0];
 

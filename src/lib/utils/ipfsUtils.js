@@ -2,7 +2,7 @@
 import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
 import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js';
 
-export async function getNFTData(helia, ipfsUrl) {
+export async function getLicenseData(helia, ipfsUrl) {
     try {
         const metadata = await getMetadataFromIPFS(helia, ipfsUrl);
         let imageUrl = null;
@@ -24,7 +24,7 @@ export async function getNFTData(helia, ipfsUrl) {
         }
         return { metadata, imageUrl, imageUrls };
     } catch (error) {
-        console.error('Error fetching NFT data:', error);
+        console.error('Error fetching license data:', error);
         return { metadata: null, imageUrl: null, imageUrls: [] };
     }
 }

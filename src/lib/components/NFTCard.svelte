@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getNFTData } from '$lib/utils/ipfsUtils.js';
-	import NFTImage from '$lib/components/NFTImage.svelte';
+	import { getLicenseData } from '$lib/utils/ipfsUtils.js';
+	import LicenseImage from '$lib/components/LicenseImage.svelte';
 	import { helia, connectedPeers } from '../doichain/doichain-store.js';
 	import { adaptNameOp } from '$lib/doichain/utxoHelpers.js';
 	import moment from 'moment';
@@ -9,7 +9,7 @@
 	export let currentNameOp;
 	export let currentNameUtxo;
 
-	let nftMetadata = null;
+	let licenseMetadata = null;
 	let imageUrl = null;
 	let showDetails = false;
 	let isIPFS = false;
@@ -27,16 +27,16 @@
 
 		isIPFS = typeof currentNameOp.value === 'string' && currentNameOp.value.startsWith('ipfs://');
 		if (isIPFS) {
-			loadNFTData();
+			loadLicenseData();
 			showDetails = false;	
 		} else {
 			showDetails = false;
 		}
 	}
 
-	async function loadNFTData() {
-		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
-		nftMetadata = metadata;
+	async function loadLicenseData() {
+		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getLicenseData($helia, currentNameOp.value);
+		licenseMetadata = metadata;
 		console.log("metadata",metadata)
 		imageUrl = _imageUrl;
 		imageUrls = _imageUrls;
@@ -103,7 +103,7 @@
 	}
 </script>
 
-<div class="nft-card bg-white rounded-lg shadow-md overflow-hidden max-w-sm mx-auto">
+<div class="license-card bg-white rounded-lg shadow-md overflow-hidden max-w-sm mx-auto">
 	<div
 		class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
 	>
@@ -117,7 +117,7 @@
 			<div
 				class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square"
 			>
-				<NFTImage {imageUrl} {imageUrls} />
+				<LicenseImage {imageUrl} {imageUrls} />
 			</div>
 			<div class="p-6">
 				<div class="flex items-center justify-between mb-2">
@@ -126,11 +126,11 @@
 					</p>
 				</div>
 				<p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
-					{#if nftMetadata}
-						<p>Name: {nftMetadata.name || 'not available'}</p>
-						<p>Description: {nftMetadata.description || 'not available'}</p>
+					{#if licenseMetadata}
+						<p>License Name: {licenseMetadata.name || 'not available'}</p>
+						<p>Description: {licenseMetadata.description || 'not available'}</p>
 					{:else}
-						<p>Loading NFT data from {$connectedPeers.length} peers...</p>
+						<p>Loading license data from {$connectedPeers.length} peers...</p>
 					{/if}
 				</p>
 			</div>
@@ -147,7 +147,7 @@
 				{:else if currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')}
 					<span class="font-semibold">Proof-Of-Existence</span>
 				{:else if isIPFS}
-					<span class="font-semibold">Non Fungible Coin</span>
+					<span class="font-semibold">License (NFC)</span>
 				{:else}
 					<span class="font-semibold">Non-Standard NameOp</span>
 				{/if}
