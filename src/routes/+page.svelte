@@ -104,10 +104,22 @@
         applyFilter();
     }
 
+    // Define the list of txids to filter out 
+	// we could store those txids inside the metadata of the latest nameOp of the same nameOp
+    const excludedTxids = [
+		'9bbb790a44d0dcbce57efd0c26dea128b36c5f51aef8e294d54e0bb486bffd97', 
+		'9211970f53b71be17d594e2c2af278fb0e2bbf8d8fe8817239a5a0529db38b3c', 
+		'35ee6bbdc6927623697c223cbe9eae68e92478edcf52e30828a7214152d91919' ]; // Replace with actual txids
+
     // Apply filter based on selectedFilter and fetched metadata
     function applyFilter() {
-
         filteredNameOps = $nameOps.filter((nameOp) => {
+			console.log("nameOp",nameOp)
+			// Exclude nameOps with nameId in the excludedTxids list
+            if (excludedTxids.includes(nameOp.txid)) {
+                return false;
+            }
+
             const metadata = metadataMap.get(nameOp.nameId);
 
             const hasNameValue =
