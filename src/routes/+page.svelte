@@ -1,36 +1,37 @@
 <script>
+	// External libraries
+	import { onMount } from 'svelte';
+
+	// Internal modules
 	import { libp2p, nameOps, blockHeight } from '$lib/doichain/doichain-store.js';
+	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+
+	// Components
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
 	import NameDoi from '$lib/components/nameDoi.svelte';
-	import { onMount } from 'svelte';
-	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 
+	// UI State
 	let showHeroSection = true;
 	let inputValue = '';
 	let currentNameOp = null;
 	let currentNameUtxo = null;
 	$: updatedCurrentNameOp = currentNameOp;
 	$: updatedCurrentNameUtxo = currentNameUtxo;
+	let isNameAvailable = false;
+	let isLoading = false;
+	let lastRequestTime = 0;
+	let selectedFilter;
+	let nameOpsSection;
+	let parallaxOffset = 0;
+	let gradientProgress = 0;
+	let overWriteValue;
 
+	// Messages
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
-	let isNameAvailable = false;
 
-	function handleInput(event) {
-		inputValue = event.detail;
-		if (inputValue.length > 0) {
-			showHeroSection = false;
-			checkNameAvailability(inputValue);
-		}
-	}
-
-	let title = `Doichain.org names on chain`;
-	let description = 'Simple name registration for Doichain';
-	const url = 'ipns://name-on-chain.com';
-	let image = '/nasa-Q1p7bh3SHj8-unsplash.jpg';
-	const favicon = './favicon.svg';
-
+	// Animation Parameters
 	const flyAndFade = (node, params) => {
 		return {
 			delay: params.delay || 0,
@@ -46,11 +47,15 @@
 		};
 	};
 
-	let nameOpsSection;
-	let parallaxOffset = 0;
-	let gradientProgress = 0;
-	let selectedFilter;
+	// Configuration
+	let title = `Doichain.org names on chain`;
+	let description = 'Simple name registration for Doichain';
+	const url = 'ipns://name-on-chain.com';
+	let image = '/nasa-Q1p7bh3SHj8-unsplash.jpg';
+	const favicon = './favicon.svg';
+	const DEBOUNCE_DELAY = 1000; // 1 second delay between requests
 
+	// Filters
 	const filters = [
 		{ id: 'collections', label: 'Collections' },
 		{ id: 'nfc', label: 'Non-Fungible-Coins (NFC)' },
@@ -60,6 +65,25 @@
 		{ id: 'bp', label: 'BlockPro (/bp)' },
 		{ id: 'all', label: 'All' }
 	];
+
+	let currentFromMap = {
+		collections: 0,
+		all: 0,
+		other: 0,
+		names: 0,
+		e: 0,
+		pe: 0,
+		bp: 0
+	};
+
+	// Input Handler
+	function handleInput(event) {
+		inputValue = event.detail;
+		if (inputValue.length > 0) {
+			showHeroSection = false;
+			checkNameAvailability(inputValue);
+		}
+	}
 
 	$: if (selectedFilter) {
 		localStorage.setItem('selectedFilter', selectedFilter);
@@ -91,15 +115,11 @@
 		if (selectedFilter === 'nfc') {
 			return nameOp.nameValue && nameOp.nameValue.startsWith('ipfs://');
 		}
-		if (selectedFilter === 'collections') {
-			return nameOp.nameId.startsWith('collections/');
-		}
+		// if (selectedFilter === 'collections') {
+		// 	return nameOp.nameId.startsWith('collections/');
+		// }
 		return true;
 	});
-
-	let isLoading = false;
-	let lastRequestTime = 0;
-	const DEBOUNCE_DELAY = 1000; // 1 second delay between requests
 
 	onMount(async () => {
 		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
@@ -153,7 +173,6 @@
 		);
 	`;
 
-	let overWriteValue;
 	$: {
 		if (overWriteValue) {
 			console.log('overwrite handler called', overWriteValue);
@@ -179,16 +198,6 @@
 		$libp2p.services.pubsub.publish(CONTENT_TOPIC, new TextEncoder().encode(message));
 	}
 
-	let currentFromMap = {
-		collections: 0,
-		all: 0,
-		other: 0,
-		names: 0,
-		e: 0,
-		pe: 0,
-		bp: 0
-	};
-
 	function handleFilterClick(filterId) {
 		selectedFilter = filterId;
 		const currentFrom = currentFromMap[selectedFilter] || 0;
@@ -196,17 +205,15 @@
 		currentFromMap[selectedFilter] = currentFrom + 5;
 	}
 
+	// Name Availability Check
 	async function checkNameAvailability(name) {
 		try {
 			const nameExists = $nameOps.some(
 				(nameOp) => nameOp.nameId.toLowerCase() === name.toLowerCase()
 			);
-
 			isNameAvailable = !nameExists;
-
 			customErrorMessage = customErrorMessage.replace('---name---', name);
 			customSuccessMessage = customSuccessMessage.replace('---name---', name);
-
 			return isNameAvailable;
 		} catch (error) {
 			console.error('Error checking name availability:', error);

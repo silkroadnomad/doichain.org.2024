@@ -1,30 +1,38 @@
 <script>
+	// External Libraries
+	import { createHelia } from 'helia';
+	import { createLibp2p } from 'libp2p';
+	import { multiaddr } from '@multiformats/multiaddr';
+	import { unixfs } from '@helia/unixfs';
+	import { onDestroy, onMount } from 'svelte';
+	import { LevelBlockstore } from 'blockstore-level';
+	import { LevelDatastore } from 'datastore-level';
+
+	// Styles
+	import '../app.css';
+
+	// Internal Modules
+	import { browser } from '$app/environment';
+	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
+	import { publishCID } from '$lib/doichain/nameDoi.js';
+	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import {
+		connectedServer,
 		electrumClient,
 		helia,
 		libp2p,
-		nameOps,
-		connectedServer
+		connectedPeers,
+		nameOps
 	} from '$lib/doichain/doichain-store.js';
-	import '../app.css';
-	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
-	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
-	import { createLibp2p } from 'libp2p';
-	import { createHelia } from 'helia';
-	import { LevelBlockstore } from 'blockstore-level';
-	import { LevelDatastore } from 'datastore-level';
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
-	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
 	import { currentNameId } from '$lib/hashRouter';
+
+	// Components
+	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
 	import NameShow from '$lib/components/nameShow.svelte';
-	import { publishCID } from '$lib/doichain/nameDoi.js';
-	import { unixfs } from '@helia/unixfs';
-	import { getNameIdData } from '$lib/doichain/namePage.js';
-	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
-	import { multiaddr } from '@multiformats/multiaddr';
 
 	const config = createLibp2pConfig();
 
@@ -103,6 +111,11 @@
 	}
 
 	let nodeAddresses = [];
+	$: {
+		if ($connectedPeers && $connectedPeers.length > 0) {
+			updateNodeAddresses();
+		}
+	}
 
 	function updateNodeAddresses() {
 		const newAddresses = $libp2p.getMultiaddrs().map((ma) => ma.toString());
@@ -149,12 +162,6 @@
 			console.log('helia.libp2p.exception', ex);
 		}
 
-		updateNodeAddresses();
-
-		addressUpdateInterval = setInterval(() => {
-			updateNodeAddresses();
-		}, 20000);
-
 		if (browser && 'serviceWorker' in navigator) {
 			navigator.serviceWorker
 				.register('/service-worker.js')
@@ -168,10 +175,6 @@
 		}
 
 		detectSystemDarkMode();
-	});
-
-	onDestroy(() => {
-		clearInterval(addressUpdateInterval);
 	});
 
 	$: ({ isConnected } = getConnectionStatus($connectedServer));
