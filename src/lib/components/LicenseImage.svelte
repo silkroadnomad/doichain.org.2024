@@ -68,7 +68,7 @@
     <img 
         bind:this={imageElement}
         src={currentImageUrl} 
-        alt="NFT image" 
+        alt="License image" 
         class="normal-image" 
         on:dblclick={toggleFullscreen}
     />
