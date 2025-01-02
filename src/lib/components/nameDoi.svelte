@@ -109,9 +109,7 @@
 		}
 
 		metadataCID = await fs.addBytes(encoder.encode(JSON.stringify(metadataJSON)));
-		console.log('nameValue before', nameValue);
 		nameValue = `ipfs://${metadataCID.toString()}`;
-		console.log('nameValue', nameValue);
 		console.log('Added metadata file to IPFS:', metadataCID.toString());
 		requestedCids.update((cids) => [...cids, metadataCID.toString()]);
 		await publishCID(metadataCID.toString());
@@ -458,6 +456,19 @@
 		if (pinnedMessage) {
 			handleCidPinnedMessage(pinnedMessage);
 		}
+	}
+
+	// Function to create a downloadable link for the PSBT
+	function downloadPSBT() {
+		const blob = new Blob([psbtBaseText], { type: 'text/plain' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${nameId}.psbt`; // Use nameId as the filename
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
 	}
 </script>
 
@@ -1223,10 +1234,17 @@
 								<p class="text-sm text-gray-500 mt-2">
 									Click on the text area to copy the PSBT to clipboard
 								</p>
+
+								<!-- Add a download icon -->
+								<button on:click={downloadPSBT} class="mt-2">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500 hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v16h16V4H4zm4 4h8m-4 4v4m0 0l-2-2m2 2l2-2" />
+									</svg>
+								</button>
 							{:else if activePanel === 'metadata'}
 								<pre class="bg-gray-100 p-4 rounded-md overflow-auto">
-              {JSON.stringify(metadataJSON, null, 2)}
-            </pre>
+									{JSON.stringify(metadataJSON, null, 2)}
+								</pre>
 							{/if}
 
 							<TransactionDetails

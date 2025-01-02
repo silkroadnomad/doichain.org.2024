@@ -26,7 +26,7 @@ The animated BC-QR code feature is particularly important as it enables secure a
 - [ ] PWA needs screenshots form-factor wide (see Opera error), not wide and a quadratic symbol
 - [ ] every browser should also index the blockchain for name_ops (like the relay does) and answer for requests
 - [ ] question is: how much should every browser cache
-- [ ] restart elecrumx / libp2p when disconnected
+- [x] restart electrumx / libp2p when disconnected
 - [ ] Docker Compose file for Doichain RegTest + Electrumx
 - [ ] enable "Buy with DoiWallet"
   - [ ] click overwrite to set a price
