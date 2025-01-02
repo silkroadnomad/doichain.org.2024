@@ -21,11 +21,10 @@
 </script>
 
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-90 text-white"
+	class="fixed inset-0 z-50 flex items-start justify-center bg-gray-900 bg-opacity-90 text-white overflow-y-auto min-h-screen p-4"
 >
-	<div class="max-w-lg p-6 bg-gray-800 rounded-lg shadow-xl">
-		<h2 class="text-2xl font-bold mb-6">Welcome to the Doichain Decentralized Progressive Web App, featuring Doichain Non-Fungible Coins and leveraging atomic transactions with PSBTs</h2>
-
+	<div class="max-w-lg p-6 bg-gray-800 rounded-lg shadow-xl my-4">
+		<h2 class="text-xl sm:text-2xl font-bold mb-6">Welcome to the Doichain Decentralized Progressive Web App, featuring Doichain Non-Fungible Coins - leveraging atomic transactions with PSBTs</h2>
 		<div class="space-y-4">
 			<div class="bg-gray-700 p-4 rounded">
 				<h3 class="font-semibold mb-2">Important Information</h3>
@@ -77,7 +76,7 @@
 
 			<button
 				on:click={handleConfirm}
-				class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+				class="w-full mt-6 mb-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
 			>
 				Continue to Doichain dPWA
 			</button>
