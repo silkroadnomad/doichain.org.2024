@@ -129,6 +129,31 @@
 					{#if licenseMetadata}
 						<p>License Name: {licenseMetadata.name || 'not available'}</p>
 						<p>Description: {licenseMetadata.description || 'not available'}</p>
+						{#if licenseMetadata.licensePdf}
+							<div class="mt-4">
+								<a
+									href={`https://ipfs.io/ipfs/${licenseMetadata.licensePdf.replace('ipfs://', '')}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+								>
+									<svg
+										class="w-4 h-4 mr-2"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+										/>
+									</svg>
+									Download License PDF
+								</a>
+							</div>
+						{/if}
 					{:else}
 						<p>Loading license data from {$connectedPeers.length} peers...</p>
 					{/if}

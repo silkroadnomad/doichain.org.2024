@@ -78,29 +78,42 @@
 	$: pinningFee = relevantMessage?.fee?.amount || 0;
 
 	let nameRegistrationFee = storageFee;
-	let files = {
+	let imageFiles = {
+		accepted: [],
+		rejected: []
+	};
+	
+	let licenseFiles = {
 		accepted: [],
 		rejected: []
 	};
 
 
-	function handleFilesSelect(e) {
+	function handleImageSelect(e) {
 		const { acceptedFiles, fileRejections } = e.detail;
-		if (files.accepted.length > 0) files.accepted.pop();
-		files.accepted = acceptedFiles;
-		files.rejected = fileRejections;
+		if (imageFiles.accepted.length > 0) imageFiles.accepted.pop();
+		imageFiles.accepted = acceptedFiles;
+		imageFiles.rejected = fileRejections;
+	}
+
+	function handleLicenseSelect(e) {
+		const { acceptedFiles, fileRejections } = e.detail;
+		if (licenseFiles.accepted.length > 0) licenseFiles.accepted.pop();
+		licenseFiles.accepted = acceptedFiles;
+		licenseFiles.rejected = fileRejections;
 	}
 
 
 	async function writeMetadata() {
-		console.log('writeMetadata', licenseName, licenseDescription, imageCID);
+		console.log('writeMetadata', licenseName, licenseDescription, imageCID, licensePdfCID);
 		const encoder = new TextEncoder();
 		const fs = unixfs($helia);
 
 		metadataJSON = {
 			name: licenseName,
 			description: licenseDescription,
-			image: `ipfs://${imageCID}`
+			image: `ipfs://${imageCID}`,
+			licensePdf: licensePdfCID ? `ipfs://${licensePdfCID}` : null
 		};
 
 		// Add images array for collections tab
@@ -117,12 +130,12 @@
 		await publishCID(metadataCID.toString());
 	}
 
-	async function previewFile() {
-		console.log('rendering preview with file', files.accepted[0].name);
+	async function previewImageFile() {
+		console.log('rendering preview with file', imageFiles.accepted[0].name);
 		const fs = unixfs($helia);
-		if (!licenseName) licenseName = files.accepted[0].name;
-		if (!nameId) nameId = files.accepted[0].name;
-		let file = files.accepted[0];
+		if (!licenseName) licenseName = imageFiles.accepted[0].name;
+		if (!nameId) nameId = imageFiles.accepted[0].name;
+		let file = imageFiles.accepted[0];
 
 		/** reader for ipfs upload */
 		const readerToArrayBuffer = new FileReader();
@@ -166,8 +179,49 @@
 		}
 	}
 
+	async function uploadLicensePdf() {
+		console.log('uploading license PDF', licenseFiles.accepted[0].name);
+		const fs = unixfs($helia);
+		let file = licenseFiles.accepted[0];
+
+		try {
+			const readerToArrayBuffer = new FileReader();
+			readerToArrayBuffer.addEventListener(
+				'load',
+				() => {
+					if (readerToArrayBuffer.result instanceof ArrayBuffer) {
+						const byteArray = new Uint8Array(readerToArrayBuffer.result);
+						fs.addBytes(new Buffer(byteArray), {
+							onProgress: (evt) => {
+								console.info('add PDF event', evt.type, evt.detail);
+							}
+						}).then(async (cid) => {
+							licensePdfCID = cid.toString();
+							console.log('Added PDF to IPFS:', licensePdfCID);
+							await publishCID(licensePdfCID);
+							requestedCids.update((cids) => [...cids, licensePdfCID]);
+							writeMetadata();
+						});
+					} else {
+						console.error('PDF file is not an ArrayBuffer');
+						licenseFiles.accepted = [];
+					}
+				},
+				false
+			);
+
+			if (file) {
+				readerToArrayBuffer.readAsArrayBuffer(file);
+			}
+		} catch (error) {
+			console.error('Error uploading PDF file:', error);
+			licenseFiles.accepted = [];
+		}
+	}
+
 	$: {
-		if (files.accepted.length > 0) previewFile();
+		if (imageFiles.accepted.length > 0) previewImageFile();
+		if (licenseFiles.accepted.length > 0) uploadLicensePdf();
 	}		
 
 	let activeTimeLine = 0;
@@ -337,9 +391,12 @@
 
 		// Reset local states
 		activeTimeLine = 0;
-		files.accepted = [];
+		imageFiles.accepted = [];
+		licenseFiles.accepted = [];
 		previewImgSrc = null;
 		selectedUtxos = [];
+		imageCID = null;
+		licensePdfCID = null;
 		// ... reset other relevant states ...
 	}
 
@@ -616,7 +673,7 @@
 												/>
 												<button
 													on:click={() => {
-														files.accepted = [];
+														imageFiles.accepted = [];
 														previewImgSrc = null;
 													}}
 													class="absolute top-2 right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 focus:outline-none"
@@ -637,8 +694,9 @@
 												</button>
 											{:else}
 												<Dropzone
+													accept="image/*"
 													multiple={false}
-													on:drop={handleFilesSelect}
+													on:drop={handleImageSelect}
 													class="w-full h-full flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-gray-50"
 												>
 													<svg
@@ -655,37 +713,112 @@
 														/>
 													</svg>
 													<p class="text-sm text-gray-600">
-														Drop your image here or click to upload
+														Drop your cover image here or click to upload
 													</p>
 													<p class="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 10MB</p>
 												</Dropzone>
+												{#if imageFiles.rejected.length > 0}
+													<div class="mt-4 p-4 bg-red-50 rounded-lg">
+														<p class="text-sm text-red-600">
+															Error: {imageFiles.rejected[0].errors[0].message}
+														</p>
+													</div>
+												{/if}
 											{/if}
 										</div>
 
-										{#if files.accepted.length > 0}
+										<div class="bg-gray-50 rounded-lg p-4">
+											<h4 class="font-medium text-gray-900 mb-4">License PDF Upload</h4>
+											<Dropzone
+												accept="application/pdf"
+												multiple={false}
+												on:drop={handleLicenseSelect}
+												class="w-full flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg"
+											>
+												<svg
+													class="w-12 h-12 text-gray-400 mb-4"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M12 4v16m8-8H4"
+													/>
+												</svg>
+												<p class="text-sm text-gray-600">
+													Drop your license PDF here or click to upload
+												</p>
+												<p class="text-xs text-gray-500 mt-2">PDF files only</p>
+											</Dropzone>
+
+
+											{#if licenseFiles.accepted.length > 0}
+												<div class="mt-4">
+													<h5 class="font-medium text-gray-900 mb-2">License PDF Details</h5>
+													<div class="space-y-2">
+														<div class="flex items-center">
+															<span class="text-sm font-medium text-gray-500 w-20">Name:</span>
+															<span class="text-sm text-gray-900 truncate">{licenseFiles.accepted[0].name}</span>
+														</div>
+														<div class="flex items-center">
+															<span class="text-sm font-medium text-gray-500 w-20">Size:</span>
+															<span class="text-sm text-gray-900">{(licenseFiles.accepted[0].size / 1024 / 1024).toFixed(2)} MB</span>
+														</div>
+														<button
+															on:click={() => {
+																licenseFiles.accepted = [];
+															}}
+															class="mt-4 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none"
+														>
+															Remove PDF
+														</button>
+													</div>
+												</div>
+											{/if}
+
+											{#if licenseFiles.rejected.length > 0}
+												<div class="mt-4 p-4 bg-red-50 rounded-lg">
+													<p class="text-sm text-red-600">
+														Error: {licenseFiles.rejected[0].errors[0].message}
+													</p>
+												</div>
+											{/if}
+										</div>
+														<div class="flex items-center">
+															<span class="text-sm font-medium text-gray-500 w-20">Size:</span>
+															<span class="text-sm text-gray-900">{(licenseFiles.accepted[0].size / 1024).toFixed(2)} KB</span>
+														</div>
+														<div class="flex items-center">
+															<span class="text-sm font-medium text-gray-500 w-20">CID:</span>
+															<span class="text-sm text-gray-900 truncate">{licensePdfCID || 'Generating...'}</span>
+														</div>
+													</div>
+												</div>
+											{/if}
+										</div>
+
+										{#if imageFiles.accepted.length > 0}
 											<div class="bg-gray-50 rounded-lg p-4">
-												<h4 class="font-medium text-gray-900 mb-4">File Details</h4>
+												<h4 class="font-medium text-gray-900 mb-4">Cover Image Details</h4>
 												<div class="space-y-3">
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Name:</span>
-														<span class="text-sm text-gray-900 truncate"
-															>{files.accepted[0].name}</span
-														>
+														<span class="text-sm text-gray-900 truncate">{imageFiles.accepted[0].name}</span>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Type:</span>
-														<span class="text-sm text-gray-900">{files.accepted[0].type}</span>
+														<span class="text-sm text-gray-900">{imageFiles.accepted[0].type}</span>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">Size:</span>
-														<span class="text-sm text-gray-900"
-															>{(files.accepted[0].size / 1024).toFixed(2)} KB</span
-														>
+														<span class="text-sm text-gray-900">{(imageFiles.accepted[0].size / 1024).toFixed(2)} KB</span>
 													</div>
 													<div class="flex items-center">
 														<span class="text-sm font-medium text-gray-500 w-20">CID:</span>
-														<span class="text-sm text-gray-900 truncate"
-															>{imageCID || 'Generating...'}</span
+														<span class="text-sm text-gray-900 truncate">{imageCID || 'Generating...'}</span
 														>
 													</div>
 
