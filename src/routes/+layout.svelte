@@ -15,6 +15,7 @@
 	import { browser } from '$app/environment';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
+	import { setupElectrumConnection } from '$lib/doichain/electrumConnection.js'; 
 	import { publishCID } from '$lib/doichain/nameDoi.js';
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import {
@@ -23,7 +24,8 @@
 		helia,
 		libp2p,
 		connectedPeers,
-		nameOps
+		nameOps,
+		network
 	} from '$lib/doichain/doichain-store.js';
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
@@ -38,13 +40,14 @@
 
 	let blockstore = new LevelBlockstore('./helia-blocks');
 	let datastore = new LevelDatastore('./helia-data');
-	let addressUpdateInterval;
 	let isConnected = false;
 	let attemptCount = 0;
 	const maxAttempts = 5;
 	let gatewayUrl = '';
 	let isDarkMode = false;
-	let showSplash = false;
+	let agreed = false;
+	let showSplash = true;
+	let initialized = false;
 
 	/**
 	 * Generates and publishes an HTML page for a nameId to IPFS
@@ -134,73 +137,102 @@
 		});
 	}
 
-	onMount(async () => {
-		if (browser) {
-			const agreed = localStorage.getItem('splashAgreed');
-			showSplash = !agreed; // show if not agreed
+	// Move initialization logic into a separate function
+	async function initializeServices() {
+		const agreed = localStorage.getItem('splashAgreed');
+		if (!agreed) {
+			console.log('Cannot initialize services before splash screen agreement');
+			return;
 		}
 
-		$libp2p = await createLibp2p(config);
-		window.libp2p = $libp2p;
-
-		nodeAddresses = $libp2p.getMultiaddrs().map((ma) => ma.toString());
-		console.log('Our node addresses:', nodeAddresses);
-
-		$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore });
-		window.helia = $helia;
-		//i need a function in the window to dial multiaddr
-		window.dialMultiaddr = (multiaddr_string) => {
-			const addr = multiaddr(multiaddr_string);
-			return $libp2p.dial(addr);
-		};
-
 		try {
+			// Initialize libp2p first
+			$libp2p = await createLibp2p(config);
+			window.libp2p = $libp2p;
+
+			nodeAddresses = $libp2p.getMultiaddrs().map((ma) => ma.toString());
+			console.log('Our node addresses:', nodeAddresses);
+
+			// Initialize Helia
+			$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore });
+			window.helia = $helia;
+			
+			window.dialMultiaddr = (multiaddr_string) => {
+				const addr = multiaddr(multiaddr_string);
+				return $libp2p.dial(addr);
+			};
+
+			// Setup libp2p event handlers
 			if ($libp2p) {
 				setupLibp2pEventHandlers($libp2p, publishList100Request);
 			}
-		} catch (ex) {
-			console.log('helia.libp2p.exception', ex);
-		}
 
-		if (browser && 'serviceWorker' in navigator) {
-			navigator.serviceWorker
-				.register('/service-worker.js')
-				.then((registration) => {
-					console.log('Service Worker registered with scope:', registration.scope);
-				})
-				.catch((error) => {
-					console.log('Service Worker not enabled!');
-					//console.error('Service Worker registration failed:', error);
-				});
-		}
+			// Initialize electrum connection
+			const { isConnected } = getConnectionStatus($connectedServer);
+			if (!isConnected) {
+				setupElectrumConnection($network);
+			}
 
+			// Set initialized to true only after everything is ready
+			initialized = true;
+			console.log('All services initialized successfully');
+		} catch (error) {
+			console.error('Error initializing services:', error);
+			initialized = false;
+		}
+	}
+
+	onMount(() => {
+		if (browser) {
+			agreed = localStorage.getItem('splashAgreed');
+			showSplash = !agreed;
+			
+			if (!showSplash) {
+				initializeServices();
+			}
+
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.register('/service-worker.js')
+					.then((registration) => {
+						console.log('Service Worker registered with scope:', registration.scope);
+					})
+					.catch((error) => {
+						console.log('Service Worker not enabled!');
+					});
+			}
+		}
+		
 		detectSystemDarkMode();
 	});
 
-	$: ({ isConnected } = getConnectionStatus($connectedServer));
-	$: {
-		if (isConnected && $currentNameId) {
-			// Generate and publish HTML page
-			console.log('Generate and publish HTML page for', $currentNameId);
-			try {
-				const nameData = getNameIdData($electrumClient, $helia, $currentNameId).then((nameData) => {
-					console.log('nameData', nameData);
-					writeNameIdHTMLToIPFS(
-						$currentNameId,
-						nameData.blockDate,
-						nameData.description,
-						nameData.imageCid
-					).then((htmlCid) => {
-						// Forward to IPFS gateway
-						gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
-						console.log('HTML page available at:', gatewayUrl);
-						console.log('Added HTML page to IPFS:', htmlCid);
-					});
+	async function closeSplash() {
+		showSplash = false;
+		localStorage.setItem('splashAgreed', 'true');
+		// Initialize services after splash screen is closed
+		await initializeServices();
+	}
+
+	$: if (agreed && isConnected && $currentNameId) {
+		// Generate and publish HTML page
+		console.log('Generate and publish HTML page for', $currentNameId);
+		try {
+			const nameData = getNameIdData($electrumClient, $helia, $currentNameId).then((nameData) => {
+				console.log('nameData', nameData);
+				writeNameIdHTMLToIPFS(
+					$currentNameId,
+					nameData.blockDate,
+					nameData.description,
+					nameData.imageCid
+				).then((htmlCid) => {
+					// Forward to IPFS gateway
+					gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
+					console.log('HTML page available at:', gatewayUrl);
+					console.log('Added HTML page to IPFS:', htmlCid);
 				});
-			} catch (error) {
-				console.error('Error generating HTML page:', error);
-				// Don't throw error to avoid blocking metadata publishing
-			}
+			});
+		} catch (error) {
+			console.error('Error generating HTML page:', error);
+			// Don't throw error to avoid blocking metadata publishing
 		}
 	}
 	// Function to copy the URL to the clipboard
@@ -218,9 +250,19 @@
 	function toggleDarkMode() {
 		isDarkMode = !isDarkMode;
 	}
-
-	function closeSplash() {
-		showSplash = false;
+	$:console.log("connected server", $connectedServer)
+	// Add debug logging to the reactive statement
+	$: if ($connectedServer?.length > 0) {
+		console.log('ConnectedServer changed:', {
+			initialized,
+			serverLength: $connectedServer.length,
+			agreed: localStorage.getItem('splashAgreed')
+		});
+		
+		if (!initialized) {
+			console.warn('WARNING: ElectrumX connection detected before initialization!');
+			// console.trace(); // This will show the call stack
+		}
 	}
 </script>
 
