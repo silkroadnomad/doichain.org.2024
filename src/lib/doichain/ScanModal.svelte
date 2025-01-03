@@ -2,6 +2,8 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Scanner } from '@peerpiper/qrcode-scanner-svelte';
 	import { joinQRs } from 'bbqr';
+	import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
+	import { URDecoder } from '@ngraveio/bc-ur';
 
 	const dispatch = createEventDispatcher();
 	let result = '';
@@ -30,10 +32,38 @@
 						dispatch('close');
 					}
 				} catch (ex) {
-					console.log('issue with bbqr code take result as standard text', ex);
-					scanData = result;
-					scanOpen = false;
-					dispatch('close');
+					console.log('issue with bbqr code, attempting BC-UR parse', ex);
+					try {
+						// Check if it's a BC-UR format
+						if (result.toLowerCase().startsWith('ur:')) {
+							// Handle single-part UR
+							const urDecoder = new URDecoder();
+							urDecoder.receivePart(result);
+							
+							if (urDecoder.isComplete()) {
+								const decoded = urDecoder.resultUR();
+								if (decoded.type === 'crypto-psbt') {
+									const psbt = CryptoPSBT.fromCBOR(decoded.cbor);
+									scanData = psbt;
+								} else {
+									scanData = decoded;
+								}
+								scanOpen = false;
+								dispatch('close');
+								return;
+							}
+						}
+						// If not BC-UR or incomplete, fall back to plain text
+						console.log('not a valid BC-UR code, using as plain text');
+						scanData = result;
+						scanOpen = false;
+						dispatch('close');
+					} catch (urError) {
+						console.log('error parsing BC-UR code, using as plain text', urError);
+						scanData = result;
+						scanOpen = false;
+						dispatch('close');
+					}
 				}
 			}, scanTimeoutDuration);
 		} else {
