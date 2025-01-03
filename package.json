@@ -73,6 +73,7 @@
 		"@libp2p/webtransport": "^5.0.21",
 		"@multiformats/dns": "^1.0.6",
 		"@multiformats/multiaddr": "^12.3.4",
+		"@ngraveio/bc-ur": "^1.1.13",
 		"@orbitdb/core": "^2.4.3",
 		"@peerpiper/qrcode-scanner-svelte": "^1.0.7",
 		"@sveltejs/adapter-static": "^3.0.8",
