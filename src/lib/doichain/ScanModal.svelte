@@ -43,8 +43,16 @@
 							if (urDecoder.isComplete()) {
 								const decoded = urDecoder.resultUR();
 								if (decoded.type === 'crypto-psbt') {
-									const psbt = CryptoPSBT.fromCBOR(decoded.cbor);
-									scanData = psbt;
+									try {
+										const psbt = CryptoPSBT.fromCBOR(decoded.cbor);
+										// Convert PSBT to base64 format expected by renderQR.js
+										const psbtBuffer = Buffer.from(psbt.getPSBT());
+										const psbtBase64 = psbtBuffer.toString('base64');
+										scanData = psbtBase64;
+									} catch (psbtError) {
+										console.error('Error processing PSBT:', psbtError);
+										scanData = decoded;
+									}
 								} else {
 									scanData = decoded;
 								}
