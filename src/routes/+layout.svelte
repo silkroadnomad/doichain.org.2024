@@ -137,6 +137,29 @@
 		});
 	}
 
+	function generateAndPublishHTMLPage() {
+		console.log('Generate and publish HTML page for', $currentNameId);
+		try {
+			getNameIdData($electrumClient, $helia, $currentNameId).then((nameData) => {
+				console.log('nameData', nameData);
+				writeNameIdHTMLToIPFS(
+					$currentNameId,
+					nameData.blockDate,
+					nameData.description,
+					nameData.imageCid
+				).then((htmlCid) => {
+					// Forward to IPFS gateway
+					gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
+					console.log('HTML page available at:', gatewayUrl);
+					console.log('Added HTML page to IPFS:', htmlCid);
+				});
+			});
+		} catch (error) {
+			console.error('Error generating HTML page:', error);
+			// Don't throw error to avoid blocking metadata publishing
+		}
+	}
+
 	// Move initialization logic into a separate function
 	async function initializeServices() {
 		const agreed = localStorage.getItem('splashAgreed');
@@ -146,7 +169,6 @@
 		}
 
 		try {
-			// Initialize libp2p first
 			$libp2p = await createLibp2p(config);
 			window.libp2p = $libp2p;
 
@@ -162,7 +184,6 @@
 				return $libp2p.dial(addr);
 			};
 
-			// Setup libp2p event handlers
 			if ($libp2p) {
 				setupLibp2pEventHandlers($libp2p, publishList100Request);
 			}
@@ -170,7 +191,11 @@
 			// Initialize electrum connection
 			const { isConnected } = getConnectionStatus($connectedServer);
 			if (!isConnected) {
-				setupElectrumConnection($network);
+				await setupElectrumConnection($network);
+
+				if ($currentNameId) {
+					generateAndPublishHTMLPage();
+				}
 			}
 
 			// Set initialized to true only after everything is ready
@@ -212,29 +237,6 @@
 		await initializeServices();
 	}
 
-	$: if (agreed && isConnected && $currentNameId) {
-		// Generate and publish HTML page
-		console.log('Generate and publish HTML page for', $currentNameId);
-		try {
-			const nameData = getNameIdData($electrumClient, $helia, $currentNameId).then((nameData) => {
-				console.log('nameData', nameData);
-				writeNameIdHTMLToIPFS(
-					$currentNameId,
-					nameData.blockDate,
-					nameData.description,
-					nameData.imageCid
-				).then((htmlCid) => {
-					// Forward to IPFS gateway
-					gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
-					console.log('HTML page available at:', gatewayUrl);
-					console.log('Added HTML page to IPFS:', htmlCid);
-				});
-			});
-		} catch (error) {
-			console.error('Error generating HTML page:', error);
-			// Don't throw error to avoid blocking metadata publishing
-		}
-	}
 	// Function to copy the URL to the clipboard
 	function copyToClipboard() {
 		navigator.clipboard
@@ -250,20 +252,7 @@
 	function toggleDarkMode() {
 		isDarkMode = !isDarkMode;
 	}
-	$:console.log("connected server", $connectedServer)
-	// Add debug logging to the reactive statement
-	$: if ($connectedServer?.length > 0) {
-		console.log('ConnectedServer changed:', {
-			initialized,
-			serverLength: $connectedServer.length,
-			agreed: localStorage.getItem('splashAgreed')
-		});
-		
-		if (!initialized) {
-			console.warn('WARNING: ElectrumX connection detected before initialization!');
-			// console.trace(); // This will show the call stack
-		}
-	}
+	
 </script>
 
 <body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen pb-[footer-height]">
