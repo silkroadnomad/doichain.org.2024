@@ -138,7 +138,7 @@
 						imageCID = cid.toString();
 						console.log('Added file to IPFS:', imageCID);
 						await publishCID(imageCID);
-						requestedCids.update((cids) => [...cids, imageCID]); //store the requested cids so we not collect other stuff
+						// requestedCids.update((cids) => [...cids, imageCID]); //the imageCID is not needed to be stored in the requestedCids list, since is referenced in the metadataCID
 						writeMetadata();
 					});
 				} else {
