@@ -162,6 +162,11 @@
         }
     }
 
+    // Watch for changes in nameOps and apply the filter
+    $: if ($nameOps) {
+        applyFilter();
+    }
+
 	onMount(async () => {
 		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
 		const handleScroll = () => {
