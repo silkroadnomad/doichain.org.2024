@@ -1,4 +1,13 @@
 <script lang="ts">
+	/**
+	 * NFTCard Component
+	 * 
+	 * This component displays an NFT card with metadata, images, and transaction details.
+	 * It supports displaying collections with multiple images and provides a tooltip for additional information.
+	 * 
+	 * @component
+	 */
+
 	import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	import NFTImage from '$lib/components/NFTImage.svelte';
 	import { helia, connectedPeers } from '../doichain/doichain-store.js';
@@ -6,21 +15,44 @@
 	import moment from 'moment';
 	import { Button, SimpleGrid, Notification } from '@svelteuidev/core';
 
+	/** @prop {Object} currentNameOp - The current name operation object containing NFT details. */
 	export let currentNameOp;
+
+	/** @prop {Object} currentNameUtxo - The current UTXO associated with the name operation. */
 	export let currentNameUtxo;
+
+	/** @prop {string} overWriteValue - A value to overwrite the current name operation. */
 	export let overWriteValue;
 
+	/** @type {Object|null} nftMetadata - Metadata of the NFT loaded from IPFS. */
 	let nftMetadata = null;
+
+	/** @type {string|null} imageUrl - URL of the current image being displayed. */
 	let imageUrl = null;
+
+	/** @type {Array} imageUrls - Array of image URLs for the NFT collection. */
 	let imageUrls = [];
+
+	/** @type {boolean} showDetails - Flag to toggle the display of NFT details. */
 	let showDetails = false;
+
+	/** @type {boolean} isIPFS - Indicates if the NFT data is loaded from IPFS. */
 	let isIPFS = false;
+
+	/** @type {boolean} showTransactionDetails - Flag to toggle the display of transaction details. */
 	let showTransactionDetails = false;
+
+	/** @type {number} currentSlideIndex - Index of the current image slide in the collection. */
 	let currentSlideIndex = 0;
+
+	/** @type {string} currentDescription - Description of the current NFT slide. */
 	let currentDescription = '';
+
+	/** @type {boolean} showNotification - Flag to show or hide the notification message. */
 	let showNotification = false;
+
+	/** @type {string} notificationMessage - Message to be displayed in the notification. */
 	let notificationMessage = '';
-	$: console.log("currentSlideIndex",currentSlideIndex)
 
 	$: {
 		if (currentNameOp.nameId) {
@@ -51,6 +83,12 @@
 
 	$: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
 
+	/**
+	 * Loads NFT data from IPFS and updates metadata and image URLs.
+	 * 
+	 * @async
+	 * @function loadNFTData
+	 */
 	async function loadNFTData() {
 		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
 		nftMetadata = metadata;
@@ -58,6 +96,13 @@
 		imageUrls = _imageUrls;
 	}
 
+	/**
+	 * Checks if the name operation is a confirmed DOI.
+	 * 
+	 * @function isConfirmedDOI
+	 * @param {Object} nameOp - The name operation object.
+	 * @returns {boolean} - True if the DOI is confirmed, false otherwise.
+	 */
 	function isConfirmedDOI(nameOp) {
 		if (typeof nameOp.value === 'string') {
 			try {
@@ -70,10 +115,22 @@
 		return false;
 	}
 
+	/**
+	 * Toggles the visibility of transaction details.
+	 * 
+	 * @function toggleTransactionDetails
+	 */
 	function toggleTransactionDetails() {
 		showTransactionDetails = !showTransactionDetails;
 	}
 
+	/**
+	 * Copies text to the clipboard and shows a notification.
+	 * 
+	 * @function copyToClipboard
+	 * @param {string} text - The text to copy.
+	 * @param {string} label - The label for the notification message.
+	 */
 	function copyToClipboard(text, label) {
 		navigator.clipboard
 			.writeText(text)
@@ -90,6 +147,11 @@
 			});
 	}
 
+	/**
+	 * Handles the overwrite action by scrolling to the top and setting the overwrite value.
+	 * 
+	 * @function handleOverwrite
+	 */
 	function handleOverwrite() {
 		console.log('handleOverwrite', currentNameOp.name);
 		window.scrollTo({
