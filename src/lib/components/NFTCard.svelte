@@ -1,4 +1,13 @@
 <script lang="ts">
+	/**
+	 * NFTCard Component
+	 * 
+	 * This component displays an NFT card with metadata, images, and transaction details.
+	 * It supports displaying collections with multiple images and provides a tooltip for additional information.
+	 * 
+	 * @component
+	 */
+
 	import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	import NFTImage from '$lib/components/NFTImage.svelte';
 	import { helia, connectedPeers } from '../doichain/doichain-store.js';
@@ -6,16 +15,44 @@
 	import moment from 'moment';
 	import { Button, SimpleGrid, Notification } from '@svelteuidev/core';
 
+	/** @prop {Object} currentNameOp - The current name operation object containing NFT details. */
 	export let currentNameOp;
+
+	/** @prop {Object} currentNameUtxo - The current UTXO associated with the name operation. */
 	export let currentNameUtxo;
 
+	/** @prop {string} overWriteValue - A value to overwrite the current name operation. */
+	export let overWriteValue;
+
+	/** @type {Object|null} nftMetadata - Metadata of the NFT loaded from IPFS. */
 	let nftMetadata = null;
+
+	/** @type {string|null} imageUrl - URL of the current image being displayed. */
 	let imageUrl = null;
-	let showDetails = false;
-	let isIPFS = false;
-	let showTransactionDetails = false;
-	let currentSlideIndex = 0;
+
+	/** @type {Array} imageUrls - Array of image URLs for the NFT collection. */
 	let imageUrls = [];
+
+	/** @type {boolean} showDetails - Flag to toggle the display of NFT details. */
+	let showDetails = false;
+
+	/** @type {boolean} isIPFS - Indicates if the NFT data is loaded from IPFS. */
+	let isIPFS = false;
+
+	/** @type {boolean} showTransactionDetails - Flag to toggle the display of transaction details. */
+	let showTransactionDetails = false;
+
+	/** @type {number} currentSlideIndex - Index of the current image slide in the collection. */
+	let currentSlideIndex = 0;
+
+	/** @type {string} currentDescription - Description of the current NFT slide. */
+	let currentDescription = '';
+
+	/** @type {boolean} showNotification - Flag to show or hide the notification message. */
+	let showNotification = false;
+
+	/** @type {string} notificationMessage - Message to be displayed in the notification. */
+	let notificationMessage = '';
 
 	$: {
 		if (currentNameOp.nameId) {
@@ -34,28 +71,6 @@
 		}
 	}
 
-	async function loadNFTData() {
-		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
-		nftMetadata = metadata;
-		console.log("metadata",metadata)
-		imageUrl = _imageUrl;
-		imageUrls = _imageUrls;
-		console.log("imageUrl",imageUrl)
-		console.log("imageUrls",imageUrls)
-	}	
-
-	function isConfirmedDOI(nameOp) {
-		if (typeof nameOp.value === 'string') {
-			try {
-				const valueObj = JSON.parse(nameOp.value);
-				return valueObj.doiSignature && valueObj.doiTimestamp;
-			} catch (e) {
-				return false;
-			}
-		}
-		return false;
-	}
-
 	$: cardBackgroundColor = currentNameOp?.name?.startsWith('e/')
 		? isConfirmedDOI(currentNameOp)
 			? 'bg-green-100'
@@ -68,13 +83,54 @@
 
 	$: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
 
+	/**
+	 * Loads NFT data from IPFS and updates metadata and image URLs.
+	 * 
+	 * @async
+	 * @function loadNFTData
+	 */
+	async function loadNFTData() {
+		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
+		nftMetadata = metadata;
+		imageUrl = _imageUrl;
+		imageUrls = _imageUrls;
+	}
+
+	/**
+	 * Checks if the name operation is a confirmed DOI.
+	 * 
+	 * @function isConfirmedDOI
+	 * @param {Object} nameOp - The name operation object.
+	 * @returns {boolean} - True if the DOI is confirmed, false otherwise.
+	 */
+	function isConfirmedDOI(nameOp) {
+		if (typeof nameOp.value === 'string') {
+			try {
+				const valueObj = JSON.parse(nameOp.value);
+				return valueObj.doiSignature && valueObj.doiTimestamp;
+			} catch (e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Toggles the visibility of transaction details.
+	 * 
+	 * @function toggleTransactionDetails
+	 */
 	function toggleTransactionDetails() {
 		showTransactionDetails = !showTransactionDetails;
 	}
 
-	let showNotification = false;
-	let notificationMessage = '';
-
+	/**
+	 * Copies text to the clipboard and shows a notification.
+	 * 
+	 * @function copyToClipboard
+	 * @param {string} text - The text to copy.
+	 * @param {string} label - The label for the notification message.
+	 */
 	function copyToClipboard(text, label) {
 		navigator.clipboard
 			.writeText(text)
@@ -91,8 +147,11 @@
 			});
 	}
 
-	export let overWriteValue;
-
+	/**
+	 * Handles the overwrite action by scrolling to the top and setting the overwrite value.
+	 * 
+	 * @function handleOverwrite
+	 */
 	function handleOverwrite() {
 		console.log('handleOverwrite', currentNameOp.name);
 		window.scrollTo({
@@ -105,7 +164,7 @@
 
 <div class="nft-card bg-white rounded-lg shadow-md overflow-hidden max-w-sm mx-auto">
 	<div
-		class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+		class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full {nftMetadata?.images?.length > 1 ? 'collection-border' : ''}"
 	>
 		<div class="mb-4">
 			<h2 class="text-xl font-semibold" title={currentNameOp?.name ?? ''}>
@@ -117,12 +176,19 @@
 			<div
 				class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square"
 			>
-				<NFTImage {imageUrl} {imageUrls} />
+				<NFTImage {imageUrl} {imageUrls} bind:currentSlideIndex />
 			</div>
 			<div class="p-6">
 				<div class="flex items-center justify-between mb-2">
 					<p class="block font-sans text-base antialiased font-medium leading-relaxed">
 						{currentNameOp?.name}
+						{#if nftMetadata?.images?.length > 1}
+							<span class="tooltip-container">
+								<span class="tooltip-icon">i</span>
+								<span class="tooltip-text">NFC Collection: Do not proof ownership of single NFCs in this collection. 
+									Transfer of the collection will only transfer the collection itself not the actual NFCs.</span>
+							</span>
+						{/if}
 					</p>
 				</div>
 				<p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
@@ -308,5 +374,52 @@
 		background-color: #fff;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		padding: 2px 4px;
+	}
+
+	.tooltip-container {
+		position: relative;
+		display: inline-block;
+		cursor: pointer;
+		margin-left: 0.5em; /* Adjust spacing between name and icon */
+	}
+
+	.tooltip-icon {
+		background-color: #007bff;
+		color: white;
+		border-radius: 50%;
+		padding: 0.2em 0.5em;
+		font-size: 0.8em;
+		text-align: center;
+		line-height: 1;
+		display: inline-block;
+	}
+
+	.tooltip-text {
+		visibility: hidden;
+		width: 200px;
+		background-color: #555;
+		color: #fff;
+		text-align: center;
+		border-radius: 6px;
+		padding: 5px 0;
+		position: absolute;
+		z-index: 1;
+		bottom: 125%; /* Position the tooltip above the icon */
+		left: 50%;
+		margin-left: -100px;
+		opacity: 0;
+		transition: opacity 0.3s;
+	}
+
+	.tooltip-container:hover .tooltip-text {
+		visibility: visible;
+		opacity: 1;
+	}
+
+	.collection-border {
+		position: relative;
+		padding: 1rem;
+		box-shadow: 0 0 0 4px #ccc, 0 0 0 8px #bbb, 0 0 0 12px #aaa;
+		border-radius: 1rem;
 	}
 </style>
