@@ -1,38 +1,93 @@
 <script>
+    /**
+     * A Svelte component for displaying NFT images with slideshow and fullscreen capabilities.
+     * 
+     * @component
+     */
+
     // External Libraries
     // (No external libraries in this file)
 
     // Exported Props
+
+    /**
+     * An array of image URLs for the slideshow.
+     * @type {string[]}
+     */
     export let imageUrls = [];
+
+    /**
+     * A single image URL to display if imageUrls is empty.
+     * @type {string}
+     */
     export let imageUrl;
+
+    /**
+     * The index of the current slide in the imageUrls array.
+     * @type {number}
+     */
     export let currentSlideIndex = 0;
 
     // Constants
-    const defaultImageUrl = 'https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80';
+
+    /**
+     * The default image URL used when no other image is available.
+     * @constant {string}
+     */
+    const defaultImageUrl = 'https://images.unsplash.com/photo-1629367494173-c78a56567877?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHx8&amp;auto=format&amp;fit=crop&amp;w=927&amp;q=80';
 
     // Reactive Variables
+
+    /**
+     * A flag indicating whether the image is in fullscreen mode.
+     * @type {boolean}
+     */
     let isFullscreen = false;
+
+    /**
+     * The image element in the DOM.
+     * @type {HTMLImageElement}
+     */
     let imageElement;
+
+    /**
+     * The URL of the current image being displayed.
+     * @type {string}
+     */
     let currentImageUrl;
 
     // Reactive Statement
     $: {
-        currentImageUrl = imageUrls[currentSlideIndex] || imageUrl || defaultImageUrl
+        currentImageUrl = imageUrls[currentSlideIndex] || imageUrl || defaultImageUrl;
     }
 
     // Functions
+
+    /**
+     * Advances to the next slide in the imageUrls array.
+     * If at the end, it loops back to the first image.
+     */
     function nextSlide() {
         if (imageUrls.length > 1) {
             currentSlideIndex = (currentSlideIndex + 1) % imageUrls.length;
         } 
     }
 
+    /**
+     * Moves to the previous slide in the imageUrls array.
+     * If at the beginning, it loops back to the last image.
+     */
     function prevSlide() {
         if (imageUrls.length > 1) {
             currentSlideIndex = (currentSlideIndex - 1 + imageUrls.length) % imageUrls.length;
         } 
     }
 
+    /**
+     * Toggles the fullscreen mode for the imageElement.
+     * If the element is not in fullscreen, it requests fullscreen.
+     * If the element is in fullscreen, it exits fullscreen.
+     */
     function toggleFullscreen() {
         if (!isFullscreen) {
             if (imageElement.requestFullscreen) {
@@ -54,6 +109,12 @@
         isFullscreen = !isFullscreen;
     }
 
+    /**
+     * Handles the 'keydown' event to exit fullscreen mode
+     * when the 'Escape' key is pressed.
+     * 
+     * @param {KeyboardEvent} event - The keyboard event object.
+     */
     function handleKeydown(event) {
         if (event.key === 'Escape' && isFullscreen) {
             toggleFullscreen();
