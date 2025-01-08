@@ -185,7 +185,7 @@
 						{#if nftMetadata?.images?.length > 1}
 							<span class="tooltip-container">
 								<span class="tooltip-icon">i</span>
-								<span class="tooltip-text">NFC Collection: Do not proof ownership of single NFCs in this collection. 
+								<span class="tooltip-text">NFC Collection: Does not proof ownership of single NFCs in this collection. 
 									Transfer of the collection will only transfer the collection itself not the actual NFCs.</span>
 							</span>
 						{/if}
