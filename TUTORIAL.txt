@@ -1,0 +1,64 @@
+# Video Tutorial Script: Registering a Name and NFC on Doichain dPWA
+
+## Opening Scene
+
+- **Visual**: Logo animation of "Doichain dPWA - the decentralized, local-first, progressive web app" with upbeat background music.
+- **Narration**: "Welcome to Doichain dPWA, the decentralized, local-first, progressive web app. In this tutorial, we'll guide you through the process of checking for an existing name, registering a new name, and creating a Non-Fungible Coin on the Doichain network."
+
+## Scene 1: Checking for an Existing Name
+
+- **Visual**: Screen recording of the Doichain dPWA homepage.
+- **Narration**: "First, let's check if a name is available on the Doichain network. Start by navigating to the 'Name Registration' section on our homepage."
+- **Action**: Show the user typing a name into the name search textfield.
+- **Narration**: "Enter the desired name into the name search textfield and hit 'Return'."
+- **Visual**: Display the result showing the name's availability.
+- **Narration**: "If the name is available, it will be immediately displayed. If not, you can proceed to register it."
+
+## Scene 2: Registering a New Name and NFC
+
+- **Visual**: Transition to the registration form.
+- **Narration**: "Now, let's register a new name and create a Non-Fungible Coin. Simply hit 'Return' in the input textfield to proceed."
+- **Action**: Show the user hitting 'Return' and the form automatically processing the registration.
+- **Narration**: "After hitting 'Return', fill out the registration form with your chosen name. Next, upload your digital artwork to associate with your NFC."
+
+- **Visual**: Screen showing the IPFS pinning process.
+- **Narration**: "After uploading, the IPFS pinning service will acknowledge receipt of your digital artwork. The screen will display the file size and the associated pinning cost."
+- **Action**: Display the file size and pinning price.
+- **Narration**: "A green status bullet will appear, indicating that the file was successfully received and is ready to be added to the pinning service. The actual pinning will occur after the payment transaction is successfully confirmed on the blockchain."
+
+## Scene 3: Entering or Scanning a Doichain Address or XPUB/YPUB/ZPUB
+
+- **Visual**: Screen showing the input field with a scanner icon.
+- **Narration**: "To proceed, you need to enter or scan a Doichain address with unspent coins, also called unspent transaction outputs (UTXOs), or scan a full XPUB/YPUB/ZPUB from your DoiWallet."
+- **Action**: Show the user clicking on the scanner icon next to the input field.
+- **Narration**: "Click on the scanner icon next to the input field. This will open your camera."
+- **Visual**: User opening the DoiWallet on their mobile device.
+- **Narration**: "Open your DoiWallet on your mobile and choose the paying wallet. Then, click on the three dots in the upper right corner and select 'Show XPUB'."
+- **Action**: Demonstrate scanning the QR code displayed on the mobile device.
+- **Narration**: "Scan the QR code to input the necessary information for the transaction. After scanning, click the magnifying glass button to confirm the address or XPUB."
+
+- **Visual**: Screen showing UTXO selection.
+- **Narration**: "Next, mark the UTXOs to be included as inputs for the transaction. You can select one or more UTXOs, but ensure they cover the total costs of the transaction."
+
+## Scene 4: Scanning the Animated QR-Code
+
+- **Visual**: Animated QR code displayed on the screen.
+- **Narration**: "To proceed with the transaction, you can use the main scanning button of the app or choose the 'Send' button and then 'Sign a Transaction' to open the scanner camera on your mobile."
+- **Action**: Show the user selecting the scanning option on their mobile device.
+- **Narration**: "The transaction scan will take a few seconds, and you'll see the progress in percentage displayed on your mobile screen."
+- **Visual**: Screen showing the transaction details.
+- **Narration**: "Once the scan is complete, double-check the inputs and outputs of the transaction to ensure everything is correct before broadcasting it to the network."
+
+## Scene 5: Broadcasting the Transaction
+
+- **Visual**: Confirmation screen showing the transaction details.
+- **Narration**: "Once scanned, review the transaction details in your DOI-Wallet. If everything looks good, go ahead and broadcast the transaction."
+- **Action**: Demonstrate the user clicking 'Broadcast' in the DOI-Wallet app.
+- **Narration**: "Click 'Broadcast' to finalize the registration. Your name and NFC are now securely registered on the Doichain network."
+
+## Closing Scene
+
+- **Visual**: Return to the Doichain dPWA logo with contact information and social media links.
+- **Narration**: "Congratulations! You've successfully registered a name and created a Non-Fungible Coin on Doichain. For more tutorials and updates, follow us on our social media channels. Thank you for choosing Doichain dPWA."
+
+- **Background Music**: Fade out with upbeat music.
