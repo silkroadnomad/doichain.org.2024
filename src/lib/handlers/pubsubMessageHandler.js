@@ -94,12 +94,22 @@ function handleList100Request(libp2p) {
 	}
 }
 
+function sanitizeInput(input) {
+	return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function handleNameOpsMessage(message) {
 	nameOps.update((currentOps) => {
 		try {
 			const jsonMessage = JSON.parse(message);
 
-			const newNameOps = jsonMessage.filter((newOp) => {
+			const sanitizedMessage = jsonMessage.map((op) => ({
+				...op,
+				nameId: sanitizeInput(op.nameId),
+				nameValue: sanitizeInput(op.nameValue),
+			}));
+
+			const newNameOps = sanitizedMessage.filter((newOp) => {
 				const isDuplicate = currentOps.some((existingOp) => {
 					return existingOp.txid === newOp.txid;
 				});
