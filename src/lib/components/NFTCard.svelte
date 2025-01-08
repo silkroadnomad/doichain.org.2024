@@ -8,14 +8,19 @@
 
 	export let currentNameOp;
 	export let currentNameUtxo;
+	export let overWriteValue;
 
 	let nftMetadata = null;
 	let imageUrl = null;
+	let imageUrls = [];
 	let showDetails = false;
 	let isIPFS = false;
 	let showTransactionDetails = false;
 	let currentSlideIndex = 0;
-	let imageUrls = [];
+	let currentDescription = '';
+	let showNotification = false;
+	let notificationMessage = '';
+	$: console.log("currentSlideIndex",currentSlideIndex)
 
 	$: {
 		if (currentNameOp.nameId) {
@@ -34,15 +39,24 @@
 		}
 	}
 
+	$: cardBackgroundColor = currentNameOp?.name?.startsWith('e/')
+		? isConfirmedDOI(currentNameOp)
+			? 'bg-green-100'
+			: 'bg-yellow-100'
+		: currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')
+			? 'bg-orange-100'
+			: currentNameOp?.name?.startsWith('nft/')
+				? 'bg-blue-100'
+				: 'bg-gray-800'; // Dark background for non-standard nameOps
+
+	$: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
+
 	async function loadNFTData() {
 		const { metadata, imageUrl: _imageUrl, imageUrls: _imageUrls } = await getNFTData($helia, currentNameOp.value);
 		nftMetadata = metadata;
-		console.log("metadata",metadata)
 		imageUrl = _imageUrl;
 		imageUrls = _imageUrls;
-		console.log("imageUrl",imageUrl)
-		console.log("imageUrls",imageUrls)
-	}	
+	}
 
 	function isConfirmedDOI(nameOp) {
 		if (typeof nameOp.value === 'string') {
@@ -56,24 +70,9 @@
 		return false;
 	}
 
-	$: cardBackgroundColor = currentNameOp?.name?.startsWith('e/')
-		? isConfirmedDOI(currentNameOp)
-			? 'bg-green-100'
-			: 'bg-yellow-100'
-		: currentNameOp?.name?.startsWith('pe/') || currentNameOp?.name?.startsWith('poe/')
-			? 'bg-orange-100'
-			: currentNameOp?.name?.startsWith('nft/')
-				? 'bg-blue-100'
-				: 'bg-gray-800'; // Dark background for non-standard nameOps
-
-	$: textColor = cardBackgroundColor === 'bg-gray-800' ? 'text-white' : 'text-gray-800';
-
 	function toggleTransactionDetails() {
 		showTransactionDetails = !showTransactionDetails;
 	}
-
-	let showNotification = false;
-	let notificationMessage = '';
 
 	function copyToClipboard(text, label) {
 		navigator.clipboard
@@ -91,8 +90,6 @@
 			});
 	}
 
-	export let overWriteValue;
-
 	function handleOverwrite() {
 		console.log('handleOverwrite', currentNameOp.name);
 		window.scrollTo({
@@ -105,7 +102,7 @@
 
 <div class="nft-card bg-white rounded-lg shadow-md overflow-hidden max-w-sm mx-auto">
 	<div
-		class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
+		class="{cardBackgroundColor} {textColor} rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full {nftMetadata?.images?.length > 1 ? 'collection-border' : ''}"
 	>
 		<div class="mb-4">
 			<h2 class="text-xl font-semibold" title={currentNameOp?.name ?? ''}>
@@ -117,12 +114,19 @@
 			<div
 				class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white bg-clip-border rounded-xl aspect-square"
 			>
-				<NFTImage {imageUrl} {imageUrls} />
+				<NFTImage {imageUrl} {imageUrls} bind:currentSlideIndex />
 			</div>
 			<div class="p-6">
 				<div class="flex items-center justify-between mb-2">
 					<p class="block font-sans text-base antialiased font-medium leading-relaxed">
 						{currentNameOp?.name}
+						{#if nftMetadata?.images?.length > 1}
+							<span class="tooltip-container">
+								<span class="tooltip-icon">i</span>
+								<span class="tooltip-text">NFC Collection: Do not proof ownership of single NFCs in this collection. 
+									Transfer of the collection will only transfer the collection itself not the actual NFCs.</span>
+							</span>
+						{/if}
 					</p>
 				</div>
 				<p class="block font-sans text-sm antialiased font-normal leading-normal opacity-75">
@@ -308,5 +312,52 @@
 		background-color: #fff;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		padding: 2px 4px;
+	}
+
+	.tooltip-container {
+		position: relative;
+		display: inline-block;
+		cursor: pointer;
+		margin-left: 0.5em; /* Adjust spacing between name and icon */
+	}
+
+	.tooltip-icon {
+		background-color: #007bff;
+		color: white;
+		border-radius: 50%;
+		padding: 0.2em 0.5em;
+		font-size: 0.8em;
+		text-align: center;
+		line-height: 1;
+		display: inline-block;
+	}
+
+	.tooltip-text {
+		visibility: hidden;
+		width: 200px;
+		background-color: #555;
+		color: #fff;
+		text-align: center;
+		border-radius: 6px;
+		padding: 5px 0;
+		position: absolute;
+		z-index: 1;
+		bottom: 125%; /* Position the tooltip above the icon */
+		left: 50%;
+		margin-left: -100px;
+		opacity: 0;
+		transition: opacity 0.3s;
+	}
+
+	.tooltip-container:hover .tooltip-text {
+		visibility: visible;
+		opacity: 1;
+	}
+
+	.collection-border {
+		position: relative;
+		padding: 1rem;
+		box-shadow: 0 0 0 4px #ccc, 0 0 0 8px #bbb, 0 0 0 12px #aaa;
+		border-radius: 1rem;
 	}
 </style>
