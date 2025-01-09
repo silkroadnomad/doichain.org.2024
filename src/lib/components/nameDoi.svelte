@@ -1,40 +1,47 @@
 <script>
-	import { onDestroy, onMount } from 'svelte';
-	import Dropzone from 'svelte-file-dropzone';
-	import {
-		helia,
-		libp2p,
-		network,
-		electrumClient,
-		cidMessages,
-		requestedCids
-	} from '$lib/doichain/doichain-store.js';
+    // External Libraries
+    import { onDestroy, onMount } from 'svelte';
+    import Dropzone from 'svelte-file-dropzone';
+    import { unixfs } from '@helia/unixfs';
+    import moment from 'moment';
 
-	import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js';
-	import { renderBCUR } from '../doichain/renderQR.js';
-	import { DOICHAIN } from '$lib/doichain/doichain.js';
-	import { unixfs } from '@helia/unixfs';
-	import ScanModal from '$lib/doichain/ScanModal.svelte';
-	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
-	import TransactionDetails from './TransactionDetails.svelte';
-	import { subscribeToAddress } from '$lib/doichain/nameDoi.js'; 
-	import { publishCID } from '$lib/doichain/nameDoi.js';
-	import { checkName } from '$lib/doichain/nameValidation.js';
-	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
-	// Add event dispatcher
-	import { createEventDispatcher } from 'svelte';
-	import moment from 'moment';
-	const dispatch = createEventDispatcher();
-	let scanOpen = false;
-	let scanTarget = '';
-	let scanData = '';
+    // Internal Modules - Stores
+    import {
+        helia,
+        libp2p,
+        network,
+        electrumClient,
+        cidMessages,
+        requestedCids
+    } from '$lib/doichain/doichain-store.js';
+
+    // Internal Modules - Functions
+    import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js';
+    import { renderBCUR } from '../doichain/renderQR.js';
+    import { DOICHAIN } from '$lib/doichain/doichain.js';
+    import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
+    import { subscribeToAddress, publishCID } from '$lib/doichain/nameDoi.js';
+    import { checkName } from '$lib/doichain/nameValidation.js';
+    import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
+
+    // Components
+    import ScanModal from '$lib/doichain/ScanModal.svelte';
+    import TransactionDetails from './TransactionDetails.svelte';
+
+    // Event Dispatcher
+    import { createEventDispatcher } from 'svelte';
+
+    // Other
+    const dispatch = createEventDispatcher();
+    let scanOpen = false;
+    let scanTarget = '';
+    let scanData = '';
 	
 	// Collections tab state
 	let previewImgSrc;
 	let imageCID;
 	let metadataCID;
 	let metadataJSON;
-	let nameIdForCollection = '';
 	let searchTerm = '';
 	let searchResults = [];
 	let collectionsList = [];
@@ -330,6 +337,7 @@
 	}
 
 	function handleFinish() {
+		console.log('handleFinish called');
 		// Dispatch event to parent component
 		dispatch('finish');
 
@@ -471,7 +479,6 @@
 		URL.revokeObjectURL(url);
 	}
 </script>
-
 {#if scanOpen}
 	<ScanModal bind:scanOpen bind:scanData />
 {/if}
@@ -485,8 +492,9 @@
 					<h3 class="font-bold">1. Data Definition</h3>
 					{#if activeTimeLine === 0}
 						<p class="text-sm text-gray-500">
-							<li>Mint a NFC (non-fungible-coin),</li>
-							<li>Create a key-value transaction!</li>
+							<li>Mint a NFC (non-fungible-coin)</li>
+							<li>Create a key-value transaction</li>
+							<li>Create a collection of NFCs</li>
 						</p>
 						<p class="mt-4">&nbsp;</p>
 						<div class="border-b border-gray-200">
@@ -794,6 +802,7 @@
 									<div class="font-semibold text-left">Key:</div>
 									<div>
 										<input
+											bind:value={nameId}
 											type="text"
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										/>
@@ -802,6 +811,7 @@
 									<div class="font-semibold text-left">Value:</div>
 									<div>
 										<input
+											bind:value={nameValue}
 											type="text"
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										/>
@@ -888,8 +898,7 @@
 					{#if activeTimeLine === 1}
 						<p class="text-sm text-gray-500">
 							Enter your wallet address which contains the UTXOs to be used for the transaction.
-							Toggle to spendable coins as inputs to the transaction. NameOps are utxos too but not
-							spendable, since burned.
+							Toggle to spendable coins as inputs to the transaction. 
 						</p>
 						<p class="mt-4">&nbsp;</p>
 						<div class="grid grid-cols-2 gap-4">
@@ -1327,3 +1336,4 @@
 		opacity: 1;
 	}
 </style>
+
