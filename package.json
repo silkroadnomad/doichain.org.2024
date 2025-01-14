@@ -12,8 +12,10 @@
 		"test": "npm run test:integration && npm run test:unit",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"test:integration": "playwright test",
-		"test:unit": "vitest"
+		"test:integration": "playwright test tests/e2e/basic.spec.js",
+		"test:e2e": "playwright test tests/e2e/basic.spec.js",
+		"test:unit": "vitest",
+		"test:watch": "nodemon --config ./nodemon.json"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.49.1",
@@ -26,6 +28,7 @@
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.46.1",
 		"globals": "^15.14.0",
+		"nodemon": "^3.1.9",
 		"postcss": "^8.4.49",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.2",

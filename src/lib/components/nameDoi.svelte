@@ -478,6 +478,33 @@
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 	}
+
+	async function handleWalletAddressKeydown(event) {
+		if (event.key === 'Enter') {
+			localStorage.setItem('walletAddress', walletAddress);
+			const {
+				transactions,
+				nextUnusedAddressesMap,
+				nextUnusedAddress,
+				nextUnusedChangeAddress
+			} = await getAddressTxs(walletAddress, [], $electrumClient, $network);
+			console.log('nextUnusedAddressesMap:', nextUnusedAddressesMap);
+			console.log('nextUnusedAddress:', nextUnusedAddress);
+			console.log('nextUnusedChangeAddress:', nextUnusedChangeAddress);
+			recipientsAddress = nextUnusedAddress;
+			changeAddress = nextUnusedChangeAddress;
+			utxos = transactions
+				.filter(
+					(tx) => tx.type === 'output' && tx.utxo === true && tx.confirmations > 0 // Additional check to ensure transaction is confirmed
+				)
+				.map((tx) => ({
+					tx_hash: tx.txid,
+					tx_pos: tx.n,
+					value: tx.value,
+					height: tx.height
+				}));
+		}
+	}
 </script>
 {#if scanOpen}
 	<ScanModal bind:scanOpen bind:scanData />
@@ -906,32 +933,7 @@
 								<input
 									type="text"
 									bind:value={walletAddress}
-									on:keydown={async (event) => {
-										if (event.key === 'Enter') {
-											localStorage.setItem('walletAddress', walletAddress);
-											const {
-												transactions,
-												nextUnusedAddressesMap,
-												nextUnusedAddress,
-												nextUnusedChangeAddress
-											} = await getAddressTxs(walletAddress, [], $electrumClient, $network);
-											console.log('nextUnusedAddressesMap:', nextUnusedAddressesMap);
-											console.log('nextUnusedAddress:', nextUnusedAddress);
-											console.log('nextUnusedChangeAddress:', nextUnusedChangeAddress);
-											recipientsAddress = nextUnusedAddress;
-											changeAddress = nextUnusedChangeAddress;
-											utxos = transactions
-												.filter(
-													(tx) => tx.type === 'output' && tx.utxo === true && tx.confirmations > 0 // Additional check to ensure transaction is confirmed
-												)
-												.map((tx) => ({
-													tx_hash: tx.txid,
-													tx_pos: tx.n,
-													value: tx.value,
-													height: tx.height
-												}));
-										}
-									}}
+									on:keydown={handleWalletAddressKeydown}
 									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								/>
 								<button
