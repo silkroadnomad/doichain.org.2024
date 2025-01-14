@@ -1,5 +1,7 @@
 # Doichain.org
 
+![Tests](https://github.com/silkroadnomad/doichain.org.2024/actions/workflows/e2e-test.yml/badge.svg)
+
 Key Features:
 Name Registration and Availability Check:
 Users can input a name to check its availability on the Doichain network.
