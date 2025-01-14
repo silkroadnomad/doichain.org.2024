@@ -33,23 +33,23 @@ jobs:
           libvpx7 \
           libevent-2.1-7 \
           libopus0 \
-          libgstallocators-1.0-0 \
-          libgstapp-1.0-0 \
-          libgstpbutils-1.0-0 \
-          libgstaudio-1.0-0 \
-          libgstgl-1.0-0 \
-          libgsttag-1.0-0 \
-          libgstvideo-1.0-0 \
-          libgstcodecparsers-1.0-0 \
-          libgstfft-1.0-0 \
+          gstreamer1.0-plugins-base \
+          gstreamer1.0-plugins-good \
+          gstreamer1.0-plugins-bad \
+          gstreamer1.0-plugins-ugly \
+          gstreamer1.0-libav \
+          gstreamer1.0-tools \
+          gstreamer1.0-x \
+          gstreamer1.0-gl \
+          gstreamer1.0-gtk3 \
+          gstreamer1.0-pulseaudio \
           libflite1 \
-          libflite1-dev \
           libavif13 \
           libharfbuzz-icu0 \
           libhyphen0 \
           libmanette-0.2-0 \
           libgles2-mesa \
-          libx264-155
+          libx264-dev
 
     - name: Install Playwright browsers
       run: npx playwright install
