@@ -59,12 +59,32 @@ test('verify at least 3 NFCs are displayed in NameOps section', async ({ page })
   
   // Get all NFC cards
   const nftCards = await page.locator('[data-testid="nft-card"]');
+  const nftCardCount = await nftCards.count();
   
-  // Verify at least 3 NFCs are displayed
-  await expect(nftCards).toHaveCount(3);
+  // Verify more than 3 NFCs are displayed
+  expect(nftCardCount).toBeGreaterThan(3);
   
   // Optional: Verify some content in the NFC cards
   const firstNfc = nftCards.first();
   await expect(firstNfc).toBeVisible();
   await expect(firstNfc.locator('h2')).not.toBeEmpty();
+});
+
+
+test('verify block height matches explorer API', async ({ page }) => {
+  await acceptTermsAndContinue(page);
+  await checkWssConnection(page); 
+  // Get block height from the UI
+  const uiBlockHeightText = await page.getByText('Current Block Height:').textContent();
+  const uiBlockHeight = parseInt(uiBlockHeightText.split(':')[1].trim(), 10);
+  console.log("uiBlockHeight",uiBlockHeight)
+  // Fetch block height from API
+  const apiResponse = await fetch('https://explorer.doichain.org/api/getblockcount/');
+  const apiData = await apiResponse.json();
+  console.log("apiData",apiData)
+  const apiBlockHeight = apiData.blockcount;
+  
+  // Compare values with a tolerance of ±1 block to account for potential delays
+  expect(uiBlockHeight).toBeGreaterThanOrEqual(apiBlockHeight - 1);
+  expect(uiBlockHeight).toBeLessThanOrEqual(apiBlockHeight + 1);
 });
