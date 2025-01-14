@@ -1,6 +1,6 @@
 # Doichain.org
 
-![Tests](https://github.com/silkroadnomad/doichain.org.2024/actions/workflows/e2e-test.yml/badge.svg)
+![Tests](https://github.com/silkroadnomad/doichain.org.2024/actions/workflows/e2e-tests.yml/badge.svg)
 
 Key Features:
 Name Registration and Availability Check:
