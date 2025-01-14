@@ -41,7 +41,7 @@ test('find the hello world nfc', async ({ page }) => {
   await page.getByText('N8YtTBMRqMq9E45VMT9KVbfwt5X5oLD4vt').click();
 });
 
-test.only('check for at least one wss transport connection', async ({ page }) => {
+test('check for at least one wss transport connection', async ({ page }) => {
   await acceptTermsAndContinue(page);
   
   await page.getByRole('button', { name: 'Collections' }).click();
