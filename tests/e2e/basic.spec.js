@@ -49,3 +49,22 @@ test.only('check for at least one wss transport connection', async ({ page }) =>
   
   await checkWssConnection(page);
 });
+
+test('verify at least 3 NFCs are displayed in NameOps section', async ({ page }) => {
+  await acceptTermsAndContinue(page);
+  await checkWssConnection(page);
+  
+  // Wait for NFC cards to load
+  await page.waitForSelector('[data-testid="nft-card"]');
+  
+  // Get all NFC cards
+  const nftCards = await page.locator('[data-testid="nft-card"]');
+  
+  // Verify at least 3 NFCs are displayed
+  await expect(nftCards).toHaveCount(3);
+  
+  // Optional: Verify some content in the NFC cards
+  const firstNfc = nftCards.first();
+  await expect(firstNfc).toBeVisible();
+  await expect(firstNfc.locator('h2')).not.toBeEmpty();
+});

@@ -402,7 +402,9 @@
 
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{#each filteredNameOps as nameOp}
-				<NFTCard currentNameOp={nameOp} currentNameUtxo={null} bind:overWriteValue />
+				<div data-testid="nft-card" class="nft-card">
+					<NFTCard currentNameOp={nameOp} currentNameUtxo={null} bind:overWriteValue />
+				</div>
 			{/each}
 		</div>
 	</div>
