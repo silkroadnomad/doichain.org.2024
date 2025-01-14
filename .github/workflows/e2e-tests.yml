@@ -25,34 +25,8 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          libwoff1 \
-          libvpx7 \
-          libevent-2.1-7 \
-          libopus0 \
-          gstreamer1.0-plugins-base \
-          gstreamer1.0-plugins-good \
-          gstreamer1.0-plugins-bad \
-          gstreamer1.0-plugins-ugly \
-          gstreamer1.0-libav \
-          gstreamer1.0-tools \
-          gstreamer1.0-x \
-          gstreamer1.0-gl \
-          gstreamer1.0-gtk3 \
-          gstreamer1.0-pulseaudio \
-          libflite1 \
-          libavif13 \
-          libharfbuzz-icu0 \
-          libhyphen0 \
-          libmanette-0.2-0 \
-          libgles2-mesa \
-          libx264-dev
-
     - name: Install Playwright browsers
-      run: npx playwright install
+      run: npx playwright install --with-deps
 
     - name: Run e2e tests
       run: npm run test:e2e 
