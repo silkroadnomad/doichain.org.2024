@@ -56,6 +56,7 @@
 
 <div class="flex justify-center flex-wrap gap-2 mb-6 relative">
 	<span
+		data-testid="transport-webrtc"
 		class="px-2 py-1 bg-blue-400 text-white hover:bg-blue-500 text-xs font-semibold rounded-full cursor-pointer"
 		on:mouseenter={() => showAddresses('webrtc')}
 		on:mouseleave={hideAddresses}
@@ -63,6 +64,7 @@
 		WebRTC: {peerCounts.webrtc}
 	</span>
 	<span
+		data-testid="transport-webtransport"
 		class="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full cursor-pointer"
 		on:mouseenter={() => showAddresses('webtransport')}
 		on:mouseleave={hideAddresses}
@@ -70,6 +72,7 @@
 		WebTransport: {peerCounts.webtransport}
 	</span>
 	<span
+		data-testid="transport-wss"
 		class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded-full cursor-pointer"
 		on:mouseenter={() => showAddresses('wss')}
 		on:mouseleave={hideAddresses}
@@ -77,6 +80,7 @@
 		WSS: {peerCounts.wss}
 	</span>
 	<span
+		data-testid="transport-ws"
 		class="px-2 py-1 bg-yellow-500 text-white text-xs font-semibold rounded-full cursor-pointer"
 		on:mouseenter={() => showAddresses('ws')}
 		on:mouseleave={hideAddresses}
