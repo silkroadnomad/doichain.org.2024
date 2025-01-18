@@ -1,10 +1,7 @@
 <script>
-	import { getConnectionStatus } from '../doichain/connectElectrum.js';
-	import { checkName } from '$lib/doichain/nameValidation.js';
-	import { electrumClient, connectedServer, network } from '../doichain/doichain-store.js';
+	import { getConnectionStatus, checkName, electrumClient, connectedServer, network, getAddressTxs } from 'doi-js';
 	import { createEventDispatcher } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
 
 	const dispatch = createEventDispatcher();
 	export let name = '';

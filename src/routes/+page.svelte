@@ -3,8 +3,7 @@
 	import { onMount } from 'svelte';
 
 	// Internal modules
-	import { libp2p, nameOps, helia, blockHeight } from '$lib/doichain/doichain-store.js';
-	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+	import { libp2p, nameOps, helia, blockHeight, CONTENT_TOPIC } from 'doi-js';
     import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	// Components
 	import NameInput from '$lib/components/nameInput.svelte';

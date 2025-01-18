@@ -1,5 +1,4 @@
-import { nameOps, cidMessages, requestedCids } from '$lib/doichain/doichain-store.js';
-import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+import { nameOps, cidMessages, requestedCids, CONTENT_TOPIC } from 'doi-js';
 let _requestedCids = [];
 requestedCids.subscribe((_) => {
 	_requestedCids = _;

@@ -1,7 +1,5 @@
 <script>
-	import { electrumClient, helia, connectedServer } from '../doichain/doichain-store.js';
-	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
-	import { nameShow } from '../doichain/nameShow.js';
+	import { electrumClient, helia, connectedServer, getConnectionStatus, nameShow } from 'doi-js';
 	import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	import { Button, Input, Card, Group, Text, SimpleGrid } from '@svelteuidev/core'; //https://svelteui.dev/core/card
 	import { browser } from '$app/environment';

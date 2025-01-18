@@ -10,17 +10,19 @@
 		requestedCids
 	} from '$lib/doichain/doichain-store.js';
 
-	import { prepareSignTransaction } from '$lib/doichain/prepareSignTransaction.js';
-	import { renderBCUR } from '../doichain/renderQR.js';
-	import { DOICHAIN } from '$lib/doichain/doichain.js';
+	import { 
+		prepareSignTransaction,
+		renderBCUR,
+		DOICHAIN,
+		ScanModal,
+		getAddressTxs,
+		subscribeToAddress,
+		publishCID,
+		checkName,
+		getMetadataFromIPFS
+	} from 'doi-js';
 	import { unixfs } from '@helia/unixfs';
-	import ScanModal from '$lib/doichain/ScanModal.svelte';
-	import { getAddressTxs } from '$lib/doichain/getAddressTxs.js';
 	import TransactionDetails from './TransactionDetails.svelte';
-	import { subscribeToAddress } from '$lib/doichain/nameDoi.js'; 
-	import { publishCID } from '$lib/doichain/nameDoi.js';
-	import { checkName } from '$lib/doichain/nameValidation.js';
-	import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
 	// Add event dispatcher
 	import { createEventDispatcher } from 'svelte';
 	import moment from 'moment';

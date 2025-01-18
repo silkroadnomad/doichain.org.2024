@@ -10,8 +10,7 @@
 
 	import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	import NFTImage from '$lib/components/NFTImage.svelte';
-	import { helia, connectedPeers } from '../doichain/doichain-store.js';
-	import { adaptNameOp } from '$lib/doichain/utxoHelpers.js';
+	import { helia, connectedPeers, adaptNameOp } from 'doi-js';
 	import moment from 'moment';
 	import { Button, SimpleGrid, Notification } from '@svelteuidev/core';
 

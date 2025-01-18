@@ -1,6 +1,5 @@
 // src/lib/utils/ipfsUtils.js
-import { getMetadataFromIPFS } from '$lib/doichain/nfc/getMetadataFromIPFS.js';
-import { getImageUrlFromIPFS } from '$lib/doichain/nfc/getImageUrlFromIPFS.js';
+import { getMetadataFromIPFS, getImageUrlFromIPFS } from 'doi-js';
 
 export async function getNFTData(helia, ipfsUrl) {
     try {

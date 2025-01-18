@@ -1,5 +1,5 @@
 <script>
-	import { connectedPeers } from '$lib/doichain/doichain-store.js';
+	import { connectedPeers } from 'doi-js';
 	let peerCounts;
 	let peerAddresses;
 

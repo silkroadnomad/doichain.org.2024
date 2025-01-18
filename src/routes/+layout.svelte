@@ -13,11 +13,13 @@
 
 	// Internal Modules
 	import { browser } from '$app/environment';
-	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
-	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
-	import { setupElectrumConnection } from '$lib/doichain/electrumConnection.js'; 
-	import { publishCID } from '$lib/doichain/nameDoi.js';
-	import { getNameIdData } from '$lib/doichain/namePage.js';
+	import { 
+		CONTENT_TOPIC,
+		getConnectionStatus,
+		setupElectrumConnection,
+		publishCID,
+		getNameIdData
+	} from 'doi-js';
 	import {
 		connectedServer,
 		electrumClient,
