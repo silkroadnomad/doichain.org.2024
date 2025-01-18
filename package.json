@@ -13,7 +13,7 @@
 		"@sveltejs/vite-plugin-svelte": "^3.1.2",
 		"@types/eslint": "^9.6.1",
 		"autoprefixer": "^10.4.20",
-		"doi-js": "github:silkroadnomad/doi-js#792d9b94ca0c90ac2fc140f24118f4712e4d12f7",
+		"doi-js": "github:silkroadnomad/doi-js#4b4ffb5eabd72c47529cda6998b2f823355f51df",
 		"eslint": "^9.17.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.46.1",
