@@ -3,17 +3,8 @@
 	"version": "0.0.122",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"ipfs-publish": "npm version patch && npm run build && ./ipfs-publish.sh",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
-		"test": "npm run test:integration && npm run test:unit",
-		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write .",
-		"test:integration": "playwright test",
-		"test:unit": "vitest"
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.49.1",
@@ -30,15 +21,14 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.2",
 		"svelte": "^4.2.19",
-		"svelte-check": "^4.1.1",
+		"svelte-check": "^4.1.4",
 		"tailwindcss": "^3.4.17",
-		"typescript": "^5.7.2",
+		"typescript": "^5.7.3",
 		"vite": "^5.4.11",
 		"vitest": "^2.1.8"
 	},
 	"type": "module",
 	"dependencies": {
-		"doi-js": "git+https://github.com/silkroadnomad/doi-js.git#14a4410",
 		"@babel/plugin-proposal-class-properties": "^7.18.6",
 		"@chainsafe/libp2p-gossipsub": "^14.1.0",
 		"@chainsafe/libp2p-noise": "^16.0.0",
@@ -89,6 +79,7 @@
 		"colors": "^1.4.0",
 		"datastore-core": "^10.0.2",
 		"datastore-level": "^11.0.1",
+		"doi-js": "git+https://github.com/silkroadnomad/doi-js.git#14a4410",
 		"dotenv": "^16.4.7",
 		"ecpair": "3.0.0-rc.0",
 		"events": "^3.3.0",
