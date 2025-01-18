@@ -38,7 +38,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"doi-js": "git+https://github.com/silkroadnomad/doi-js.git#cb2118c",
+		"doi-js": "git+https://github.com/silkroadnomad/doi-js.git#14a4410",
 		"@babel/plugin-proposal-class-properties": "^7.18.6",
 		"@chainsafe/libp2p-gossipsub": "^14.1.0",
 		"@chainsafe/libp2p-noise": "^16.0.0",
