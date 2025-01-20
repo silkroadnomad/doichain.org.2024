@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "x-ipfs-path",
-          "value": "/ipfs/QmWtv5ru5X9R7Enwj2Pa6RGX6dNhkzdzwRqsgmNYAHRPic"
+          "value": "/ipfs/QmeaYdmBop6LsygT8m9gCYgBpzqmaXZZw7vwxo7h4WAqzh"
         },
         {
           "key": "Cache-Control",
@@ -26,7 +26,7 @@
       "headers": [
         {
           "key": "x-ipfs-path",
-          "value": "/ipfs/QmWtv5ru5X9R7Enwj2Pa6RGX6dNhkzdzwRqsgmNYAHRPic"
+          "value": "/ipfs/QmeaYdmBop6LsygT8m9gCYgBpzqmaXZZw7vwxo7h4WAqzh"
         },
         {
           "key": "Cache-Control",
