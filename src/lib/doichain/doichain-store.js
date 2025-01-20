@@ -105,3 +105,4 @@ export const electrumBlockchainRelayfee = writable();
 export const electrumBlockchainBlockHeaders = writable();
 export const logs = writable([]);
 export const orbitDB = writable(null);
+export const peerIdFromHash = writable(null);

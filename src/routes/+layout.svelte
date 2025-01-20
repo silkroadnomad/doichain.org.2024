@@ -29,7 +29,8 @@
 		connectedPeers,
 		nameOps,
 		network,
-		orbitdb
+		orbitdb,
+		peerIdFromHash
 	} from '$lib/doichain/doichain-store.js';
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
@@ -40,7 +41,6 @@
 	import NameShow from '$lib/components/nameShow.svelte';
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
 
-	const config = createLibp2pConfig();
 
 	let blockstore = new LevelBlockstore('./helia-blocks');
 	let datastore = new LevelDatastore('./helia-data');
@@ -174,6 +174,8 @@
 		}
 
 		try {
+
+			const config = createLibp2pConfig();
 			// $libp2p = await createLibp2p({...config}); //incl. global libp2p network, webtransport etc.
 			$libp2p = await createLibp2p(config);	
 			window.libp2p = $libp2p;
@@ -214,7 +216,7 @@
 			if (!isConnected) {
 				await setupElectrumConnection($network);
 
-				if ($currentNameId) {
+				if ($currentNameId && $currentNameId !== 'e2e') {
 					generateAndPublishHTMLPage();
 				}
 			}
@@ -230,7 +232,20 @@
 
 	onMount(async () => {
 		console.log("localStorage",localStorage.getItem('selectedFilter'))
-		if (browser) {
+			if ($currentNameId === 'e2e') {
+				try {
+					const response = await fetch('http://localhost:3000/peer-id');
+					const data = await response.json();
+					console.log('data', data);
+					if (data.peerId) {
+						$peerIdFromHash = data.peerId;
+						console.log('peerIdFromHash', $peerIdFromHash);
+					}
+				} catch (error) {
+					console.error('Error fetching peer-id:', error);
+				}
+			}
+
 			agreed = localStorage.getItem('splashAgreed');
 			showSplash = !agreed;
 			
@@ -247,7 +262,6 @@
 						console.log('Service Worker not enabled!');
 					});
 			}
-		}
 		
 		detectSystemDarkMode();
 		return async () => {
@@ -308,7 +322,7 @@
 			</section>
 
 			<main class="mb-16">
-				{#if $currentNameId}
+				{#if $currentNameId && $currentNameId !== 'e2e'}
 					<div class="container mx-auto px-4">
 						<NameShow nameId={$currentNameId} />
 						<!-- Share Button -->

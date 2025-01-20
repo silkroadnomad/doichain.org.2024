@@ -487,10 +487,7 @@
 				nextUnusedAddressesMap,
 				nextUnusedAddress,
 				nextUnusedChangeAddress
-			} = await getAddressTxs(walletAddress, [], $electrumClient, $network);
-			console.log('nextUnusedAddressesMap:', nextUnusedAddressesMap);
-			console.log('nextUnusedAddress:', nextUnusedAddress);
-			console.log('nextUnusedChangeAddress:', nextUnusedChangeAddress);
+			} = await getAddressTxs(walletAddress, [], $electrumClient, $network)
 			recipientsAddress = nextUnusedAddress;
 			changeAddress = nextUnusedChangeAddress;
 			utxos = transactions
@@ -857,15 +854,12 @@
 
 						<div class="grid grid-cols-2 gap-4">
 							<div>
-								<!-- <button
-									on:click={() => activeTimeLine--}
-									class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-									>Back</button
-								> -->
+&nbsp;
 							</div>
 							<div>
 								<button
 									on:click={async () => {
+									
 										if (activeTab === 'collections') {
 											console.log('activeTab', activeTab);
 											if (!nameId) {
@@ -905,6 +899,7 @@
 												alert('Error generating metadata. Please try again.');
 											}
 										} else {
+											await writeMetadata()
 											activeTimeLine++;
 										}
 									}}
