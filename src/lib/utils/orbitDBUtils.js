@@ -6,7 +6,6 @@ let isClosing = false;
 
 class OrbitDBInterface {
     constructor(orbitdb) {
-        console.log("orbitdb",orbitdb)
         this.orbitdb = orbitdb;
     }
 
