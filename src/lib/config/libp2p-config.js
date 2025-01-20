@@ -51,13 +51,27 @@ export function createLibp2pConfig() {
 					{ urls: 'stun:stun1.l.google.com:19302' },
 					{ urls: 'stun:stun2.l.google.com:19302' },
 					{ urls: 'stun:stun3.l.google.com:19302' },
-					{ urls: 'stun:stun4.l.google.com:19302' }
+					{ urls: 'stun:stun4.l.google.com:19302' },
+					{ urls: 'stun:global.stun.twilio.com:3478' }
 					// Add a TURN server if possible
 					// { urls: 'turn:your-turn-server.com:3478', username: 'username', credential: 'password' }
 				]
 			}
 		}),
-		webRTCDirect(),
+		webRTCDirect({
+			rtcConfiguration: {
+				iceServers: [
+					{ urls: 'stun:stun.l.google.com:19302' },
+					{ urls: 'stun:stun1.l.google.com:19302' },
+					{ urls: 'stun:stun2.l.google.com:19302' },
+					{ urls: 'stun:stun3.l.google.com:19302' },
+					{ urls: 'stun:stun4.l.google.com:19302' },
+					{ urls: 'stun:global.stun.twilio.com:3478' }
+					// Add a TURN server if possible
+					// { urls: 'turn:your-turn-server.com:3478', username: 'username', credential: 'password' }
+				]
+			}
+		}),
 	];
 
 	config.connectionEncrypters = [noise()];
@@ -82,19 +96,19 @@ export function createLibp2pConfig() {
 	config.services.pubsub = pubsubConfig;
 	//delete config.services['delegatedRouting']
 	// const bootstrapList = ['/ip4/127.0.0.1/tcp/8080/ws/p2p/12D3KooWQvNEC1EAnupGVsT517abvx7w6FcQ7u8LciKd2ha1XgCm']
-	// const bootstrapList = dev
-	// 	? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2']
-	// 	: [
-	// 			'/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
-	// 			'/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj'
-	// 		];
+	const bootstrapList = dev
+		? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2']
+		: [
+				'/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
+				'/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj'
+			];
 
-	const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2',
-	    '/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
-	   '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj'
-	]
-	: ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
-	   '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj']
+	// const bootstrapList = dev ? ['/ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooWQpeSaj6FR8SpnDzkESTXY5VqnZVWNUKrkqymGiZTZbW2',
+	//     '/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
+	//    '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj'
+	// ]
+	// : ['/dns4/istanbul.le-space.de/tcp/443/wss/p2p/12D3KooWP2xyF6sHAtfVbUybUsu4F8Ku6acw9X5PX815fQt17Lm2',
+	//    '/dns4/ipfs.namokado.com/tcp/443/wss/p2p/12D3KooWLzMiAt4S8YWH7QANh3SURDwfV3Cgih1XYPAePSYWR1cj']
 
 	console.log('bootstrapList', bootstrapList);
 	// Connection gater

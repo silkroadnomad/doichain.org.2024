@@ -1,4 +1,4 @@
-# Doichain.org
+# The Doichain - NFC marketplace a decentralized, localfirst PWA
 
 ![Tests](https://github.com/silkroadnomad/doichain.org.2024/actions/workflows/e2e-tests.yml/badge.svg)
 
@@ -6,12 +6,12 @@
 
 ## Name Registration and Availability Check
 - Users can input a name to check its availability on the Doichain network
-- If the name is available, users can register it
-- If the name is already taken, users receive a notification
+- If the name is available, register it
+- If the name is already taken, receive a notification and watch see the nameOp transaction / non fungible coing
 
 ## Non-Fungible Coin (NFC) Management
 - Mint and manage NFCs (similar to NFTs but on the Doichain network)
-- Upload images and metadata to IPFS (InterPlanetary File System)
+- Upload and PIN images and metadata to IPFS (InterPlanetary File System)
 - Associate uploaded content with NFCs
 
 ## Advanced PSBT Transaction Management
@@ -20,6 +20,11 @@
   - Cycles through QR code frames for PSBT data
   - Scannable by DoiWallet (specifically understands NameOp transactions)
   - Enables transmission of larger PSBT data that wouldn't fit in a single QR code
+
+## NFC-Marketplace (*** coming soon ***) 
+- atomic nfc transactions 
+- Seller: Presigned NFC - PSBTs via scanning BC-QR Code with DOIWallet and scan signed transaction back to app
+- Buyer: Finds presigned sell offer on market place - clicks buy button for scanning and signing the PSBT with DOI wallet  
 
 ## Filtering and Displaying Name Operations
 - Filter and view different types of name operations:

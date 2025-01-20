@@ -925,6 +925,7 @@
 					{#if activeTimeLine === 1}
 						<p class="text-sm text-gray-500">
 							Enter your wallet address which contains the UTXOs to be used for the transaction.
+							You can also enter a xpub or zpub to scan spendable coins from all wallet addresses derived from it. 
 							Toggle to spendable coins as inputs to the transaction. 
 						</p>
 						<p class="mt-4">&nbsp;</p>

@@ -1,5 +1,7 @@
-import { nameOps, cidMessages, requestedCids } from '$lib/doichain/doichain-store.js';
+import { nameOps, cidMessages, requestedCids, orbitdb } from '$lib/doichain/doichain-store.js';
 import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
+import { get } from 'svelte/store';
+import { getOrCreateDB } from '$lib/utils/orbitDBUtils.js';
 let _requestedCids = [];
 requestedCids.subscribe((_) => {
 	_requestedCids = _;
@@ -102,7 +104,6 @@ function handleNameOpsMessage(message) {
 	nameOps.update((currentOps) => {
 		try {
 			const jsonMessage = JSON.parse(message);
-
 			const sanitizedMessage = jsonMessage.map((op) => ({
 				...op,
 				nameId: sanitizeInput(op.nameId),
@@ -116,24 +117,49 @@ function handleNameOpsMessage(message) {
 				return !isDuplicate;
 			});
 
-			// console.log('newNameOps.length', newNameOps.length);
-
 			if (newNameOps.length > 0) {
 				const updatedOps = [...currentOps, ...newNameOps].sort((a, b) => {
 					const timeA = a.blocktime || 0;
 					const timeB = b.blocktime || 0;
 					return timeB - timeA;
 				});
-				console.log(
-					`Added ${newNameOps.length} new unique nameOps. Total nameOps after update:`,
-					updatedOps.length
-				);
+
+				// Store new nameOps in OrbitDB
+				const dbInstance = get(orbitdb);
+				if (dbInstance) {
+					console.log("dbInstance available",dbInstance)
+					getOrCreateDB(dbInstance).then(async db => {
+						console.log("db", db);
+						newNameOps.forEach(op => {
+							const doc = {
+								_id: op.txid,
+								...op
+							};
+							
+							console.log("doc", doc);
+							
+							// Use proper put method
+							db.put(doc)
+								.then(hash => {
+									console.log('Stored document with hash:', hash);
+									return db.all();
+								})
+								.then(entries => {
+									console.log('Current database entries:', entries);
+								})
+								.catch(error => {
+									console.error('Error storing nameOp in OrbitDB:', op.txid, error);
+								});
+						});
+					}).catch(error => {
+						console.error('Error getting database:', error);
+					});
+				}
+
 				return updatedOps;
 			}
-			// console.log('No new unique nameOps to add.');
 			return currentOps;
 		} catch (e) {
-			console.log('message', message);
 			console.error('Failed to parse message:', e);
 			return currentOps;
 		}

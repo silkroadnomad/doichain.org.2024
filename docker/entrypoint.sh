@@ -20,7 +20,8 @@ elif [ "$1" == "start" ]; then
     echo "Starting node..."
     npm run start
 else
-    echo "Invalid command. Use 'generate-key' or 'start'."
+    npm run start
+    #echo "Invalid command. Use 'generate-key' or 'start'."
     exit 1
 fi
 

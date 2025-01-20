@@ -2,9 +2,12 @@
 	// External Libraries
 	import { createHelia } from 'helia';
 	import { createLibp2p } from 'libp2p';
+	import { createOrbitDB, Identities, KeyStore } from '@orbitdb/core';
+	import { base58btc } from 'multiformats/bases/base58';
+	import { CID } from 'multiformats/cid'
 	import { multiaddr } from '@multiformats/multiaddr';
 	import { unixfs } from '@helia/unixfs';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { LevelBlockstore } from 'blockstore-level';
 	import { LevelDatastore } from 'datastore-level';
 
@@ -25,7 +28,8 @@
 		libp2p,
 		connectedPeers,
 		nameOps,
-		network
+		network,
+		orbitdb
 	} from '$lib/doichain/doichain-store.js';
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
@@ -169,16 +173,32 @@
 		}
 
 		try {
-			$libp2p = await createLibp2p(config);
+			// $libp2p = await createLibp2p({...config}); //incl. global libp2p network, webtransport etc.
+			$libp2p = await createLibp2p(config);	
 			window.libp2p = $libp2p;
-
+			
 			nodeAddresses = $libp2p.getMultiaddrs().map((ma) => ma.toString());
 			console.log('Our node addresses:', nodeAddresses);
 
 			// Initialize Helia
 			$helia = await createHelia({ libp2p: $libp2p, datastore: datastore, blockstore: blockstore });
+			const identities = await Identities({ ipfs: $helia })
+			const identity = await identities.createIdentity({ id: 'me' })
+			const cid = CID.parse(identity.hash, base58btc)
+			console.log("identity cid",cid.toString())
+			console.log("libp2p peerId:",$helia.libp2p.peerId.toString())
 			window.helia = $helia;
-			
+			try {
+				$orbitdb = await createOrbitDB({ 
+					ipfs: $helia,
+					identity: identity
+				//	identity: await identities.createIdentity({ id: $helia.libp2p.peerId.toString() })
+				});
+				console.log('OrbitDB initialized',$orbitdb);
+			} catch (error) {
+				console.error('Error initializing OrbitDB:', error);
+			}
+
 			window.dialMultiaddr = (multiaddr_string) => {
 				const addr = multiaddr(multiaddr_string);
 				return $libp2p.dial(addr);
@@ -207,7 +227,7 @@
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		if (browser) {
 			agreed = localStorage.getItem('splashAgreed');
 			showSplash = !agreed;
@@ -228,6 +248,18 @@
 		}
 		
 		detectSystemDarkMode();
+		return async () => {
+			// ... existing cleanup code ...
+			try {
+				if ($orbitdb) {
+					await $orbitdb.stop();
+					$orbitdb.set(null);
+					console.log('OrbitDB closed');
+				}
+			} catch (error) {
+				console.error('Error closing OrbitDB:', error);
+			}
+		};
 	});
 
 	async function closeSplash() {
@@ -247,10 +279,6 @@
 			.catch((err) => {
 				console.error('Failed to copy: ', err);
 			});
-	}
-
-	function toggleDarkMode() {
-		isDarkMode = !isDarkMode;
 	}
 	
 </script>

@@ -3,7 +3,6 @@ import { randomBytes } from 'crypto';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import { Psbt } from 'bitcoinjs-lib';
-import { DOICHAIN } from '../../src/lib/doichain/doichain.js';
 
 const bip32 = BIP32Factory(ecc);
 
@@ -26,6 +25,22 @@ async function signPsbt(psbtBase64, seedPhrase) {
   psbt.finalizeAllInputs();
   return psbt.extractTransaction().toHex();
 }
+
+// Start local node before tests
+test.beforeAll(async () => {
+  process.env.E2E_TESTING = 'true';
+  const response = await fetch('http://localhost:3000/peer-id');
+  const { peerId } = await response.json();
+  console.log('peerId', peerId);
+  process.env.LOCAL_PEER_ID = peerId;
+});
+
+// Cleanup after tests
+test.afterAll(async () => {
+  delete process.env.E2E_TESTING;
+  delete process.env.LOCAL_PEER_ID;
+//   await stopLocalNode();
+});
 
 test('complete name registration flow', async ({ page }) => {
   // Test configuration

@@ -2,7 +2,6 @@ import { connectedPeers } from '$lib/doichain/doichain-store.js';
 import { handlePubsubMessage } from './pubsubMessageHandler.js';
 import { peerIdFromString } from '@libp2p/peer-id';
 import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
-import { multiaddr } from '@multiformats/multiaddr'
 
 export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 	const pubsubPeerDiscoveryTopics = import.meta.env.VITE_P2P_PUPSUB?.split(',') || [
@@ -16,12 +15,13 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 		handlePubsubMessage(event, libp2p);
 	});
 	// implement a listener which libp2p:discovery:pubsub message is received
-	// libp2p.addEventListener('peer', (event) => {
-	// 	console.log('PubSubPeerDiscovery: dialing discoveryed peer', event);
-	// 	const multiaddr = event.detail.message.data.toString();
-	// 	const addr = multiaddr(multiaddr);
+	libp2p.addEventListener('peer', (event) => {
+		console.log('PubSubPeerDiscovery: dialing discoveryed peer', event);
+		const multiaddr = event.detail.message.data.toString();
+		const addr = multiaddr(multiaddr);
+		console.log('PubSubPeerDiscovery: discoveryed peer', addr);
 	// 	libp2p.dial(addr);
-	// });
+	});
 	// Connection events
 	libp2p.addEventListener('connection:open', (p) => {
 		connectedPeers.update((peers) => [...peers, p.detail]);

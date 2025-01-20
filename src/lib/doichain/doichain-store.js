@@ -13,19 +13,70 @@ const BITCOIN_MAINNET = {
 	wif: 0x80
 };
 
+
 export const electrumServers = [
-	{ network: 'doichain-mainnet', host: 'big-parrot-60.doi.works', port: 50004, protocol: 'wss' },
-	{ network: 'doichain-mainnet', host: 'ugly-bird-70.doi.works', port: 50004, protocol: 'wss' },
-	{ network: 'doichain-mainnet', host: 'pink-deer-69.doi.works', port: 50004, protocol: 'wss' },
 	{
-		network: 'doichain-mainnet',
-		host: 'itchy-jellyfish-89.doi.works',
-		port: 50004,
-		protocol: 'wss'
+	  network: 'doichain-mainnet',
+	  host: 'pink-deer-69.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
 	},
-	{ network: 'doichain-regtest', host: 'localhost', port: 8443, protocol: 'wss' },
-	{ network: 'bitcoin-mainnet', host: 'btcpay.doi.works', port: 50004, protocol: 'wss' }
-];
+	{
+	  network: 'doichain-mainnet',
+	  host: 'ugly-bird-70.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-mainnet',
+	  host: 'lovely-dolphin-15.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-mainnet',
+	  host: 'big-parrot-60.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-mainnet',
+	  host: 'cuddly-mouse-39.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-mainnet',
+	  host: 'gentle-liger-36.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-mainnet',
+	  host: 'white-snail-54.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-regtest',
+	  host: 'electrumx',
+	  port: 8443,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'doichain-regtest',
+	  host: 'localhost',
+	  port: 8443,
+	  protocol: 'wss',
+	},
+	{
+	  network: 'bitcoin-mainnet',
+	  host: 'btcpay.doi.works',
+	  port: 50004,
+	  protocol: 'wss',
+	},
+  ];
+
 
 export const networks = [
 	{ id: 'doichain-mainnet', text: 'Doichain-Mainnet', value: DOICHAIN },
@@ -53,3 +104,4 @@ export const electrumBlockchainBlockHeadersSubscribe = writable();
 export const electrumBlockchainRelayfee = writable();
 export const electrumBlockchainBlockHeaders = writable();
 export const logs = writable([]);
+export const orbitDB = writable(null);

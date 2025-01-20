@@ -30,6 +30,7 @@ export default defineConfig({
 	},
 	define: {
 		__APP_VERSION__: JSON.stringify(pkg.version),
-		'process.env.dev': JSON.stringify(true) // Set dev to true
+		DEV: JSON.stringify(true), // Set dev to true
+		E2E_TESTING: JSON.stringify('true')
 	}
 });

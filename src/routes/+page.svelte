@@ -3,9 +3,10 @@
 	import { onMount } from 'svelte';
 
 	// Internal modules
-	import { libp2p, nameOps, helia, blockHeight } from '$lib/doichain/doichain-store.js';
+	import { libp2p, nameOps, helia, blockHeight, orbitdb } from '$lib/doichain/doichain-store.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
     import { getNFTData } from '$lib/utils/ipfsUtils.js';
+	import { getOrCreateDB, closeDB } from '$lib/utils/orbitDBUtils.js';
 	// Components
 	import NameInput from '$lib/components/nameInput.svelte';
 	import NFTCard from '$lib/components/NFTCard.svelte';
@@ -33,6 +34,8 @@
 	// Messages
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to observe!";
 	let customSuccessMessage = "Doichain Name ---name--- is available! Hit 'Enter' to register!";
+
+	let db;
 
 	// Animation Parameters
 	const flyAndFade = (node, params) => {
@@ -166,6 +169,27 @@
     $: if ($nameOps) {
         applyFilter();
     }
+	$: if($orbitdb){
+		getOrCreateDB($orbitdb).then((dbInstance)=>{
+			if (dbInstance && dbInstance.isOpen()) {
+				try {
+					console.log("dbInstance",dbInstance)
+					const records = dbInstance.db.all().then((storedNameOps)=>{
+						console.log("loaded storedNameOps", storedNameOps)
+						if (storedNameOps && storedNameOps.length > 0) {
+							// Extract only the value property from each record
+							const valuesOnly = storedNameOps.map(record => record.value);
+							nameOps.set(valuesOnly);
+							console.log('Loaded nameOps from OrbitDB:', valuesOnly.length);
+						}
+					})
+					
+				} catch (error) {
+					console.error('Error loading nameOps from OrbitDB:', error);
+				}
+			}
+		})
+	}
 
 	onMount(async () => {
 		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
@@ -205,9 +229,11 @@
 				}
 			}
 		};
-
 		window.addEventListener('scroll', handleScroll);
-		return () => window.removeEventListener('scroll', handleScroll);
+		return () => {
+			window.removeEventListener('scroll', handleScroll);
+			closeDB();
+		};
 	});
 
 	$: gradientStyle = `
