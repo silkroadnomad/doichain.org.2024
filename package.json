@@ -82,6 +82,7 @@
 		"@sveltejs/adapter-static": "^3.0.8",
 		"@svelteuidev/core": "^0.15.7",
 		"@vkontakte/vk-qr": "^2.1.1",
+		"axios": "^1.7.9",
 		"bbqr": "^1.0.1",
 		"bip32": "^4.0.0",
 		"bitcoinjs-lib": "^6.1.7",

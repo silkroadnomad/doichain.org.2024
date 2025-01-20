@@ -1,6 +1,7 @@
 import { electrumServerVersion, connectedServer, electrumServerBanner } from './doichain-store.js';
 
 export async function setupElectrumConnection(network) {
+	console.log('setupElectrumConnection', network);
 	const { connectElectrum } = await import('./connectElectrum.js');
 
 	await connectElectrum(network);

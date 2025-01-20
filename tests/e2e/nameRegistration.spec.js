@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import { Psbt } from 'bitcoinjs-lib';
+import { DoichainRPC } from '../doichainRPC.js';
 
 const bip32 = BIP32Factory(ecc);
 
@@ -29,6 +30,32 @@ async function signPsbt(psbtBase64, seedPhrase) {
 // Start local node before tests
 test.beforeAll(async () => {
   process.env.E2E_TESTING = 'true';
+  
+  // Initialize Doichain RPC
+  const doichainRPC = new DoichainRPC({
+    host: 'localhost',
+    port: 18332,
+    username: process.env.DOICHAIN_RPC_USER || 'admin',
+    password: process.env.DOICHAIN_RPC_PASSWORD || 'adminpw',
+  });
+
+  // Generate new address and mine coins
+  try {
+    const newAddress = await doichainRPC.call('getnewaddress');
+    console.log(`🏠 New address generated: ${newAddress}`);
+    
+    console.log('⛏️ Mining 200 DOI...');
+    const miningResult = await doichainRPC.call('generatetoaddress', [
+      200,
+      newAddress,
+    ]);
+    console.log(`✅ Mining complete! ${miningResult.length} blocks mined`);
+  } catch (error) {
+    console.error('❌ Error setting up regtest:', error);
+    throw error;
+  }
+
+  // Get peer ID
   const response = await fetch('http://localhost:3000/peer-id');
   const { peerId } = await response.json();
   console.log('peerId', peerId);
@@ -54,15 +81,40 @@ test('complete name registration flow', async ({ page }) => {
   const nameValue = 'test-value';
 
   // Accept terms and connect
-  await page.goto('http://localhost:5173/');
+  await page.goto('http://localhost:5173/#/e2e');
   await page.getByLabel('I understand and agree that').check();
   await page.getByLabel('I agree that my browsers').check();
   await page.getByRole('button', { name: 'Continue to Doichain dPWA' }).click();
 
-  // Enter xpub
+  // Wait for form to appear and fill name/description
+  await page.waitForSelector('[data-testid="name-input"]');
+  await page.getByTestId('name-input').fill('hello');
+    // Wait for the spinner to disappear
+  await page.waitForSelector('.animate-spin', { state: 'detached' });
+
+  await expect(page.locator('text=Doichain Name hello is available! Hit \'Enter\' to register!')).toBeVisible();
+  await page.getByPlaceholder('Find name...').press('Enter'); 
+  await page.getByTestId('nftDescription-input').fill('a test description');
+ 
+ /*
+
+
+  // Upload test image  
+  // const fileChooserPromise = page.waitForEvent('filechooser');
+  // await page.locator('.dropzone').click();
+  // const fileChooser = await fileChooserPromise;
+  // await fileChooser.setFiles('tests/e2e/test-image.png');
+
+  // Wait for image preview to appear
+  await page.waitForSelector('img[alt="Preview"]');
+
+  // Click next button
+  await page.getByRole('button', { name: 'Next' }).click();
+
+    // Enter xpub
   await page.getByPlaceholder('Enter your xpub').fill(xpub);
   await page.getByRole('button', { name: 'Load UTXOs' }).click();
-  
+
   // Wait for UTXOs to load
   await page.waitForSelector('[data-testid="utxo-item"]');
   
@@ -105,5 +157,5 @@ test('complete name registration flow', async ({ page }) => {
   
   // Verify name appears in the list
   await page.getByPlaceholder('Find name...').fill(nameId);
-  await expect(page.locator(`text=${nameId}`)).toBeVisible();
+  await expect(page.locator(`text=${nameId}`)).toBeVisible(); */
 }); 

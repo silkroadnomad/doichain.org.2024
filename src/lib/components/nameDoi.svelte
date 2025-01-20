@@ -560,6 +560,7 @@
 										<input
 											type="text"
 											bind:value={nameId}
+											data-testid="nameId-input"
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 											placeholder="Enter NameId for NFC-Collection"
 										/>
@@ -569,6 +570,8 @@
 										<input
 											type="text"
 											bind:value={nftDescription}
+											data-testid="collectionDescription-input"
+											placeholder="Enter Description for NFC-Collection"
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										/>
 									</div>
@@ -630,6 +633,8 @@
 									<div>
 										<input
 											type="text"
+											data-testid="nftName-input"
+											placeholder="Enter Name for NFC"
 											bind:value={nftName}
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										/>
@@ -639,6 +644,8 @@
 									<div>
 										<input
 											type="text"
+											data-testid="nftDescription-input"
+											placeholder="Enter Description for NFC"
 											bind:value={nftDescription}
 											class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										/>

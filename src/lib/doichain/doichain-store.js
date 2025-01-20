@@ -1,5 +1,8 @@
 import { writable } from 'svelte/store';
 import { DOICHAIN, DOICHAIN_REGTEST } from '$lib/doichain/doichain.js';
+export const peerIdFromHash = writable(null);
+export const network = writable(peerIdFromHash?DOICHAIN_REGTEST:DOICHAIN);
+
 const BITCOIN_MAINNET = {
 	name: 'bitcoin-mainnet',
 	messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -59,16 +62,16 @@ export const electrumServers = [
 	},
 	{
 	  network: 'doichain-regtest',
-	  host: 'electrumx',
-	  port: 8443,
-	  protocol: 'wss',
+	  host: peerIdFromHash?'localhost':'electrumx',
+	  port: 8081,
+	  protocol: 'ws',
 	},
 	{
-	  network: 'doichain-regtest',
-	  host: 'localhost',
-	  port: 8443,
-	  protocol: 'wss',
-	},
+		network: 'doichain-regtest',
+		host: peerIdFromHash?'localhost':'electrumx',
+		port: 8081,
+		protocol: 'ws',
+	  },
 	{
 	  network: 'bitcoin-mainnet',
 	  host: 'btcpay.doi.works',
@@ -95,7 +98,6 @@ export const requestedCids = writable([]);
 export const cidMessages = writable([]);
 export const scanOpen = writable(false);
 export const scanData = writable();
-export const network = writable(DOICHAIN);
 export const connectedServer = writable('offline');
 export const electrumClient = writable();
 export const electrumServerVersion = writable('');
@@ -105,4 +107,3 @@ export const electrumBlockchainRelayfee = writable();
 export const electrumBlockchainBlockHeaders = writable();
 export const logs = writable([]);
 export const orbitDB = writable(null);
-export const peerIdFromHash = writable(null);

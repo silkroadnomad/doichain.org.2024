@@ -5,12 +5,14 @@ let db = null;
 let isClosing = false;
 
 class OrbitDBInterface {
-    constructor(orbitdb) {
+    constructor(orbitdb, network) {
         this.orbitdb = orbitdb;
+        this.network = network;
     }
 
     async open() {
-        const dbName = 'nameops';
+        console.log("this.network",this.network)
+        const dbName = this.network.name.indexOf('regtest')!==-1?'nameops-regtest':'nameops';
         
         this.db = await this.orbitdb.open(dbName, {
             type: 'documents',
@@ -63,11 +65,11 @@ class OrbitDBInterface {
     }
 }
 
-export async function getOrCreateDB(orbitdb) {
+export async function getOrCreateDB(orbitdb,network) {
     if (db && db.isOpen && db.isOpen()) {
         return db;
     }
-    db = new OrbitDBInterface(orbitdb);
+    db = new OrbitDBInterface(orbitdb,network);
     await db.open();
     return db;
 }

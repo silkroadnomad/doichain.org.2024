@@ -145,6 +145,7 @@
 				</svg>
 			</div>
 			<input
+				data-testid="name-input"
 				bind:value={name}
 				autofocus
 				on:input={handleInput}

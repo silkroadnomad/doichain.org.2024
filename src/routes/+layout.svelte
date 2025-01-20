@@ -231,15 +231,14 @@
 	}
 
 	onMount(async () => {
-		console.log("localStorage",localStorage.getItem('selectedFilter'))
+		console.log('currentNameId', $currentNameId);
 			if ($currentNameId === 'e2e') {
+				console.log('e2e mode');
 				try {
 					const response = await fetch('http://localhost:3000/peer-id');
 					const data = await response.json();
-					console.log('data', data);
 					if (data.peerId) {
 						$peerIdFromHash = data.peerId;
-						console.log('peerIdFromHash', $peerIdFromHash);
 					}
 				} catch (error) {
 					console.error('Error fetching peer-id:', error);
