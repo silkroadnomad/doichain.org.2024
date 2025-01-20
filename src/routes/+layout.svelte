@@ -87,7 +87,8 @@
 	}
 
 	function publishList100Request() {
-		if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
+		// if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
+		if (attemptCount < maxAttempts) {
 			try {
 				const messageObject = {
 					type: 'LIST',
@@ -228,6 +229,7 @@
 	}
 
 	onMount(async () => {
+		console.log("localStorage",localStorage.getItem('selectedFilter'))
 		if (browser) {
 			agreed = localStorage.getItem('splashAgreed');
 			showSplash = !agreed;

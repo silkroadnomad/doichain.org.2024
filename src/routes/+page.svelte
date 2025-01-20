@@ -29,7 +29,7 @@
 	// nameOps = []; // Assume this is populated with initial data
     let metadataMap = new Map();
     let filteredNameOps = [];
-    let selectedFilter = 'all';
+    let selectedFilter ;
 
 	// Messages
 	let customErrorMessage = "Name ---name--- is already registered! Hit 'Enter' to observe!";
@@ -192,7 +192,8 @@
 	}
 
 	onMount(async () => {
-		selectedFilter = localStorage.getItem('selectedFilter') || 'other';
+		selectedFilter = localStorage.getItem('selectedFilter') || 'all';
+		console.log("selectedFilter",selectedFilter)
 		const handleScroll = () => {
 			if (nameOpsSection && !isLoading) {
 				const rect = nameOpsSection.getBoundingClientRect();

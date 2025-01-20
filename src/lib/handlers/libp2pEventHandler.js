@@ -92,7 +92,7 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 					console.warn(
 						'Unsupported key type detected. Clearing peerStore and aborting reconnection.'
 					);
-					await libp2p.peerStore.clear(); // Clear all peers from the peerStore
+					// await libp2p.peerStore.clear(); // Clear all peers from the peerStore
 					return; // Exit the reconnection attempt
 				}
 			}
