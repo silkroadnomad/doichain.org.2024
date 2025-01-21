@@ -117,7 +117,6 @@
 			);
 		}
 	}
-
 	let nodeAddresses = [];
 	$: {
 		if ($connectedPeers && $connectedPeers.length > 0) {

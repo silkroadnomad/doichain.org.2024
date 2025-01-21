@@ -1,7 +1,10 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { DOICHAIN, DOICHAIN_REGTEST } from '$lib/doichain/doichain.js';
 export const peerIdFromHash = writable(null);
-export const network = writable(peerIdFromHash?DOICHAIN_REGTEST:DOICHAIN);
+export const network = derived(
+	peerIdFromHash,
+	$peerIdFromHash => $peerIdFromHash ? DOICHAIN_REGTEST : DOICHAIN
+);
 
 const BITCOIN_MAINNET = {
 	name: 'bitcoin-mainnet',

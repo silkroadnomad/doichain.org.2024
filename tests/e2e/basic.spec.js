@@ -10,7 +10,7 @@ async function checkWssConnection(page) {
 
 async function acceptTermsAndContinue(page) {
 
-  await page.goto('/');
+  await page.goto('http://localhost:5173/');
   await page.getByLabel('I understand and agree that').check();
   await page.getByLabel('I agree that my browsers').check();
   await page.getByRole('button', { name: 'Continue to Doichain dPWA' }).click();
