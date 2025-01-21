@@ -2,11 +2,10 @@
 	// External Libraries
 	import { createHelia } from 'helia';
 	import { createLibp2p } from 'libp2p';
-	import { createOrbitDB, Identities, KeyStore } from '@orbitdb/core';
+	import { createOrbitDB, Identities  } from '@orbitdb/core';
 	import { base58btc } from 'multiformats/bases/base58';
 	import { CID } from 'multiformats/cid'
 	import { multiaddr } from '@multiformats/multiaddr';
-	import { unixfs } from '@helia/unixfs';
 	import { onMount } from 'svelte';
 	import { LevelBlockstore } from 'blockstore-level';
 	import { LevelDatastore } from 'datastore-level';
@@ -19,7 +18,6 @@
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
 	import { setupElectrumConnection } from '$lib/doichain/electrumConnection.js'; 
-	import { publishCID } from '$lib/doichain/nameDoi.js';
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import {
 		connectedServer,
@@ -36,6 +34,7 @@
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
 	import { currentNameId } from '$lib/hashRouter';
+	import { writeNameIdHTMLToIPFS } from '$lib/utils/ipfsUtils.js';
 
 	// Components
 	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
@@ -53,39 +52,6 @@
 	let agreed = false;
 	let showSplash = true;
 	let initialized = false;
-
-	/**
-	 * Generates and publishes an HTML page for a nameId to IPFS
-	 * @param {string} nameId - The name identifier
-	 * @param {string} blockDate - The date from the blockchain
-	 * @param {string} description - Description of the name
-	 * @param {string} imageCid - IPFS CID of the associated image
-	 * @returns {Promise<string>} The IPFS CID of the generated HTML page
-	 */
-	async function writeNameIdHTMLToIPFS(nameId, blockDate, description, imageCid) {
-		const encoder = new TextEncoder();
-		const fs = unixfs($helia);
-
-		try {
-			const { generateNameIdHTML } = await import('$lib/doichain/namePage.js');
-			const htmlString = await generateNameIdHTML(
-				nameId,
-				blockDate,
-				description,
-				`https://ipfs.le-space.de/ipfs/${imageCid}`
-			);
-
-			const cid = await fs.addBytes(encoder.encode(htmlString));
-			console.log('Added nameId HTML to IPFS:', cid.toString());
-
-			await publishCID(cid.toString());
-
-			return cid.toString();
-		} catch (error) {
-			console.error('Error in writeNameIdHTMLToIPFS:', error);
-			throw error;
-		}
-	}
 
 	function publishList100Request() {
 		if (attemptCount < maxAttempts) {
@@ -147,12 +113,12 @@
 			getNameIdData($electrumClient, $helia, $currentNameId).then((nameData) => {
 				console.log('nameData', nameData);
 				writeNameIdHTMLToIPFS(
+					$helia,
 					$currentNameId,
 					nameData.blockDate,
 					nameData.description,
 					nameData.imageCid
 				).then((htmlCid) => {
-					// Forward to IPFS gateway
 					gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
 					console.log('HTML page available at:', gatewayUrl);
 					console.log('Added HTML page to IPFS:', htmlCid);
@@ -160,7 +126,6 @@
 			});
 		} catch (error) {
 			console.error('Error generating HTML page:', error);
-			// Don't throw error to avoid blocking metadata publishing
 		}
 	}
 
