@@ -24,6 +24,14 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Build application
+      run: npm run build
+
+    - name: Start production server
+      run: npm run preview &
+      env:
+        PORT: 5173  # Using consistent port 5173
+
     - name: Install Playwright browsers
       run: npx playwright install --with-deps
     
@@ -47,4 +55,5 @@ jobs:
       env:
         DOICHAIN_RPC_USER: ${{ secrets.DOICHAIN_RPC_USER }}
         DOICHAIN_RPC_PASSWORD: ${{ secrets.DOICHAIN_RPC_PASSWORD }}
+        BASE_URL: http://localhost:5173  # Consistent with PORT
       run: npm run test:e2e:regtest 
