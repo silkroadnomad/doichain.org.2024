@@ -28,13 +28,8 @@ jobs:
     - name: Build application
       run: npm run build
 
-    - name: Start production server
-      run: npm run preview &
-
     - name: Install Playwright browsers
       run: npx playwright install --with-deps
 
     - name: Run e2e tests
       run: npm run test:e2e
-      env:
-        BASE_URL: http://localhost:4173  # Consistent with PORT 
