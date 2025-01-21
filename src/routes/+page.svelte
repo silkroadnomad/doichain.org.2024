@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 
 	// Internal modules
-	import { libp2p, nameOps, helia, blockHeight, orbitdb } from '$lib/doichain/doichain-store.js';
+	import { libp2p, nameOps, helia, blockHeight, orbitdb, network } from '$lib/doichain/doichain-store.js';
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
     import { getNFTData } from '$lib/utils/ipfsUtils.js';
 	import { getOrCreateDB, closeDB } from '$lib/utils/orbitDBUtils.js';
@@ -164,16 +164,13 @@
             applyFilter();
         }
     }
-
-    // Watch for changes in nameOps and apply the filter
     $: if ($nameOps) {
         applyFilter();
     }
 	$: if($orbitdb){
-		getOrCreateDB($orbitdb).then((dbInstance)=>{
+		getOrCreateDB($orbitdb,$network).then((dbInstance)=>{
 			if (dbInstance && dbInstance.isOpen()) {
 				try {
-					console.log("dbInstance",dbInstance)
 					const records = dbInstance.db.all().then((storedNameOps)=>{
 						console.log("loaded storedNameOps", storedNameOps)
 						if (storedNameOps && storedNameOps.length > 0) {

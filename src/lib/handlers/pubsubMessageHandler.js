@@ -11,11 +11,11 @@ export function handlePubsubMessage(event, libp2p) {
 		// handlePeerDiscoveryMessage(event, libp2p)
 	} else if (event.detail.topic === CONTENT_TOPIC) {
 		console.log(`Received pubsub message from ${event.detail.from} on topic ${event.detail.topic}`);
-		handleContentMessage(event, libp2p);
+		handlePinningMessage(event, libp2p);
 	}
 }
 
-function handleContentMessage(event, libp2p) {
+function handlePinningMessage(event, libp2p) {
 	const message = new TextDecoder().decode(event.detail.data);
 
 	try {

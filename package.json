@@ -14,6 +14,7 @@
 		"format": "prettier --write .",
 		"test:integration": "playwright test tests/e2e/basic.spec.js",
 		"test:e2e": "playwright test tests/e2e/basic.spec.js",
+		"test:e2e:regtest": "playwright test tests/e2e/nameRegistration.spec.js",
 		"test:unit": "vitest",
 		"test:watch": "nodemon --config ./nodemon.json"
 	},
@@ -82,6 +83,7 @@
 		"@sveltejs/adapter-static": "^3.0.8",
 		"@svelteuidev/core": "^0.15.7",
 		"@vkontakte/vk-qr": "^2.1.1",
+		"axios": "^1.7.9",
 		"bbqr": "^1.0.1",
 		"bip32": "^4.0.0",
 		"bitcoinjs-lib": "^6.1.7",

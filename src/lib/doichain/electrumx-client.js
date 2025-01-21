@@ -183,7 +183,7 @@ export class ElectrumxClient {
 		if (msg instanceof Array) {
 			this.response(msg);
 		} else {
-			if (msg.id !== 0) {
+			if (msg.id && msg.id !== 0) {
 				this.response(msg);
 			} else {
 				this.subscribe.emit(msg.method, msg.params);

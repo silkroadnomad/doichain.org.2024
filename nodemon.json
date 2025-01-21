@@ -1,5 +1,5 @@
    {
      "watch": ["tests/e2e", "src"],
      "ext": "js,ts,svelte",
-     "exec": "npx playwright test tests/e2e/basic.spec.js --headed"
+     "exec": "npx playwright test tests/e2e/nameRegistration.spec.js --headed"
    }

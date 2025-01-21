@@ -2,11 +2,10 @@
 	// External Libraries
 	import { createHelia } from 'helia';
 	import { createLibp2p } from 'libp2p';
-	import { createOrbitDB, Identities, KeyStore } from '@orbitdb/core';
+	import { createOrbitDB, Identities  } from '@orbitdb/core';
 	import { base58btc } from 'multiformats/bases/base58';
 	import { CID } from 'multiformats/cid'
 	import { multiaddr } from '@multiformats/multiaddr';
-	import { unixfs } from '@helia/unixfs';
 	import { onMount } from 'svelte';
 	import { LevelBlockstore } from 'blockstore-level';
 	import { LevelDatastore } from 'datastore-level';
@@ -19,7 +18,6 @@
 	import { CONTENT_TOPIC } from '$lib/doichain/doichain.js';
 	import { getConnectionStatus } from '$lib/doichain/connectElectrum.js';
 	import { setupElectrumConnection } from '$lib/doichain/electrumConnection.js'; 
-	import { publishCID } from '$lib/doichain/nameDoi.js';
 	import { getNameIdData } from '$lib/doichain/namePage.js';
 	import {
 		connectedServer,
@@ -29,18 +27,20 @@
 		connectedPeers,
 		nameOps,
 		network,
-		orbitdb
+		orbitdb,
+		peerIdFromHash,
+		blockHeight
 	} from '$lib/doichain/doichain-store.js';
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
 	import { currentNameId } from '$lib/hashRouter';
+	import { writeNameIdHTMLToIPFS } from '$lib/utils/ipfsUtils.js';
 
 	// Components
 	import LibP2PTransportTags from '$lib/components/LibP2PTransportTags.svelte';
 	import NameShow from '$lib/components/nameShow.svelte';
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
 
-	const config = createLibp2pConfig();
 
 	let blockstore = new LevelBlockstore('./helia-blocks');
 	let datastore = new LevelDatastore('./helia-data');
@@ -53,41 +53,7 @@
 	let showSplash = true;
 	let initialized = false;
 
-	/**
-	 * Generates and publishes an HTML page for a nameId to IPFS
-	 * @param {string} nameId - The name identifier
-	 * @param {string} blockDate - The date from the blockchain
-	 * @param {string} description - Description of the name
-	 * @param {string} imageCid - IPFS CID of the associated image
-	 * @returns {Promise<string>} The IPFS CID of the generated HTML page
-	 */
-	async function writeNameIdHTMLToIPFS(nameId, blockDate, description, imageCid) {
-		const encoder = new TextEncoder();
-		const fs = unixfs($helia);
-
-		try {
-			const { generateNameIdHTML } = await import('$lib/doichain/namePage.js');
-			const htmlString = await generateNameIdHTML(
-				nameId,
-				blockDate,
-				description,
-				`https://ipfs.le-space.de/ipfs/${imageCid}`
-			);
-
-			const cid = await fs.addBytes(encoder.encode(htmlString));
-			console.log('Added nameId HTML to IPFS:', cid.toString());
-
-			await publishCID(cid.toString());
-
-			return cid.toString();
-		} catch (error) {
-			console.error('Error in writeNameIdHTMLToIPFS:', error);
-			throw error;
-		}
-	}
-
 	function publishList100Request() {
-		// if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
 		if (attemptCount < maxAttempts) {
 			try {
 				const messageObject = {
@@ -95,7 +61,8 @@
 					dateString: 'LAST',
 					pageSize: 10,
 					from: 0,
-					filter: '' // Add any specific filter if needed
+					filter: '',
+					height: $blockHeight
 				};
 
 				const message = JSON.stringify(messageObject);
@@ -103,7 +70,6 @@
 				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`, message);
 				attemptCount++;
 
-				// Schedule next attempt after 5 seconds
 				setTimeout(() => {
 					publishList100Request();
 				}, 5000);
@@ -117,7 +83,6 @@
 			);
 		}
 	}
-
 	let nodeAddresses = [];
 	$: {
 		if ($connectedPeers && $connectedPeers.length > 0) {
@@ -148,12 +113,12 @@
 			getNameIdData($electrumClient, $helia, $currentNameId).then((nameData) => {
 				console.log('nameData', nameData);
 				writeNameIdHTMLToIPFS(
+					$helia,
 					$currentNameId,
 					nameData.blockDate,
 					nameData.description,
 					nameData.imageCid
 				).then((htmlCid) => {
-					// Forward to IPFS gateway
 					gatewayUrl = `https://ipfs.le-space.de/ipfs/${htmlCid}`;
 					console.log('HTML page available at:', gatewayUrl);
 					console.log('Added HTML page to IPFS:', htmlCid);
@@ -161,7 +126,6 @@
 			});
 		} catch (error) {
 			console.error('Error generating HTML page:', error);
-			// Don't throw error to avoid blocking metadata publishing
 		}
 	}
 
@@ -174,6 +138,8 @@
 		}
 
 		try {
+
+			const config = createLibp2pConfig();
 			// $libp2p = await createLibp2p({...config}); //incl. global libp2p network, webtransport etc.
 			$libp2p = await createLibp2p(config);	
 			window.libp2p = $libp2p;
@@ -214,7 +180,7 @@
 			if (!isConnected) {
 				await setupElectrumConnection($network);
 
-				if ($currentNameId) {
+				if ($currentNameId && $currentNameId !== 'e2e') {
 					generateAndPublishHTMLPage();
 				}
 			}
@@ -229,8 +195,20 @@
 	}
 
 	onMount(async () => {
-		console.log("localStorage",localStorage.getItem('selectedFilter'))
-		if (browser) {
+		console.log('currentNameId', $currentNameId);
+			if ($currentNameId === 'e2e') {
+				console.log('e2e mode');
+				try {
+					const response = await fetch('http://localhost:3000/peer-id');
+					const data = await response.json();
+					if (data.peerId) {
+						$peerIdFromHash = data.peerId;
+					}
+				} catch (error) {
+					console.error('Error fetching peer-id:', error);
+				}
+			}
+
 			agreed = localStorage.getItem('splashAgreed');
 			showSplash = !agreed;
 			
@@ -247,7 +225,6 @@
 						console.log('Service Worker not enabled!');
 					});
 			}
-		}
 		
 		detectSystemDarkMode();
 		return async () => {
@@ -308,7 +285,7 @@
 			</section>
 
 			<main class="mb-16">
-				{#if $currentNameId}
+				{#if $currentNameId && $currentNameId !== 'e2e'}
 					<div class="container mx-auto px-4">
 						<NameShow nameId={$currentNameId} />
 						<!-- Share Button -->
