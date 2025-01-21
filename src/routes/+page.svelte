@@ -164,8 +164,6 @@
             applyFilter();
         }
     }
-
-    // Watch for changes in nameOps and apply the filter
     $: if ($nameOps) {
         applyFilter();
     }

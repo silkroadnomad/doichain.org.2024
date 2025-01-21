@@ -30,7 +30,8 @@
 		nameOps,
 		network,
 		orbitdb,
-		peerIdFromHash
+		peerIdFromHash,
+		blockHeight
 	} from '$lib/doichain/doichain-store.js';
 	import { createLibp2pConfig } from '$lib/config/libp2p-config';
 	import { setupLibp2pEventHandlers } from '$lib/handlers/libp2pEventHandler.js';
@@ -87,7 +88,6 @@
 	}
 
 	function publishList100Request() {
-		// if (attemptCount < maxAttempts && (!$nameOps || $nameOps.length === 0)) {
 		if (attemptCount < maxAttempts) {
 			try {
 				const messageObject = {
@@ -95,7 +95,8 @@
 					dateString: 'LAST',
 					pageSize: 10,
 					from: 0,
-					filter: '' // Add any specific filter if needed
+					filter: '',
+					height: $blockHeight
 				};
 
 				const message = JSON.stringify(messageObject);
@@ -103,7 +104,6 @@
 				console.log(`Published request for LIST_LAST_100 (Attempt ${attemptCount + 1})`, message);
 				attemptCount++;
 
-				// Schedule next attempt after 5 seconds
 				setTimeout(() => {
 					publishList100Request();
 				}, 5000);

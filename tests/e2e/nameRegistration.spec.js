@@ -78,6 +78,7 @@ test('complete name registration flow', async ({ page }) => {
   
   // Generate random name
   const nameId = generateRandomName();
+  console.log("nameId",nameId)
   const nameValue = 'test-value';
 
   // Accept terms and connect

@@ -30,7 +30,7 @@ services:
     privileged: true
 
   relay-service:
-    image: "silkroadnomad/libp2p-relay-relay-service:v0.12.32"
+    image: "silkroadnomad/libp2p-relay-relay-service:v0.12.39"
     ports:
       - "8080:8080"
       - "1235:1235"
