@@ -28,7 +28,7 @@ jobs:
       run: npm run build
 
     - name: Start production server
-      run: npm run preview &
+      run: PORT=5173 npm run preview &
       env:
         PORT: 5173  # Using consistent port 5173
 
