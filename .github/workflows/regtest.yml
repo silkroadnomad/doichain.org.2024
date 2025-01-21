@@ -47,4 +47,4 @@ jobs:
       env:
         DOICHAIN_RPC_USER: ${{ secrets.DOICHAIN_RPC_USER }}
         DOICHAIN_RPC_PASSWORD: ${{ secrets.DOICHAIN_RPC_PASSWORD }}
-      run: npm run test:e2e 
+      run: npm run test:e2e:regtest 
