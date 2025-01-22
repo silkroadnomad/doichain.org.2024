@@ -171,13 +171,21 @@
 		getOrCreateDB($orbitdb,$network).then((dbInstance)=>{
 			if (dbInstance && dbInstance.isOpen()) {
 				try {
-					const records = dbInstance.db.all().then((storedNameOps)=>{
+					dbInstance.db.all().then((storedNameOps)=>{
 						console.log("loaded storedNameOps", storedNameOps)
 						if (storedNameOps && storedNameOps.length > 0) {
 							// Extract only the value property from each record
 							const valuesOnly = storedNameOps.map(record => record.value);
-							nameOps.set(valuesOnly);
-							console.log('Loaded nameOps from OrbitDB:', valuesOnly.length);
+							
+							// Sort by block time (youngest first)
+							const sortedValues = valuesOnly.sort((a, b) => {
+								const timeA = a.blockTime || 0;
+								const timeB = b.blockTime || 0;
+								return timeB - timeA; // Descending order
+							});
+							
+							nameOps.set(sortedValues);
+							console.log('Loaded nameOps from OrbitDB:', sortedValues.length);
 						}
 					})
 					
