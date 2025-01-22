@@ -82,7 +82,7 @@ export const generateAtomicNameTradingPSBT = async (
 			console.log('fundingUtxoAddresses->', utxo);
 			console.log('utxo.fullTx.type', utxo?.scriptPubKey?.type);
 			// if (!utxo.scriptPubKey.nameOp) {
-			const scriptPubKeyHex = utxo.hex;
+			const scriptPubKeyHex = utxo?.hex;
 			const isSegWit =
 				utxo?.scriptPubKey?.type === 'witness_v0_keyhash' ||
 				scriptPubKeyHex?.startsWith('0014') ||
