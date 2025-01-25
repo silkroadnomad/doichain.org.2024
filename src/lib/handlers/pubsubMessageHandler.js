@@ -8,10 +8,59 @@ requestedCids.subscribe((_) => {
 });
 export function handlePubsubMessage(event, libp2p) {
 	if (event.detail.topic === 'doichain._peer-discovery._p2p._pubsub') {
+		console.log('A: handlePubsubMessage', event.detail.topic)
 		// handlePeerDiscoveryMessage(event, libp2p)
 	} else if (event.detail.topic === CONTENT_TOPIC) {
 		console.log(`Received pubsub message from ${event.detail.from} on topic ${event.detail.topic}`);
-		handlePinningMessage(event, libp2p);
+		
+		// Check and establish WebRTC connection if needed
+		checkAndDialPeer(libp2p, event.detail.from).then(() => {
+			handlePinningMessage(event, libp2p);
+		}).catch(error => {
+			console.error('Failed to establish connection with peer:', error);
+		});
+	}
+}
+
+async function checkAndDialPeer(libp2p, peerId) {
+	try {
+		// Check if we're already connected
+		const connections = libp2p.getConnections(peerId);
+		if (connections.length > 0) {
+			console.log(`Already connected to peer ${peerId}`);
+			return;
+		}
+
+		// Get peer info to find WebRTC addresses
+		const peerInfo = await libp2p.peerStore.get(peerId);
+		const webrtcAddresses = peerInfo.addresses
+			.map(addr => addr.multiaddr)
+			.filter(ma => ma.protos().some(p => p.name === 'webrtc'));
+
+		if (webrtcAddresses.length === 0) {
+			console.log(`No WebRTC addresses found for peer ${peerId}`);
+			return;
+		}
+
+		console.log(`Found WebRTC addresses for peer ${peerId}:`, webrtcAddresses.map(ma => ma.toString()));
+		
+		// Try dialing each WebRTC address
+		for (const address of webrtcAddresses) {
+			try {
+				console.log(`Attempting to dial peer ${peerId} at ${address.toString()}`);
+				await libp2p.dial(address);
+				console.log(`Successfully connected to peer ${peerId} via WebRTC`);
+				return; // Success, stop trying other addresses
+			} catch (error) {
+				console.warn(`Failed to dial ${address.toString()}:`, error);
+				// Continue to next address
+			}
+		}
+
+		throw new Error(`Could not establish WebRTC connection to ${peerId}`);
+	} catch (error) {
+		console.error(`Failed to connect to peer ${peerId}:`, error);
+		throw error;
 	}
 }
 

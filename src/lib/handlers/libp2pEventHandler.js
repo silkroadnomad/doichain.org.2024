@@ -154,14 +154,22 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 	//            console.log('Publishing peer discovery message on topic:', evt.detail.topic)
 	        }
 	    })
+		libp2p.addEventListener('peer', (event) => {
 
+			console.log('A: Discovered new peer:', event.detail.id.toString())
+			const multiaddrs = event.detail.multiaddrs;
+			for (const addr of multiaddrs) {
+				libp2p.dial(addr).then(console.log('dialed address', addr)).catch(err => {
+					console.warn(`Failed to dial address ${addr.toString()}:`, err);
+				});
+			}
+		})
 	    libp2p.addEventListener('peer:discovery', (evt) => {
-	       console.log('Discovered new peer:', evt.detail.id.toString())
-	    })
+	       console.log('B: Discovered new peer dialing:', evt.detail.id.toString())
+	//     })
 
-	// Update the peer event listener
-	libp2p.addEventListener('peer', (event) => {
-		console.log('PubSubPeerDiscovery: discovered peer', event.detail);
+	// // Update the peer event listener
+	// libp2p.addEventListener('peer', (event) => {
 		
 		// Extract multiaddrs from the event detail
 		const multiaddrs = event.detail.multiaddrs;
@@ -169,7 +177,7 @@ export function setupLibp2pEventHandlers(libp2p, publishList100Request) {
 		// Try to dial each multiaddr
 		for (const addr of multiaddrs) {
 			try {
-				libp2p.dial(addr).catch(err => {
+				libp2p.dial(addr).then(console.log('dialed address', addr)).catch(err => {
 					console.warn(`Failed to dial address ${addr.toString()}:`, err);
 				});
 			} catch (err) {

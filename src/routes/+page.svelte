@@ -179,8 +179,8 @@
 							
 							// Sort by block time (youngest first)
 							const sortedValues = valuesOnly.sort((a, b) => {
-								const timeA = a.blockTime || 0;
-								const timeB = b.blockTime || 0;
+								const timeA = a.blocktime || 0;
+								const timeB = b.blocktime || 0;
 								return timeB - timeA; // Descending order
 							});
 							
